@@ -191,8 +191,9 @@
       <button class="startbtn hard" data-d="hard">HARD</button>
     </div>
     <div id="menuInfo"></div>
-    <div class="hint">←→ 이동 · ↑ 사다리/조준 · ↓ 내려가기 · SPACE 점프 · J/Z 사격 · K/X 수류탄 · L/C 필살기 · Q/E 무기교체 · P/ESC 일시정지 · N 음소거<br>
-      상자를 부수고 · POW를 구출하고 · 돈을 모아 중앙 상점에서 강해져라</div>
+    <div class="hint">←→ 이동 · ↑ 사다리/위 조준 · <b style="color:#ffcf3f;">↓ 엎드리기(낮은 적 조준)</b> · SPACE 점프 · J/Z 사격 · K/X 수류탄<br>
+      L/C 필살기 <b style="color:#9fe8ff;">(탈것 탑승 중엔 탈것 특수기)</b> · Q/E 무기교체 · P/ESC 일시정지 · N 음소거<br>
+      군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · 상자를 부수고 · POW를 구출하고 · 중앙 상점에서 강해져라</div>
   </div>
 
   <!-- ═══ 상점 ═══ -->
@@ -898,27 +899,27 @@ function vskinOf(m, si) { return (VEHICLE_SKINS[si] || VEHICLE_SKINS[0])[m]; }
 // windy: 공중풍 / geyser: 용암 간헐천 / movp: 이동 발판
 // ═══════════════════════════════════════════════════════════════
 const STAGES = [
-  { name: 'JUNGLE', len: 5000, intensity: 0.85, enemyHpMul: 1.0, ultUses: 2, theme: 'jungle',
+  { name: 'JUNGLE', len: 3300, intensity: 0.85, enemyHpMul: 1.0, ultUses: 2, theme: 'jungle',
     roster: ['grunt', 'grunt', 'gunner', 'dog'],
     pal: { a: '#1d3a2c', b: '#2f5238', c: '#5e6b38', far: '#3a5240', mid: '#1d2e1a',
       gTop: '#6a5226', gBody: '#473418', gDot: '#7d5e2c', plat: '#6b4f24', platTop: '#8f6f38' } },
-  { name: 'DESERT', len: 5400, intensity: 1.02, enemyHpMul: 1.12, ultUses: 3, theme: 'desert',
+  { name: 'DESERT', len: 3500, intensity: 1.02, enemyHpMul: 1.12, ultUses: 3, theme: 'desert',
     roster: ['grunt', 'gunner', 'heavy', 'rocket', 'sniper'],
     pal: { a: '#3c2a30', b: '#9c5536', c: '#e0a85a', far: '#a06a3c', mid: '#6e4524',
       gTop: '#d6ab5e', gBody: '#a87e3e', gDot: '#ecc986', plat: '#a07a40', platTop: '#cda058' } },
-  { name: 'SNOWFIELD', len: 5600, intensity: 1.15, enemyHpMul: 1.22, ultUses: 3, theme: 'snow', slip: true,
+  { name: 'SNOWFIELD', len: 3700, intensity: 1.15, enemyHpMul: 1.22, ultUses: 3, theme: 'snow', slip: true,
     roster: ['gunner', 'shield', 'dog', 'sniper', 'heavy'],
     pal: { a: '#20304a', b: '#4a6a8a', c: '#cfe0ea', far: '#8aa4bc', mid: '#5a7690',
       gTop: '#e8f0f6', gBody: '#aebfcf', gDot: '#f6fbff', plat: '#7d93a8', platTop: '#c8d8e4' } },
-  { name: 'NIGHT FORTRESS', len: 5800, intensity: 1.28, enemyHpMul: 1.32, ultUses: 4, theme: 'night',
+  { name: 'NIGHT FORTRESS', len: 3900, intensity: 1.28, enemyHpMul: 1.32, ultUses: 4, theme: 'night',
     roster: ['gunner', 'heavy', 'rocket', 'ninja', 'drone', 'turret'],
     pal: { a: '#0a0e22', b: '#172046', c: '#39345a', far: '#1a2240', mid: '#0a0d1c',
       gTop: '#3e3e4a', gBody: '#26262e', gDot: '#56565f', plat: '#33333d', platTop: '#54545f' } },
-  { name: 'VOLCANO CORE', len: 6000, intensity: 1.42, enemyHpMul: 1.45, ultUses: 4, theme: 'volcano', geyser: true,
+  { name: 'VOLCANO CORE', len: 4100, intensity: 1.42, enemyHpMul: 1.45, ultUses: 4, theme: 'volcano', geyser: true,
     roster: ['flamer', 'shield', 'rocket', 'bomber', 'mortar', 'heavy'],
     pal: { a: '#1a0c10', b: '#4a1a14', c: '#8a3a1e', far: '#3a1712', mid: '#241010',
       gTop: '#5a3a30', gBody: '#33201c', gDot: '#7a4a3a', plat: '#4c2e26', platTop: '#6e453a' } },
-  { name: 'SKY CARRIER', len: 6400, intensity: 1.58, enemyHpMul: 1.6, ultUses: 4, theme: 'sky', windy: true, movp: true,
+  { name: 'SKY CARRIER', len: 4300, intensity: 1.58, enemyHpMul: 1.6, ultUses: 4, theme: 'sky', windy: true, movp: true,
     roster: ['jet', 'drone', 'gunner', 'ninja', 'rocket', 'sniper', 'shield'],
     pal: { a: '#3a6ea8', b: '#6aa8d8', c: '#a8d8f0', far: '#cfe8f8', mid: '#8ab8d8',
       gTop: '#8a94a2', gBody: '#5c6672', gDot: '#a2acb8', plat: '#6a7480', platTop: '#98a2ae' } },
@@ -927,7 +928,7 @@ const STAGES = [
 STAGES.forEach((s, i) => {
   s.shopX = Math.round(s.len * 0.5);      // 중앙 상점 위치
   s.apcX = Math.round(s.len * 0.42);      // 중간보스 등장 트리거
-  s.par = 60 * (85 + i * 15);             // 랭크 판정용 목표 시간(프레임)
+  s.par = 60 * (58 + i * 9);              // 랭크 판정용 목표 시간(프레임)
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -1065,7 +1066,7 @@ function makePlayer(ci) {
     ult: 0, ultT: 0, ultMode: null, beamX: 0, rage: 0, ultReady: false, ultUses: 0,
     fly: 0, climbing: false, jumps: 0, standPl: null,
     money: 0, shopLock: false, capMul: 1, hpRegen: 0,
-    anim: { n: 'idle', f: 0 }, landT: 0, deadAnim: false,
+    anim: { n: 'idle', f: 0 }, landT: 0, deadAnim: false, crouch: false, vehCd: 0, vskin: null,
   };
 }
 function wMax(wp) { return Math.round((WEAPONS[wp].max || 0) * (player ? player.capMul : 1)); }
@@ -1107,6 +1108,7 @@ function cycleWeapon() {
 // ═══════════════════════════════════════════════════════════════
 function enterMode(m) {
   const p = player, d = DIMS[m], bottom = p.y + p.h;
+  p.crouch = false;
   p.mode = m; p.w = d.w; p.h = d.h;
   p.y = Math.min(bottom - d.h, GROUND_Y - d.h);
   p.climbing = false;
@@ -1128,9 +1130,10 @@ function exitMode(burst) {
     explode(p.x + p.w / 2, p.y + p.h / 2, 22, 0, true);
     addFloat(p.x, p.y - 20, 'EJECT!', '#e8412c');
   }
+  p.crouch = false;
   p.mode = 'foot'; p.w = fd.w; p.h = fd.h;
   p.y = Math.min(bottom - fd.h, GROUND_Y - fd.h);
-  p.vehHp = 0; p.vehMax = 0; p.modeT = 0;
+  p.vehHp = 0; p.vehMax = 0; p.modeT = 0; p.vskin = null;
   p.invuln = Math.max(p.invuln, 55);
 }
 
@@ -1163,27 +1166,69 @@ function buildLevel() {
     platforms.push(pl);
   }
 
-  // 2층 구조 + 사다리 + 방어 포탑 (고지 쟁탈전)
-  const f2 = GROUND_Y - 72;
-  [[Math.round(stage.len * 0.30), 170], [Math.round(stage.len * 0.62), 150]].forEach(([sx, sw]) => {
-    platforms.push({ x: sx, y: f2, w: sw, tier: 2, floor: true });
-    ladders.push({ x: sx + 4, top: f2, bottom: GROUND_Y });
-    ladders.push({ x: sx + sw - 10, top: f2, bottom: GROUND_Y });
-    for (let cx = sx + 18; cx < sx + sw - 14; cx += 26)
-      pickups.push({ x: cx, y: f2 - 12, type: 'coin', val: 15 });
-    // 2층 캠핑을 견제하는 장거리 포탑
-    const ledgeX = sx + sw + 90;
-    platforms.push({ x: ledgeX, y: f2 - 6, w: 46, tier: 2, floor: true });
-    enemies.push(mkEnemy(ledgeX + 12, f2 - 6 - 26, 'turret', 1.4, false, true));
-    // 고지 위 수비 포탑
-    enemies.push(mkEnemy(sx + sw - 34, f2 - 26, 'turret', 1.2, false, true));
+  // ── 2층 구조 + 사다리 (테마별로 완전히 다른 형태) ──────────────
+  // jungle : 나무 위 전망대 2곳 — 낮고 짧다 (입문용)
+  // desert : 넓은 메사 1곳 + 낮은 중계 선반 — 개방적
+  // snow   : 얼음 선반을 사다리로 3단 연결 — 수직 등반
+  // night  : 긴 캣워크가 스테이지를 가로지름 — 고지 이동로
+  // volcano: 짧은 발판 여러 개를 사다리로 건너뜀 — 위태로운 징검다리
+  // sky    : 상·하 2층 갑판 — 가장 입체적
+  const f2 = GROUND_Y - 72, f3 = GROUND_Y - 124;
+  const L = stage.len;
+  const decks = [];
+  const th = stage.theme;
+  if (th === 'desert') {
+    decks.push({ x: Math.round(L * 0.34), w: 250, y: f2, lad: 'both' });
+    decks.push({ x: Math.round(L * 0.70), w: 120, y: GROUND_Y - 50, lad: 'left' });
+  } else if (th === 'snow') {
+    decks.push({ x: Math.round(L * 0.26), w: 120, y: GROUND_Y - 46, lad: 'right' });
+    decks.push({ x: Math.round(L * 0.40), w: 110, y: f2, lad: 'both' });
+    decks.push({ x: Math.round(L * 0.56), w: 110, y: f3, lad: 'left' });
+    decks.push({ x: Math.round(L * 0.78), w: 130, y: f2, lad: 'both' });
+  } else if (th === 'night') {
+    decks.push({ x: Math.round(L * 0.22), w: 400, y: f2, lad: 'both' });
+    decks.push({ x: Math.round(L * 0.68), w: 220, y: f2, lad: 'both' });
+  } else if (th === 'volcano') {
+    for (let i = 0; i < 4; i++)
+      decks.push({ x: Math.round(L * (0.26 + i * 0.14)), w: 86, y: (i % 2 ? f3 : f2), lad: i % 2 ? 'left' : 'right' });
+  } else if (th === 'sky') {
+    decks.push({ x: Math.round(L * 0.24), w: 200, y: f2, lad: 'both' });
+    decks.push({ x: Math.round(L * 0.34), w: 150, y: f3, lad: 'left' });
+    decks.push({ x: Math.round(L * 0.62), w: 190, y: f2, lad: 'both' });
+    decks.push({ x: Math.round(L * 0.72), w: 140, y: f3, lad: 'right' });
+  } else {
+    decks.push({ x: Math.round(L * 0.30), w: 170, y: f2, lad: 'both' });
+    decks.push({ x: Math.round(L * 0.62), w: 150, y: f2, lad: 'both' });
+  }
+
+  decks.forEach((dk, di) => {
+    platforms.push({ x: dk.x, y: dk.y, w: dk.w, tier: 2, floor: true });
+    // 사다리는 지면이 아니라 바로 아래 있는 구조물까지만 내려간다
+    let below = GROUND_Y;
+    decks.forEach(o => {
+      if (o === dk || o.y <= dk.y) return;
+      if (dk.x < o.x + o.w && dk.x + dk.w > o.x) below = Math.min(below, o.y);
+    });
+    if (dk.lad === 'both' || dk.lad === 'left') ladders.push({ x: dk.x + 4, top: dk.y, bottom: below });
+    if (dk.lad === 'both' || dk.lad === 'right') ladders.push({ x: dk.x + dk.w - 10, top: dk.y, bottom: below });
+    for (let cx = dk.x + 18; cx < dk.x + dk.w - 14; cx += 30)
+      pickups.push({ x: cx, y: dk.y - 12, type: 'coin', val: 15 });
+    // 고지 수비 포탑 (넓은 갑판에만)
+    if (dk.w >= 110) enemies.push(mkEnemy(dk.x + dk.w - 34, dk.y - 26, 'turret', 1.2, false, true));
+    // 2층 캠핑 견제용 장거리 포탑 선반
+    if (di === 0) {
+      const ledgeX = dk.x + dk.w + 90;
+      platforms.push({ x: ledgeX, y: dk.y - 6, w: 46, tier: 2, floor: true });
+      enemies.push(mkEnemy(ledgeX + 12, dk.y - 6 - 26, 'turret', 1.4, false, true));
+    }
   });
+  const mainDeck = decks[0], lateDeck = decks[decks.length - 1];
 
   // POW 인질 (2~3명, 2층 또는 발판 위)
   const powSpots = [
-    { x: Math.round(stage.len * 0.30) + 60, y: f2 - 16 },
-    { x: Math.round(stage.len * 0.62) + 70, y: f2 - 16 },
-    { x: Math.round(stage.len * 0.82), y: GROUND_Y - 16 },
+    { x: mainDeck.x + Math.round(mainDeck.w * 0.4), y: mainDeck.y - 16 },
+    { x: lateDeck.x + Math.round(lateDeck.w * 0.5), y: lateDeck.y - 16 },
+    { x: Math.round(stage.len * 0.84), y: GROUND_Y - 16 },
   ];
   st.powCount = 2 + (si >= 3 ? 1 : 0);
   for (let i = 0; i < st.powCount; i++) pickups.push({ x: powSpots[i].x, y: powSpots[i].y, type: 'pow', w: 12, h: 16 });
@@ -1195,10 +1240,10 @@ function buildLevel() {
     pickups.push({ x, y: GROUND_Y - 14, type: route[t % route.length] });
     t++;
   }
-  pickups.push({ x: Math.round(stage.len * 0.30) + 150, y: f2 - 14, type: 'w_blade' });
+  pickups.push({ x: mainDeck.x + Math.round(mainDeck.w * 0.75), y: mainDeck.y - 14, type: 'w_blade' });
   // 후반 스테이지엔 고급 무기 배치
   if (si >= 2) pickups.push({ x: Math.round(stage.len * 0.72), y: GROUND_Y - 14, type: 'w_homing' });
-  if (si >= 3) pickups.push({ x: Math.round(stage.len * 0.86), y: f2 - 14, type: 'w_rail' });
+  if (si >= 3) pickups.push({ x: lateDeck.x + 30, y: lateDeck.y - 14, type: 'w_rail' });
   if (si >= 4) pickups.push({ x: Math.round(stage.len * 0.24), y: GROUND_Y - 14, type: 'w_flame' });
 
   // 탑승물 배치
@@ -1271,7 +1316,7 @@ function startStage(i) {
   p.hp = p.maxHp; p.invuln = 80;
   p.nades = Math.min(p.nades + 2, 9);
   p.fly = 0; p.climbing = false; p.shopLock = false; p.jumps = 0; p.standPl = null;
-  p.deadAnim = false; p.landT = 0; p.hurtT = 0;
+  p.deadAnim = false; p.landT = 0; p.hurtT = 0; p.crouch = false; p.vehCd = 0;
   p.anim = { n: 'idle', f: 0 };
   corpses = [];
   // 보유 무기 전부 완충
@@ -1594,10 +1639,52 @@ function gainUlt(n) {
     S.power();
   }
 }
+// ═══════════════════════════════════════════════════════════════
+// 탈것 전용 특수기 (SP 게이지가 아닌 자체 쿨다운으로 동작)
+//   크롤러(tank)  — 돌진: 궤도를 갈며 밀고 나가 접촉한 적을 갈아버린다
+//   워커(mech)    — 미사일 일제사격: 유도탄 5발 부채꼴 발사
+//   브루트(hulk)  — 지면 강타: 도약 후 착지하며 광역 충격파
+// ═══════════════════════════════════════════════════════════════
+const VEH_CD = { tank: 110, mech: 130, hulk: 120 };
+function vehicleSpecial() {
+  const p = player;
+  if (p.vehCd > 0) {
+    if (tick % 12 === 0) addFloat(p.x, p.y - 26, '재충전 ' + Math.ceil(p.vehCd / 60) + 's', '#8a8158');
+    return;
+  }
+  p.vehCd = VEH_CD[p.mode] || 120;
+  if (p.mode === 'tank') {
+    p.vehDash = 26;
+    addFloat(p.x, p.y - 22, '궤도 돌진!', '#ffcf3f');
+    addShake(6);
+    S.shoot('tank');
+    for (let i = 0; i < 10; i++) fx.dust(p.x + p.w / 2 + rnd(-16, 16), p.y + p.h, -p.face * rnd(0.6, 2.2), -rnd(0.2, 0.9));
+  } else if (p.mode === 'mech') {
+    addFloat(p.x, p.y - 26, '미사일 일제사격!', '#9fe8ff');
+    addShake(4);
+    S.shoot('rocketP');
+    for (let i = 0; i < 5; i++) {
+      const a = (p.face > 0 ? 0 : Math.PI) + (i - 2) * 0.16;
+      bullets.push({
+        x: p.x + (p.face > 0 ? p.w : 0), y: p.y + 12 + i,
+        vx: Math.cos(a) * 4.4, vy: Math.sin(a) * 4.4,
+        life: 150, dmg: pdmg(16), r: 3,
+        homing: true, spd: 4.6, explosive: true, rocketP: true,
+      });
+    }
+  } else if (p.mode === 'hulk') {
+    if (!p.onGround) { p.vehCd = 0; return; }   // 지상에서만 발동
+    p.vy = -8.6; p.onGround = false; p.slamPending = true;
+    addFloat(p.x, p.y - 30, '지면 강타!', '#bfffb0');
+    S.shoot('hulk');
+    addShake(3);
+  }
+}
+
 function triggerUlt() {
   const p = player;
   if (p.ult < 100 || p.ultUses <= 0 || p.ultT > 0) return;
-  if (p.mode !== 'foot' && p.mode !== 'hulk') return;
+  if (p.mode !== 'foot') return;
   if (CHARS[p.char].ult === 'rage' && p.rage > 0) return;
   p.ult = 0; p.ultReady = false; p.ultUses--;
   const u = CHARS[p.char].ult;
@@ -2494,11 +2581,26 @@ function update() {
   });
   if (p.standPl && p.standPl.mv) p.x += p.standPl._dx;
 
+  // ── 웅크리기(프론) ──────────────────────────────────────────
+  // 지상에서 ↓를 누르면 자세를 낮춘다. 총구가 함께 내려가므로
+  // 군견·자폭견처럼 키가 낮은 적을 비로소 맞출 수 있다.
+  const wantCrouch = p.mode === 'foot' && p.onGround && keys.down &&
+                     !p.climbing && p.fly <= 0 && !p.dead;
+  if (wantCrouch !== !!p.crouch) {
+    const fd = footDims(p.char);
+    const bottom = p.y + p.h;
+    p.crouch = wantCrouch;
+    p.h = wantCrouch ? Math.max(11, Math.round(fd.h * 0.56)) : fd.h;
+    p.y = bottom - p.h;
+    if (wantCrouch) for (let i = 0; i < 4; i++) fx.dust(p.x + p.w / 2 + rnd(-5, 5), GROUND_Y, rnd(-0.7, 0.7), -rnd(0.1, 0.4));
+  }
+
   // ── 플레이어 이동 ───────────────────────────────────────────
   let mv = 0;
   if (keys.left) mv--;
   if (keys.right) mv++;
-  const topSpd = d.spd * (p.mode === 'foot' ? c.spd : (p.vskin ? p.vskin.spdMul : 1));
+  let topSpd = d.spd * (p.mode === 'foot' ? c.spd : (p.vskin ? p.vskin.spdMul : 1));
+  if (p.crouch) topSpd *= 0.38;                       // 웅크린 채로는 느리게 기어간다
   if (mv !== 0 && !p.dead) {
     p.face = mv;
     if (stage.slip && p.onGround) p.vx = clamp(p.vx + mv * 0.35, -topSpd, topSpd);  // 눈길: 관성
@@ -2507,6 +2609,23 @@ function update() {
   } else {
     p.vx *= (stage.slip && p.onGround) ? 0.93 : 0.6;   // 눈길: 미끄러지며 감속
   }
+  // 크롤러 돌진 진행 중: 속도 고정 + 접촉한 적을 갈아버린다
+  if (p.vehDash > 0) {
+    p.vehDash--;
+    p.vx = p.face * 6.4;
+    p.invuln = Math.max(p.invuln, 2);
+    enemies.forEach(e => {
+      if (!e.dead && hitBox(p.x - 4, p.y, p.w + 8, p.h, e.x, e.y, e.w, e.h)) hurtEnemy(e, pdmg(11));
+    });
+    crates.forEach(cr => {
+      if (!cr.dead && hitBox(p.x - 4, p.y, p.w + 8, p.h, cr.x, cr.y, cr.w, cr.h)) damageCrate(cr, pdmg(20));
+    });
+    if (boss && !boss.dead && !boss.hidden && boss.state !== 'enter' &&
+        hitBox(p.x - 4, p.y, p.w + 8, p.h, boss.x, boss.y, boss.w, boss.h)) hurtBoss(pdmg(3));
+    if (tick % 2 === 0) fx.dust(p.x + p.w / 2 - p.face * 12, p.y + p.h, -p.face * rnd(1, 2.4), -rnd(0.2, 0.8));
+    addShake(1);
+  }
+
   // 공중항모: 상공의 바람이 공중에서 민다
   if (stage.windy && !p.onGround && !p.climbing)
     p.vx += Math.sin(tick * 0.013) * 0.05;
@@ -2573,9 +2692,18 @@ function update() {
       }
     }
     if (p.y + p.h >= GROUND_Y) { p.y = GROUND_Y - p.h; p.vy = 0; p.onGround = true; p.jumps = 0; }
-    // 헐크 착지 충격파
-    if (p.onGround && p.mode === 'hulk' && fallV > 6)
-      explode(p.x + p.w / 2, p.y + p.h, 42, pdmg(10), true);
+    // 브루트 착지 충격파 (지면 강타 발동 시 훨씬 크게)
+    if (p.onGround && p.mode === 'hulk' && (fallV > 6 || p.slamPending)) {
+      if (p.slamPending) {
+        p.slamPending = false;
+        explode(p.x + p.w / 2, p.y + p.h, 78, pdmg(30), true);
+        fx.shock(p.x + p.w / 2, p.y + p.h, 110, '#bfffb0', 3);
+        addShake(14);
+        for (let i = 0; i < 12; i++) fx.debris(p.x + p.w / 2, p.y + p.h, rnd(-4, 4), rnd(-5, -1.5), '#4a3a28');
+      } else {
+        explode(p.x + p.w / 2, p.y + p.h, 42, pdmg(10), true);
+      }
+    }
   }
 
   // 카메라: 전진만 허용
@@ -2583,6 +2711,7 @@ function update() {
 
   // ── 타이머 갱신 ─────────────────────────────────────────────
   if (p.invuln > 0) p.invuln--;
+  if (p.vehCd > 0) p.vehCd--;
   if (p.fireCd > 0) p.fireCd--;
   if (p.nadeCd > 0) p.nadeCd--;
   if (p.flash > 0) p.flash--;
@@ -2618,7 +2747,10 @@ function update() {
   }
 
   // ── 입력 액션 ───────────────────────────────────────────────
-  if (keys.special && !lastSpecial && !p.dead) triggerUlt();
+  if (keys.special && !lastSpecial && !p.dead) {
+    if (p.mode !== 'foot') vehicleSpecial();
+    else triggerUlt();
+  }
   lastSpecial = keys.special;
   if (keys.swap && !lastSwap && !p.dead && p.mode === 'foot') cycleWeapon();
   lastSwap = keys.swap;
@@ -4252,6 +4384,24 @@ ANIMS.land = () => [
 ];
 
 // 사다리 오르기 (4)
+// 웅크리기 (2) — 자세를 낮추고 총구를 지면 가까이 내린다
+ANIMS.crouch = () => {
+  const out = [];
+  for (let i = 0; i < 2; i++) {
+    const t = i * Math.PI;
+    out.push(basePose({
+      hy: -6.6 + Math.sin(t) * 0.25, hx: -0.6,
+      lean: 0.52, headT: -0.34,
+      fThigh: 1.2, fShin: -2.0,
+      bThigh: -0.35, bShin: -1.95,
+      fUpper: 1.46, fFore: 0.06,
+      bUpper: -0.34, bFore: -0.72,
+      gunA: 0.02, hair: 1.1,
+    }));
+  }
+  return out;
+};
+
 ANIMS.climb = () => {
   const out = [];
   for (let i = 0; i < 4; i++) {
@@ -4326,7 +4476,7 @@ function bakeAllSprites() {
 // ═══════════════════════════════════════════════════════════════
 // 플레이어 애니메이션 상태 기계 + 렌더
 // ═══════════════════════════════════════════════════════════════
-const ANIM_SPD = { idle: 0.10, run: 0, rise: 0.10, fall: 0.09, land: 0.16, climb: 0, hurt: 0.13, die: 0.13, aimUp: 0.10, fly: 0.22 };
+const ANIM_SPD = { idle: 0.10, run: 0, rise: 0.10, fall: 0.09, land: 0.16, climb: 0, hurt: 0.13, die: 0.13, aimUp: 0.10, fly: 0.22, crouch: 0.06 };
 const ANIM_LOOP = { land: false, die: false, hurt: false };
 
 function pickAnim(p) {
@@ -4335,6 +4485,7 @@ function pickAnim(p) {
   if (p.climbing) return 'climb';
   if (p.fly > 0) return 'fly';
   if (!p.onGround) return p.vy < -0.4 ? 'rise' : 'fall';
+  if (p.crouch) return 'crouch';
   if (p.landT > 0) return 'land';
   if (keys.up && Math.abs(p.vx) < 0.4) return 'aimUp';
   if (Math.abs(p.vx) > 0.35) return 'run';
