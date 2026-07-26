@@ -851,11 +851,18 @@ const ECFG = {
   apc:    { w: 60, h: 30, hp: 260, pts: 800, coin: 60 },
 };
 const DIMS = {
-  foot: { w: 16, h: 32, spd: 1.8,  jump: -8.4 },
-  mech: { w: 26, h: 40, spd: 1.7,  jump: -8.0 },
-  tank: { w: 48, h: 26, spd: 1.25, jump: -5.0 },
-  hulk: { w: 26, h: 46, spd: 2.0,  jump: -9.6 },
+  foot:  { w: 16, h: 32, spd: 1.8,  jump: -8.4 },
+  mech:  { w: 26, h: 40, spd: 1.7,  jump: -8.0 },
+  tank:  { w: 48, h: 26, spd: 1.25, jump: -5.0 },
+  hulk:  { w: 26, h: 46, spd: 2.0,  jump: -9.6 },
+  // ── 비행 탈것: 중력을 받지 않고 SPACE 상승 / ↓ 하강 ──
+  heli:  { w: 44, h: 24, spd: 2.1,  jump: 0, air: true, lift: 0.42, vmax: 3.0 },
+  drone: { w: 22, h: 16, spd: 3.1,  jump: 0, air: true, lift: 0.60, vmax: 4.2 },
+  jet:   { w: 50, h: 18, spd: 3.8,  jump: 0, air: true, lift: 0.50, vmax: 3.6 },
 };
+// vehHp(내구도)를 쓰는 탈것 — hulk는 시간제라 제외
+function hasVehHp(m) { return m === 'mech' || m === 'tank' || m === 'heli' || m === 'drone' || m === 'jet'; }
+function isAirVeh(m) { return !!(DIMS[m] && DIMS[m].air); }
 
 // 색상 보정: amt>0 밝게, amt<0 어둡게 (스테이지별 탈것 팔레트 파생에 사용)
 function shade(hex, amt) {
@@ -867,31 +874,64 @@ function shade(hex, amt) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 스테이지별 탈것 스킨 6종 × 3계열
-// 매 스테이지마다 이름·색상·전용 스탯 배율이 다른 탈것이 등장한다
-// (mech→'워커' 경량 이족보행 / tank→'크롤러' 궤도차량 / hulk→'브루트' 강화슈트)
+// 탈것 카탈로그 — 지상 3계열 + 비행 3계열, 스테이지마다 다른 조합
+//   walker(mech) 보행 메카 · crawler(tank) 궤도 전차 · exo(hulk) 강화 외골격
+//   gunship(heli) 공격 헬기 · drone 전투 드론 · stealth(jet) 스텔스 전투기
+// 스테이지별로 등장 기종 자체가 달라진다 (색만 다른 게 아니다)
 // ═══════════════════════════════════════════════════════════════
-const VEHICLE_SKINS = [
-  { mech: { name: '정글 워커',   body: '#4f8f5a', visor: '#bfffb0', spdMul: 1.0,  jumpMul: 1.0,  hpMul: 1.0 },
-    tank: { name: '정글 크롤러', body: '#5a7242', visor: '#eaffea', spdMul: 1.0,  jumpMul: 1.0,  hpMul: 1.05 },
-    hulk: { name: '포레스트 브루트', body: '#3a8c3a', visor: '#eaffea', spdMul: 1.0,  jumpMul: 1.0,  hpMul: 1.0 } },
-  { mech: { name: '듄 스트라이더', body: '#b08a44', visor: '#ffe27a', spdMul: 1.08, jumpMul: 0.95, hpMul: 0.95 },
-    tank: { name: '샌드 크롤러', body: '#a8863c', visor: '#ffe27a', spdMul: 1.1,  jumpMul: 0.9,  hpMul: 1.1 },
-    hulk: { name: '듄 브레이커', body: '#c9863a', visor: '#fff0c0', spdMul: 0.95, jumpMul: 1.0,  hpMul: 1.15 } },
-  { mech: { name: '프로스트 워커', body: '#5c7f9a', visor: '#eafcff', spdMul: 0.95, jumpMul: 1.0,  hpMul: 1.0 },
-    tank: { name: '스노우 크롤러', body: '#7d93a8', visor: '#eafcff', spdMul: 0.9,  jumpMul: 1.0,  hpMul: 1.15 },
-    hulk: { name: '글레이셔 브루트', body: '#6fb8c8', visor: '#ffffff', spdMul: 1.0,  jumpMul: 0.95, hpMul: 1.1 } },
-  { mech: { name: '섀도우 워커', body: '#3a3a52', visor: '#ff3a5a', spdMul: 1.1,  jumpMul: 1.05, hpMul: 0.9 },
-    tank: { name: '나이트 크롤러', body: '#33333f', visor: '#ff3a5a', spdMul: 1.0,  jumpMul: 1.0,  hpMul: 1.0 },
-    hulk: { name: '다크 브루트', body: '#48345c', visor: '#ff8ac0', spdMul: 1.0,  jumpMul: 1.0,  hpMul: 1.0 } },
-  { mech: { name: '마그마 워커', body: '#8a3a20', visor: '#ffb03a', spdMul: 0.95, jumpMul: 0.95, hpMul: 1.15 },
-    tank: { name: '라바 크롤러', body: '#8a3a1e', visor: '#ffb03a', spdMul: 0.92, jumpMul: 0.9,  hpMul: 1.25 },
-    hulk: { name: '인페르노 브루트', body: '#c8481e', visor: '#ffe27a', spdMul: 0.95, jumpMul: 1.0,  hpMul: 1.2 } },
-  { mech: { name: '스카이 워커', body: '#6a8fae', visor: '#eafcff', spdMul: 1.05, jumpMul: 1.15, hpMul: 0.95 },
-    tank: { name: '게일 크롤러', body: '#7c96a8', visor: '#eafcff', spdMul: 1.0,  jumpMul: 1.05, hpMul: 1.05 },
-    hulk: { name: '스톰 브루트', body: '#8ac0d8', visor: '#ffffff', spdMul: 1.05, jumpMul: 1.1,  hpMul: 1.0 } },
-];
-function vskinOf(m, si) { return (VEHICLE_SKINS[si] || VEHICLE_SKINS[0])[m]; }
+const VSKIN = {
+  // 지상
+  mech: [
+    { name: 'MK-1 레이븐',  body: '#4f8f5a', visor: '#bfffb0', spdMul: 1.0,  jumpMul: 1.0,  hpMul: 1.0 },
+    { name: 'MK-2 듄워커',  body: '#b08a44', visor: '#ffe27a', spdMul: 1.08, jumpMul: 0.95, hpMul: 0.95 },
+    { name: 'MK-3 글레이셔', body: '#5c7f9a', visor: '#eafcff', spdMul: 0.95, jumpMul: 1.0,  hpMul: 1.05 },
+    { name: 'MK-4 나이트호크', body: '#3a3a52', visor: '#ff3a5a', spdMul: 1.1, jumpMul: 1.05, hpMul: 0.9 },
+    { name: 'MK-5 이그니스', body: '#8a3a20', visor: '#ffb03a', spdMul: 0.95, jumpMul: 0.95, hpMul: 1.15 },
+    { name: 'MK-6 제니스',  body: '#6a8fae', visor: '#eafcff', spdMul: 1.05, jumpMul: 1.15, hpMul: 0.95 },
+  ],
+  tank: [
+    { name: 'T-70 보어',    body: '#5a7242', visor: '#eaffea', spdMul: 1.0,  jumpMul: 1.0, hpMul: 1.05 },
+    { name: 'T-80 스콜피오', body: '#a8863c', visor: '#ffe27a', spdMul: 1.1,  jumpMul: 0.9, hpMul: 1.1 },
+    { name: 'T-90 페름',    body: '#7d93a8', visor: '#eafcff', spdMul: 0.9,  jumpMul: 1.0, hpMul: 1.2 },
+    { name: 'T-95 레이스',  body: '#33333f', visor: '#ff3a5a', spdMul: 1.0,  jumpMul: 1.0, hpMul: 1.05 },
+    { name: 'T-99 마그마',  body: '#8a3a1e', visor: '#ffb03a', spdMul: 0.92, jumpMul: 0.9, hpMul: 1.25 },
+    { name: 'T-X 게일',     body: '#7c96a8', visor: '#eafcff', spdMul: 1.0,  jumpMul: 1.05, hpMul: 1.1 },
+  ],
+  hulk: [
+    { name: 'EXO 포레스트', body: '#3a8c3a', visor: '#eaffea', spdMul: 1.0,  jumpMul: 1.0,  hpMul: 1.0 },
+    { name: 'EXO 브레이커', body: '#c9863a', visor: '#fff0c0', spdMul: 0.95, jumpMul: 1.0,  hpMul: 1.15 },
+    { name: 'EXO 빙하',    body: '#6fb8c8', visor: '#ffffff', spdMul: 1.0,  jumpMul: 0.95, hpMul: 1.1 },
+    { name: 'EXO 나이트메어', body: '#48345c', visor: '#ff8ac0', spdMul: 1.05, jumpMul: 1.0, hpMul: 1.0 },
+    { name: 'EXO 인페르노', body: '#c8481e', visor: '#ffe27a', spdMul: 0.95, jumpMul: 1.0,  hpMul: 1.2 },
+    { name: 'EXO 스톰',    body: '#8ac0d8', visor: '#ffffff', spdMul: 1.05, jumpMul: 1.1,  hpMul: 1.0 },
+  ],
+  // 비행
+  heli: [
+    { name: 'AH-1 호넷',   body: '#3e6a4a', visor: '#bfffb0', spdMul: 1.0,  jumpMul: 1.0, hpMul: 1.0 },
+    { name: 'AH-2 바이퍼', body: '#8a7038', visor: '#ffe27a', spdMul: 1.05, jumpMul: 1.0, hpMul: 1.0 },
+    { name: 'AH-3 블리자드', body: '#4e6e88', visor: '#eafcff', spdMul: 0.95, jumpMul: 1.0, hpMul: 1.1 },
+    { name: 'AH-4 나이트블레이드', body: '#2e2e40', visor: '#ff3a5a', spdMul: 1.1, jumpMul: 1.0, hpMul: 0.95 },
+    { name: 'AH-5 파이어버드', body: '#7a3018', visor: '#ffb03a', spdMul: 1.0, jumpMul: 1.0, hpMul: 1.1 },
+    { name: 'AH-6 템페스트', body: '#5a7e9a', visor: '#eafcff', spdMul: 1.1, jumpMul: 1.0, hpMul: 1.0 },
+  ],
+  drone: [
+    { name: 'RX 와스프',   body: '#4a7a5a', visor: '#bfffb0', spdMul: 1.0,  jumpMul: 1.0, hpMul: 0.85 },
+    { name: 'RX 스카라베', body: '#a08040', visor: '#ffe27a', spdMul: 1.05, jumpMul: 1.0, hpMul: 0.85 },
+    { name: 'RX 프로스트', body: '#6a8ca8', visor: '#eafcff', spdMul: 1.0,  jumpMul: 1.0, hpMul: 0.9 },
+    { name: 'RX 팬텀',    body: '#38384e', visor: '#ff3a5a', spdMul: 1.15, jumpMul: 1.0, hpMul: 0.8 },
+    { name: 'RX 엠버',    body: '#8a4028', visor: '#ffb03a', spdMul: 1.0,  jumpMul: 1.0, hpMul: 0.95 },
+    { name: 'RX 사이클론', body: '#6e94b0', visor: '#eafcff', spdMul: 1.2,  jumpMul: 1.0, hpMul: 0.85 },
+  ],
+  jet: [
+    { name: 'SF-1 팰컨',   body: '#46705a', visor: '#bfffb0', spdMul: 1.0,  jumpMul: 1.0, hpMul: 0.9 },
+    { name: 'SF-2 미라주', body: '#967a42', visor: '#ffe27a', spdMul: 1.05, jumpMul: 1.0, hpMul: 0.9 },
+    { name: 'SF-3 아이스픽', body: '#5e80a0', visor: '#eafcff', spdMul: 1.0, jumpMul: 1.0, hpMul: 0.95 },
+    { name: 'SF-4 스펙터', body: '#2a2a3c', visor: '#ff3a5a', spdMul: 1.15, jumpMul: 1.0, hpMul: 0.9 },
+    { name: 'SF-5 파이로', body: '#8a3820', visor: '#ffb03a', spdMul: 1.0,  jumpMul: 1.0, hpMul: 1.0 },
+    { name: 'SF-6 소닉',   body: '#6288a8', visor: '#eafcff', spdMul: 1.2,  jumpMul: 1.0, hpMul: 0.9 },
+  ],
+};
+function vskinOf(m, si) { const a = VSKIN[m] || VSKIN.mech; return a[si] || a[0]; }
 
 // ═══════════════════════════════════════════════════════════════
 // 스테이지 6종
@@ -935,13 +975,15 @@ STAGES.forEach((s, i) => {
 // 보스 6종
 // special: 페이즈 특수 패턴 키 / lob: 곡사탄 사용 여부
 // ═══════════════════════════════════════════════════════════════
+// shape: 렌더 실루엣 종류 (전부 다른 형태 — 전차형은 하나뿐)
+// air:   부양체 여부
 const BOSSCFG = [
-  { name: 'IRON SCORPION', hp: 240, col: '#5a4a2a', size: { w: 128, h: 76 }, fireCd: [80, 50], spread: 3, lob: false, special: 'charge', eye: '#ff3a2a', aura: 'rgba(255,90,40,.16)' },
-  { name: 'DESERT FANG',   hp: 340, col: '#7a5a2e', size: { w: 144, h: 84 }, fireCd: [64, 42], spread: 4, lob: false, special: 'burrow', eye: '#ffcf3f', aura: 'rgba(224,168,90,.16)' },
-  { name: 'FROST TITAN',   hp: 420, col: '#7d9ab0', size: { w: 150, h: 90 }, fireCd: [62, 40], spread: 4, lob: false, special: 'icicle', eye: '#9fe8ff', aura: 'rgba(159,232,255,.18)' },
-  { name: 'NIGHT REAPER',  hp: 500, col: '#3a3a48', size: { w: 156, h: 88 }, fireCd: [52, 34], spread: 5, lob: true,  special: 'summon', eye: '#ff2a5a', aura: 'rgba(177,140,255,.18)' },
-  { name: 'MAGMA GOLEM',   hp: 600, col: '#6e3020', size: { w: 168, h: 96 }, fireCd: [50, 32], spread: 5, lob: true,  special: 'erupt', eye: '#ff8a2b', aura: 'rgba(255,90,30,.2)' },
-  { name: 'SKY FORTRESS CORE', hp: 820, col: '#4a5a72', size: { w: 195, h: 105 }, fireCd: [46, 28], spread: 6, lob: false, special: 'final', eye: '#eafcff', aura: 'rgba(159,232,255,.22)' },
+  { name: 'ARACHNID WALKER', hp: 240, col: '#5a6a3a', size: { w: 132, h: 84 }, fireCd: [80, 50], spread: 3, lob: false, special: 'charge', eye: '#ff3a2a', aura: 'rgba(255,90,40,.16)', shape: 'spider' },
+  { name: 'SAND DRILL RIG',  hp: 340, col: '#8a6a34', size: { w: 150, h: 82 }, fireCd: [64, 42], spread: 4, lob: false, special: 'burrow', eye: '#ffcf3f', aura: 'rgba(224,168,90,.16)', shape: 'drill' },
+  { name: 'FROST TITAN',     hp: 420, col: '#7d9ab0', size: { w: 128, h: 108 }, fireCd: [62, 40], spread: 4, lob: false, special: 'icicle', eye: '#9fe8ff', aura: 'rgba(159,232,255,.18)', shape: 'titan' },
+  { name: 'STEALTH GUNSHIP', hp: 500, col: '#2e2e40', size: { w: 178, h: 66 }, fireCd: [52, 34], spread: 5, lob: true,  special: 'summon', eye: '#ff2a5a', aura: 'rgba(255,60,90,.18)', shape: 'gunship', air: true },
+  { name: 'MAGMA GOLEM',     hp: 600, col: '#6e3020', size: { w: 150, h: 112 }, fireCd: [50, 32], spread: 5, lob: true,  special: 'erupt', eye: '#ff8a2b', aura: 'rgba(255,90,30,.2)', shape: 'golem' },
+  { name: 'ORBITAL CORE',    hp: 820, col: '#4a5a72', size: { w: 168, h: 120 }, fireCd: [46, 28], spread: 6, lob: false, special: 'final', eye: '#eafcff', aura: 'rgba(159,232,255,.22)', shape: 'core', air: true },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -1117,6 +1159,9 @@ function enterMode(m) {
   const vmul = (CHARS[p.char].trait === 'vehhp' ? 1.5 : 1) * (vk.hpMul || 1);
   if (m === 'mech') { p.vehHp = p.vehMax = Math.round(90 * vmul); }
   else if (m === 'tank') { p.vehHp = p.vehMax = Math.round(150 * vmul); }
+  else if (m === 'heli') { p.vehHp = p.vehMax = Math.round(110 * vmul); p.y = Math.min(p.y, GROUND_Y - d.h - 46); p.vy = 0; p.onGround = false; }
+  else if (m === 'drone') { p.vehHp = p.vehMax = Math.round(70 * vmul); p.y = Math.min(p.y, GROUND_Y - d.h - 50); p.vy = 0; p.onGround = false; }
+  else if (m === 'jet') { p.vehHp = p.vehMax = Math.round(95 * vmul); p.y = Math.min(p.y, GROUND_Y - d.h - 60); p.vy = 0; p.onGround = false; }
   else if (m === 'hulk') { p.modeT = Math.round(660 * (CHARS[p.char].trait === 'vehhp' ? 1.4 : 1) * (vk.hpMul || 1)); }
   addFloat(p.x, p.y - 12, vk.name + ' 탑승!', '#ffcf3f');
   for (let i = 0; i < 16; i++) particles.push(spark(p.x + p.w / 2, p.y + p.h / 2, '#9fe8ff'));
@@ -1247,15 +1292,19 @@ function buildLevel() {
   if (si >= 4) pickups.push({ x: Math.round(stage.len * 0.24), y: GROUND_Y - 14, type: 'w_flame' });
 
   // 탑승물 배치
+  // 스테이지마다 등장 기종 자체가 다르다 (r = 진행률 기준 배치)
   const vehLayouts = [
-    [{ x: 1500, type: 'mech' }, { x: 3400, type: 'hulk' }],
-    [{ x: 1700, type: 'tank' }, { x: 3700, type: 'mech' }, { x: 4800, type: 'hulk' }],
-    [{ x: 1400, type: 'hulk' }, { x: 3200, type: 'mech' }, { x: 4600, type: 'tank' }],
-    [{ x: 1400, type: 'hulk' }, { x: 3400, type: 'tank' }, { x: 5000, type: 'mech' }],
-    [{ x: 1600, type: 'tank' }, { x: 3600, type: 'hulk' }, { x: 5100, type: 'mech' }],
-    [{ x: 1500, type: 'mech' }, { x: 3800, type: 'hulk' }, { x: 5400, type: 'mech' }],
+    [{ r: 0.30, type: 'mech' },  { r: 0.68, type: 'hulk' }],                            // 정글: 지상 위주
+    [{ r: 0.26, type: 'tank' },  { r: 0.55, type: 'heli' },  { r: 0.80, type: 'hulk' }], // 사막: 헬기 등장
+    [{ r: 0.24, type: 'drone' }, { r: 0.52, type: 'mech' },  { r: 0.78, type: 'tank' }], // 설원: 드론 등장
+    [{ r: 0.26, type: 'jet' },   { r: 0.54, type: 'hulk' },  { r: 0.80, type: 'heli' }], // 야간: 스텔스기 등장
+    [{ r: 0.25, type: 'tank' },  { r: 0.53, type: 'drone' }, { r: 0.79, type: 'mech' }], // 화산
+    [{ r: 0.22, type: 'jet' },   { r: 0.50, type: 'heli' },  { r: 0.76, type: 'drone' }], // 공중항모: 전부 비행
   ];
-  vehLayouts[si].forEach(s => pickups.push({ x: s.x, y: GROUND_Y - 20, type: s.type, w: 22, h: 20 }));
+  vehLayouts[si].forEach(v => {
+    const air = isAirVeh(v.type);
+    pickups.push({ x: Math.round(stage.len * v.r), y: (air ? GROUND_Y - 76 : GROUND_Y - 20), type: v.type, w: 22, h: 20 });
+  });
 
   // 바닥 코인
   for (let x = 600; x < stage.len - 300; x += Math.floor(stage.len / 14))
@@ -1407,7 +1456,7 @@ function applyPickup(pk) {
   else if (t === 'nade') { p.nades = Math.min(9, p.nades + 3); addFloat(pk.x, pk.y - 10, '+3 NADE', '#ffcf3f'); }
   else if (t === 'fly') { p.fly = 540; addFloat(pk.x, pk.y - 10, 'JETPACK!', '#9fe8ff'); }
   else if (t.indexOf('w_') === 0) { pickupWeapon(t.slice(2)); }
-  else if (t === 'mech' || t === 'tank' || t === 'hulk') { enterMode(t); return; }
+  else if (t === 'mech' || t === 'tank' || t === 'hulk' || t === 'heli' || t === 'drone' || t === 'jet') { enterMode(t); return; }
   S.pickup();
 }
 
@@ -1523,6 +1572,49 @@ function playerFire() {
     p.fireCd = 7;
     for (let i = 0; i < 4; i++) particles.push(spark(mX, mY, '#9fe8ff'));
     S.shoot('mech');
+    return;
+  }
+  // ── 공격 헬기: 전방 기관포 + 아래로 폭탄 투하 ──
+  if (p.mode === 'heli') {
+    const mX = p.x + (p.face > 0 ? p.w : 0), mY = p.y + 12;
+    if (keys.down) {
+      nades.push({ x: p.x + p.w / 2, y: p.y + p.h, vx: p.vx * 0.5, vy: 1.4, t: 200, air: true });
+      p.fireCd = 22; S.nade();
+    } else {
+      const ang = aimUp ? -Math.PI / 2 : (p.face > 0 ? 0 : Math.PI);
+      for (let i = -1; i <= 1; i += 2)
+        bullets.push({ x: mX, y: mY + i * 3, vx: Math.cos(ang) * 8.5, vy: Math.sin(ang) * 8.5, life: 60, dmg: pdmg(9), r: 2 });
+      p.fireCd = 5;
+      fx.muzzle(mX, mY, p.face > 0 ? 0 : Math.PI, 0.8);
+      S.shoot('mg');
+    }
+    addShake(1);
+    return;
+  }
+  // ── 전투 드론: 초고속 연사 (단발 위력은 낮음) ──
+  if (p.mode === 'drone') {
+    const ang = aimUp ? -Math.PI / 2 : (p.face > 0 ? 0 : Math.PI);
+    const mX = p.x + (p.face > 0 ? p.w : 0), mY = p.y + 8;
+    bullets.push({ x: mX, y: mY, vx: Math.cos(ang) * 10 + rnd(-0.3, 0.3), vy: Math.sin(ang) * 10 + rnd(-0.4, 0.4), life: 50, dmg: pdmg(6), r: 2 });
+    p.fireCd = 3;
+    fx.muzzle(mX, mY, p.face > 0 ? 0 : Math.PI, 0.6);
+    S.shoot('mg');
+    return;
+  }
+  // ── 스텔스 전투기: 관통 레이저 + 유도 미사일 교대 ──
+  if (p.mode === 'jet') {
+    const ang = aimUp ? -Math.PI / 2 : (p.face > 0 ? 0 : Math.PI);
+    const mX = p.x + (p.face > 0 ? p.w : 0), mY = p.y + 9;
+    p.jetAlt = !p.jetAlt;
+    if (p.jetAlt) {
+      bullets.push({ x: mX, y: mY, vx: Math.cos(ang) * 13, vy: Math.sin(ang) * 13, life: 55, dmg: pdmg(13), r: 2, pierce: true, hitList: [] });
+      S.shoot('laser');
+    } else {
+      bullets.push({ x: mX, y: mY, vx: Math.cos(ang) * 5, vy: Math.sin(ang) * 5, life: 130, dmg: pdmg(15), r: 3, homing: true, spd: 5.4, explosive: true, rocketP: true });
+      S.shoot('homing');
+    }
+    p.fireCd = 9;
+    fx.muzzle(mX, mY, p.face > 0 ? 0 : Math.PI, 0.7);
     return;
   }
   // ── 헐크 슈트 ──
@@ -1645,7 +1737,7 @@ function gainUlt(n) {
 //   워커(mech)    — 미사일 일제사격: 유도탄 5발 부채꼴 발사
 //   브루트(hulk)  — 지면 강타: 도약 후 착지하며 광역 충격파
 // ═══════════════════════════════════════════════════════════════
-const VEH_CD = { tank: 110, mech: 130, hulk: 120 };
+const VEH_CD = { tank: 110, mech: 130, hulk: 120, heli: 140, drone: 100, jet: 130 };
 function vehicleSpecial() {
   const p = player;
   if (p.vehCd > 0) {
@@ -1672,6 +1764,40 @@ function vehicleSpecial() {
         homing: true, spd: 4.6, explosive: true, rocketP: true,
       });
     }
+  } else if (p.mode === 'heli') {
+    // 헬기 — 로켓 탄막: 전방으로 로켓 8발 쏟아붓기
+    addFloat(p.x, p.y - 22, '로켓 탄막!', '#ffcf3f');
+    addShake(5); S.shoot('rocketP');
+    for (let i = 0; i < 8; i++) {
+      const a = (p.face > 0 ? 0 : Math.PI) + rnd(-0.22, 0.22);
+      bullets.push({
+        x: p.x + (p.face > 0 ? p.w : 0), y: p.y + 10 + rnd(-4, 4),
+        vx: Math.cos(a) * (5 + i * 0.3), vy: Math.sin(a) * (5 + i * 0.3),
+        life: 120, dmg: pdmg(13), r: 3, explosive: true, rocketP: true,
+      });
+    }
+  } else if (p.mode === 'drone') {
+    // 드론 — EMP 파동: 주변 전방위 감전 피해
+    addFloat(p.x, p.y - 22, 'EMP 파동!', '#9fe8ff');
+    addShake(6); S.ult();
+    flashScreen = Math.max(flashScreen, 7);
+    const cx = p.x + p.w / 2, cy = p.y + p.h / 2;
+    fx.shock(cx, cy, 150, '#9fe8ff', 3);
+    fx.shock(cx, cy, 95, '#eafcff', 2);
+    enemies.forEach(e => {
+      if (!e.dead && Math.hypot(e.x + e.w / 2 - cx, e.y + e.h / 2 - cy) < 150) {
+        hurtEnemy(e, pdmg(22));
+        fx.lance(cx, cy, e.x + e.w / 2, e.y + e.h / 2, '#9fe8ff');
+      }
+    });
+    if (boss && !boss.dead && !boss.hidden && boss.state !== 'enter' &&
+        Math.hypot(boss.x + boss.w / 2 - cx, boss.y + boss.h / 2 - cy) < 190) hurtBoss(pdmg(16));
+  } else if (p.mode === 'jet') {
+    // 스텔스기 — 초음속 대시: 순간 가속하며 항적으로 적을 찢는다
+    p.vehDash = 22;
+    addFloat(p.x, p.y - 22, '초음속 대시!', '#eafcff');
+    addShake(7); S.shoot('rail');
+    flashScreen = Math.max(flashScreen, 5);
   } else if (p.mode === 'hulk') {
     if (!p.onGround) { p.vehCd = 0; return; }   // 지상에서만 발동
     p.vy = -8.6; p.onGround = false; p.slamPending = true;
@@ -1898,7 +2024,7 @@ function hurtPlayer(dmg) {
   if (p.invuln > 0 || p.dead) return;
   dmg *= diff.dmgTaken * CHARS[p.char].dmgMul;
   // 탑승물이 대신 피해를 받는다
-  if (p.mode === 'mech' || p.mode === 'tank') {
+  if (hasVehHp(p.mode)) {
     p.vehHp -= dmg;
     p.invuln = 10;
     addShake(3);
@@ -2269,9 +2395,9 @@ function updateBoss() {
 
   // ── 기본 전투 위치 유지 + 조준 ──────────────────────────────
   b.x += (bossRestX(b) - b.x) * 0.04 * T;
-  if (b.tier === 5) {
-    // 최종보스는 부양체
-    b.y = GROUND_Y - b.h - 30 + Math.sin(tick * 0.05) * 7;
+  if (b.cfg.air) {
+    // 부양형 보스는 공중에서 흔들리며 떠 있는다
+    b.y = GROUND_Y - b.h - (b.tier === 3 ? 54 : 30) + Math.sin(tick * 0.05) * 7;
   }
   b.turret = Math.atan2((p.y + 10) - (b.y + 14), p.x - (b.x + 12));
 
@@ -2612,7 +2738,9 @@ function update() {
   // 크롤러 돌진 진행 중: 속도 고정 + 접촉한 적을 갈아버린다
   if (p.vehDash > 0) {
     p.vehDash--;
-    p.vx = p.face * 6.4;
+    p.vx = p.face * (p.mode === 'jet' ? 9.5 : 6.4);
+    if (p.mode === 'jet' && tick % 2 === 0)
+      particles.push({ k: 'smoke', x: p.x + p.w / 2, y: p.y + p.h / 2, vx: -p.face * 1.2, vy: 0, life: 18, r: 3, gr: 0.25, c: [220, 235, 245], a: 0.5, g: 0 });
     p.invuln = Math.max(p.invuln, 2);
     enemies.forEach(e => {
       if (!e.dead && hitBox(p.x - 4, p.y, p.w + 8, p.h, e.x, e.y, e.w, e.h)) hurtEnemy(e, pdmg(11));
@@ -2651,7 +2779,17 @@ function update() {
     if (keys.jump) { p.climbing = false; p.vy = -6; }
     p.onGround = (p.y + p.h >= lad.bottom - 1);
   } else {
-    if (p.fly > 0) {
+    if (isAirVeh(p.mode)) {
+      // 비행 탈것: 중력 대신 추력으로 부양한다
+      const dv = DIMS[p.mode];
+      if (keys.jump && !p.dead) p.vy -= dv.lift;
+      else if (keys.down && !p.dead) p.vy += dv.lift * 0.85;
+      else p.vy *= 0.86;                       // 손을 떼면 서서히 제자리 호버
+      p.vy = clamp(p.vy, -dv.vmax, dv.vmax);
+      // 로터 하강기류
+      if (tick % 3 === 0)
+        fx.smoke(p.x + p.w / 2 + rnd(-p.w / 3, p.w / 3), p.y + p.h + 2, rnd(-0.4, 0.4), rnd(0.5, 1.3), 1.8, 0.22);
+    } else if (p.fly > 0) {
       // 제트팩: 점프 홀드로 상승
       if (keys.jump && !p.dead) {
         p.vy -= 0.92;
@@ -2682,7 +2820,7 @@ function update() {
     p.x = clamp(p.x, cam, stage.len - p.w);
     p.onGround = false;
     p.standPl = null;
-    if (p.vy >= 0) {
+    if (p.vy >= 0 && !isAirVeh(p.mode)) {
       for (const pl of platforms) {
         const bottom = p.y + p.h;
         if (prevBottom <= pl.y + 3 && bottom >= pl.y && p.x + p.w > pl.x + 2 && p.x < pl.x + pl.w - 2) {
@@ -2691,7 +2829,11 @@ function update() {
         }
       }
     }
-    if (p.y + p.h >= GROUND_Y) { p.y = GROUND_Y - p.h; p.vy = 0; p.onGround = true; p.jumps = 0; }
+    if (isAirVeh(p.mode)) {
+      p.y = clamp(p.y, 12, GROUND_Y - p.h - 2);
+      if (p.y <= 12 || p.y >= GROUND_Y - p.h - 2) p.vy = 0;
+      p.onGround = false;
+    } else if (p.y + p.h >= GROUND_Y) { p.y = GROUND_Y - p.h; p.vy = 0; p.onGround = true; p.jumps = 0; }
     // 브루트 착지 충격파 (지면 강타 발동 시 훨씬 크게)
     if (p.onGround && p.mode === 'hulk' && (fallV > 6 || p.slamPending)) {
       if (p.slamPending) {
@@ -3600,6 +3742,36 @@ function drawPickup(pk) {
     ctx.fillText('H', x + 11, y + 13); ctx.textAlign = 'left';
     return;
   }
+  if (pk.type === 'heli') {
+    const vk = vskinOf('heli', stageIndex);
+    px(x, y + 4, 24, 12, '#0a0a0a'); px(x + 1, y + 7, 20, 7, vk.body);
+    px(x + 14, y + 8, 6, 4, vk.visor);
+    px(x + 2, y + 2, 20, 2, '#c8ccd8');
+    px(x, y + 9, 5, 3, shade(vk.body, -0.4));
+    ctx.fillStyle = '#fff'; ctx.font = '6px "Press Start 2P"'; ctx.textAlign = 'center';
+    ctx.fillText('H', x + 10, y + 22); ctx.textAlign = 'left';
+    return;
+  }
+  if (pk.type === 'drone') {
+    const vk = vskinOf('drone', stageIndex);
+    px(x + 2, y + 6, 18, 2, shade(vk.body, -0.4));
+    px(x + 6, y + 6, 11, 8, vk.body);
+    px(x + 13, y + 8, 4, 4, vk.visor);
+    px(x + 1, y + 3, 6, 1.6, '#c8ccd8'); px(x + 15, y + 3, 6, 1.6, '#c8ccd8');
+    ctx.fillStyle = '#fff'; ctx.font = '6px "Press Start 2P"'; ctx.textAlign = 'center';
+    ctx.fillText('D', x + 11, y + 22); ctx.textAlign = 'left';
+    return;
+  }
+  if (pk.type === 'jet') {
+    const vk = vskinOf('jet', stageIndex);
+    px(x + 1, y + 8, 22, 5, vk.body);
+    px(x + 4, y + 5, 12, 3, shade(vk.body, -0.45));
+    px(x + 16, y + 7, 5, 3, vk.visor);
+    px(x, y + 9, 4, 3, 'rgba(255,140,60,.8)');
+    ctx.fillStyle = '#fff'; ctx.font = '6px "Press Start 2P"'; ctx.textAlign = 'center';
+    ctx.fillText('J', x + 11, y + 22); ctx.textAlign = 'left';
+    return;
+  }
   if (pk.type === 'fly') {
     px(x, y, 12, 12, '#0a0a0a'); px(x + 1, y + 1, 10, 10, '#5fd6cf');
     px(x + 3, y + 10, 2, 3, '#ff8a2b'); px(x + 7, y + 10, 2, 3, '#ff8a2b');
@@ -3776,6 +3948,106 @@ function drawTank(p) {
   px(26, -1, 18, 8, turretCol); px(28, 1, 5, 5, CHARS[p.char].pal.skin);
   px(40, 1, 12, 4, '#2a2a2a'); px(50, 1, 4, 4, '#555');
   if (p.flash > 0) px(53, 0, 5, 6, vk.visor);
+  ctx.restore();
+}
+// ── 공격 헬기: 회전 로터 + 스터브 윙 미사일 포드 ────────────────
+function drawHeli(p) {
+  const f = p.face, vk = p.vskin || vskinOf('heli', stageIndex);
+  const B = vk.body, Lt = shade(B, 0.3), Dk = shade(B, -0.42);
+  const tilt = clamp(p.vx * 0.05, -0.16, 0.16) * f;
+  ctx.save();
+  ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+  ctx.scale(f, 1);
+  ctx.rotate(tilt);
+  ctx.translate(-p.w / 2, -p.h / 2);
+  // 테일 붐 + 수직 미익
+  px(2, 9, 14, 5, Dk);
+  px(0, 2, 5, 12, B); px(0, 2, 5, 3, Lt);
+  // 테일 로터
+  const tr = tick * 0.9;
+  px(1, 6 + Math.sin(tr) * 4, 3, 2, '#c8c8d0');
+  // 동체
+  px(14, 5, 24, 14, B); px(14, 5, 24, 3, Lt); px(14, 16, 24, 3, Dk);
+  // 조종석 캐노피
+  px(32, 6, 11, 9, shade(B, -0.55));
+  px(34, 8, 7, 4, vk.visor);
+  px(35, 9, 4, 3, CHARS[p.char].pal.skin);
+  // 스터브 윙 + 미사일 포드
+  px(18, 15, 16, 4, Dk);
+  px(19, 18, 5, 4, '#2a2a30'); px(28, 18, 5, 4, '#2a2a30');
+  if (p.flash > 0) { px(43, 9, 5, 4, '#ffe27a'); }
+  // 스키드
+  px(16, 22, 22, 2, '#3a3a42');
+  px(18, 19, 2, 3, '#3a3a42'); px(34, 19, 2, 3, '#3a3a42');
+  // 메인 로터 (고속 회전 블러)
+  const rw = 30 + Math.sin(tick * 1.3) * 14;
+  px(24 - rw / 2, 1, rw, 2, 'rgba(210,215,225,.85)');
+  px(24 - rw * 0.36, 0, rw * 0.72, 1, '#e8ecf2');
+  px(23, 2, 3, 4, '#4a4a52');
+  ctx.restore();
+}
+// ── 전투 드론: 쿼드 로터 + 중앙 센서 아이 ──────────────────────
+function drawDrone(p) {
+  const f = p.face, vk = p.vskin || vskinOf('drone', stageIndex);
+  const B = vk.body, Lt = shade(B, 0.32), Dk = shade(B, -0.4);
+  const tilt = clamp(p.vx * 0.06, -0.2, 0.2) * f;
+  ctx.save();
+  ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+  ctx.scale(f, 1);
+  ctx.rotate(tilt);
+  ctx.translate(-p.w / 2, -p.h / 2);
+  // 암 4개 + 로터 디스크
+  px(1, 5, 20, 2, Dk);
+  const rr = 6 + Math.sin(tick * 1.5) * 2.5;
+  [2, 16].forEach(ax => {
+    px(ax - rr / 2 + 2, 3, rr, 1.6, 'rgba(200,210,225,.8)');
+    px(ax, 4, 4, 3, Dk);
+  });
+  // 본체
+  px(6, 5, 11, 8, B); px(6, 5, 11, 2, Lt); px(6, 11, 11, 2, Dk);
+  // 센서 아이 (맥동)
+  const pulse = tick % 22 < 11;
+  px(14, 7, 4, 4, pulse ? vk.visor : shade(vk.visor, -0.35));
+  px(7, 7, 4, 3, shade(B, -0.6));
+  px(8, 8, 2, 2, CHARS[p.char].pal.skin);
+  // 하단 무장 포드
+  px(9, 13, 6, 3, '#2a2a30');
+  if (p.flash > 0) px(19, 7, 4, 3, '#ffe27a');
+  ctx.restore();
+}
+// ── 스텔스 전투기: 델타익 + 애프터버너 ─────────────────────────
+function drawJet(p) {
+  const f = p.face, vk = p.vskin || vskinOf('jet', stageIndex);
+  const B = vk.body, Lt = shade(B, 0.3), Dk = shade(B, -0.45);
+  const tilt = clamp(-p.vy * 0.06, -0.22, 0.22);
+  ctx.save();
+  ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+  ctx.scale(f, 1);
+  ctx.rotate(tilt);
+  ctx.translate(-p.w / 2, -p.h / 2);
+  // 애프터버너 화염
+  const fl = 6 + Math.abs(Math.sin(tick * 0.7)) * 6;
+  px(-fl, 8, fl, 4, 'rgba(255,140,60,.75)');
+  px(-fl * 0.55, 9, fl * 0.55, 2, '#ffe9b0');
+  // 델타 주익 (각진 스텔스 실루엣)
+  ctx.fillStyle = SILH || Dk;
+  ctx.beginPath();
+  ctx.moveTo(6, 9); ctx.lineTo(26, 2); ctx.lineTo(34, 9); ctx.lineTo(26, 16); ctx.closePath(); ctx.fill();
+  // 수직 미익 2매
+  ctx.fillStyle = SILH || Dk;
+  ctx.beginPath(); ctx.moveTo(8, 8); ctx.lineTo(14, 0); ctx.lineTo(17, 8); ctx.closePath(); ctx.fill();
+  // 동체
+  px(4, 7, 34, 6, B); px(4, 7, 34, 2, Lt); px(4, 12, 34, 1.5, Dk);
+  // 기수
+  ctx.fillStyle = SILH || B;
+  ctx.beginPath(); ctx.moveTo(38, 7); ctx.lineTo(50, 10); ctx.lineTo(38, 13); ctx.closePath(); ctx.fill();
+  // 캐노피
+  px(28, 5, 9, 5, shade(B, -0.6));
+  px(30, 6, 6, 3, vk.visor);
+  px(31, 6.5, 3, 2, CHARS[p.char].pal.skin);
+  // 하드포인트
+  px(16, 13, 5, 3, '#2a2a30'); px(24, 13, 5, 3, '#2a2a30');
+  if (p.flash > 0) px(50, 9, 5, 3, '#ffe27a');
   ctx.restore();
 }
 function drawHulk(p) {
@@ -3956,113 +4228,253 @@ function drawEnemy(e) {
 // 보스 스프라이트 (티어별 장식)
 // ═══════════════════════════════════════════════════════════════
 function drawBoss() {
-  const b = boss, fl = b.hit > 0, col = b.cfg.col, t2 = b.tier;
+  const b = boss, fl = b.hit > 0, cf = b.cfg;
   if (b.hidden) {
-    // 잠복 중: 모래 융기 표시
     ctx.globalAlpha = 0.5 + 0.3 * Math.sin(tick * 0.3);
-    px(b.x + b.w / 2 - 20, GROUND_Y - 6, 40, 6, '#d6ab5e');
+    px(b.x + b.w / 2 - 24, GROUND_Y - 7, 48, 7, '#d6ab5e');
     ctx.globalAlpha = 1;
     return;
   }
-  const sinkY = 0;
-  const by = b.y + sinkY;
-  const bw = b.w, bh = b.h;
-
-  // 위압감 있는 배경 아우라
+  // 위압 아우라
   if (!SILH) {
-    const ag = ctx.createRadialGradient(b.x + bw / 2, by + bh * 0.5, bw * 0.15, b.x + bw / 2, by + bh * 0.5, bw * 0.75);
-    ag.addColorStop(0, b.cfg.aura || 'rgba(255,90,40,.15)');
-    ag.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = ag;
-    ctx.fillRect(b.x - bw * 0.4, by - bh * 0.4, bw * 1.8, bh * 1.8);
+    const g = ctx.createRadialGradient(b.x + b.w / 2, b.y + b.h * 0.5, b.w * 0.15, b.x + b.w / 2, b.y + b.h * 0.5, b.w * 0.8);
+    g.addColorStop(0, cf.aura); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(b.x - b.w * 0.45, b.y - b.h * 0.45, b.w * 1.9, b.h * 1.9);
   }
+  const F = {
+    spider: drawBossSpider, drill: drawBossDrill, titan: drawBossTitan,
+    gunship: drawBossGunship, golem: drawBossGolem, core: drawBossCore,
+  }[cf.shape] || drawBossSpider;
+  F(b, fl, cf);
+}
 
-  // 트레드 (최종보스는 부양체라 생략)
-  if (t2 !== 5) {
-    px(b.x, by + bh - bh * 0.19, bw, bh * 0.19, '#161616');
-    for (let i = 0; i < bw; i += Math.round(bw / 11)) px(b.x + i + 2, by + bh - bh * 0.16, Math.round(bw * 0.045), bh * 0.14, '#333');
-    px(b.x, by + bh - bh * 0.19, bw, 2, '#444');
-  } else {
-    // 부양 추진광
-    ctx.fillStyle = 'rgba(159,232,255,' + (0.3 + 0.15 * Math.sin(tick * 0.2)) + ')';
-    ctx.fillRect(b.x + bw * 0.13, by + bh - 4, bw * 0.18, 6);
-    ctx.fillRect(b.x + bw - bw * 0.31, by + bh - 4, bw * 0.18, 6);
+// 맥동하는 안광 (모든 보스 공통)
+function bossEye(b, cf, x, y, w, h) {
+  if (SILH) { px(x, y, w, h, SILH); return; }
+  const enr = b.hp < b.maxhp * 0.4;
+  ctx.globalAlpha = 0.55 + 0.45 * Math.abs(Math.sin(tick * (enr ? 0.34 : 0.16)));
+  px(x, y, w, h, cf.eye);
+  ctx.globalAlpha = 1;
+}
+
+// ① 거미형 4족 보행병기 — 관절 다리 + 집게
+function drawBossSpider(b, fl, cf) {
+  const C = fl ? '#fff' : cf.col, D = shade(cf.col, -0.4), L = shade(cf.col, 0.28);
+  const bw = b.w, bh = b.h, cx = b.x + bw / 2, by = b.y;
+  const bodyY = by + bh * 0.18, bodyH = bh * 0.46;
+  // 다리 8개(좌우 4쌍) — 걸음에 따라 굽힘
+  for (let i = 0; i < 4; i++) {
+    const side = i < 2 ? -1 : 1, k = i % 2;
+    const hipX = cx + side * bw * (0.18 + k * 0.16);
+    const ph = Math.sin(tick * 0.05 + i * 1.7) * 5;
+    const kneeX = hipX + side * bw * 0.19, kneeY = bodyY + bh * 0.1 - 10 + ph;
+    const footX = kneeX + side * bw * 0.1, footY = by + bh;
+    ctx.strokeStyle = SILH || D; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(hipX, bodyY + bh * 0.25); ctx.lineTo(kneeX, kneeY); ctx.lineTo(footX, footY); ctx.stroke();
+    px(footX - 4, footY - 3, 8, 4, D);
   }
+  // 갑각 동체
+  ctx.fillStyle = SILH || C;
+  ctx.beginPath(); ctx.ellipse(cx, bodyY + bodyH / 2, bw * 0.34, bodyH * 0.62, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = SILH || L;
+  ctx.beginPath(); ctx.ellipse(cx, bodyY + bodyH * 0.3, bw * 0.26, bodyH * 0.24, 0, 0, 7); ctx.fill();
+  // 등판 리브
+  for (let i = -2; i <= 2; i++) px(cx + i * bw * 0.09 - 1, bodyY + bodyH * 0.15, 3, bodyH * 0.6, D);
+  // 전방 집게 2개
+  const cl = Math.sin(tick * 0.07) * 4;
+  [-1, 1].forEach(sd => {
+    px(cx - bw * 0.46, bodyY + bodyH * 0.5 + sd * (10 + cl), bw * 0.16, 7, D);
+    px(cx - bw * 0.54, bodyY + bodyH * 0.5 + sd * (12 + cl), bw * 0.1, 5, C);
+  });
+  // 머리 + 눈 3개
+  px(cx - bw * 0.12, bodyY - bh * 0.1, bw * 0.24, bh * 0.15, C);
+  bossEye(b, cf, cx - bw * 0.09, bodyY - bh * 0.06, bw * 0.06, bh * 0.06);
+  bossEye(b, cf, cx - bw * 0.01, bodyY - bh * 0.07, bw * 0.05, bh * 0.05);
+  bossEye(b, cf, cx + bw * 0.05, bodyY - bh * 0.06, bw * 0.06, bh * 0.06);
+  // 등 미사일 포드
+  px(cx + bw * 0.16, bodyY - bh * 0.04, bw * 0.14, bh * 0.1, D);
+  if (tick % 24 < 12) px(cx + bw * 0.19, bodyY - bh * 0.02, bw * 0.04, bh * 0.05, cf.eye);
+}
 
-  // 본체
-  px(b.x + bw * 0.045, by + bh * 0.2, bw * 0.91, bh * 0.65, fl ? '#fff' : col);
-  px(b.x + bw * 0.045, by + bh * 0.2, bw * 0.91, 3, '#9a8a5a');
-  px(b.x + bw * 0.045, by + bh - bh * 0.17, bw * 0.91, 3, '#2a2418');
-  for (let i = b.x + bw * 0.08; i < b.x + bw * 0.94; i += bw * 0.09) px(i, by + bh * 0.28, 3, 3, '#1a160e');
-
-  // 상부 조종석 + 눈 (스테이지 대장의 위협적인 시선)
-  const headW = bw * 0.42, headX = b.x + bw / 2 - headW / 2, headY = by - bh * 0.02, headH = bh * 0.28;
-  px(headX, headY, headW, headH, fl ? '#fff' : col);
-  const eyeCol = b.cfg.eye || '#ff5a3c';
-  const eyePulse = 0.6 + 0.4 * Math.sin(tick * (b.enraged2 ? 0.5 : 0.22));
-  const ex1 = headX + headW * 0.2, ex2 = headX + headW * 0.62, ey = headY + headH * 0.32, ew = headW * 0.2, eh = headH * 0.42;
+// ② 사막 굴착 시추 병기 — 거대 회전 드릴 + 궤도 캐터필러
+function drawBossDrill(b, fl, cf) {
+  const C = fl ? '#fff' : cf.col, D = shade(cf.col, -0.42), L = shade(cf.col, 0.3);
+  const bw = b.w, bh = b.h, by = b.y;
+  // 캐터필러
+  px(b.x + bw * 0.2, by + bh * 0.72, bw * 0.72, bh * 0.28, '#191410');
+  const off = Math.floor(tick * 0.8) % 10;
+  for (let i = -10; i < bw * 0.72; i += 10) px(b.x + bw * 0.21 + i + off, by + bh * 0.76, 5, bh * 0.18, '#3a332a');
+  // 차체
+  px(b.x + bw * 0.22, by + bh * 0.34, bw * 0.7, bh * 0.4, C);
+  px(b.x + bw * 0.22, by + bh * 0.34, bw * 0.7, 4, L);
+  px(b.x + bw * 0.22, by + bh * 0.68, bw * 0.7, 4, D);
+  // 조종실
+  px(b.x + bw * 0.62, by + bh * 0.14, bw * 0.24, bh * 0.22, C);
+  bossEye(b, cf, b.x + bw * 0.66, by + bh * 0.2, bw * 0.14, bh * 0.08);
+  // 회전 드릴 (원뿔 + 나선 밴드)
+  const dx = b.x + bw * 0.2, dcy = by + bh * 0.52, dl = bw * 0.3, dr = bh * 0.2;
+  ctx.fillStyle = SILH || '#9a9aa4';
+  ctx.beginPath(); ctx.moveTo(dx - dl, dcy); ctx.lineTo(dx, dcy - dr); ctx.lineTo(dx, dcy + dr); ctx.closePath(); ctx.fill();
   if (!SILH) {
-    ctx.globalAlpha = eyePulse;
-    ctx.fillStyle = eyeCol;
-    ctx.fillRect(ex1, ey, ew, eh);
-    ctx.fillRect(ex2, ey, ew, eh);
-    ctx.globalAlpha = 1;
-  } else {
-    px(ex1, ey, ew, eh, SILH); px(ex2, ey, ew, eh, SILH);
-  }
-
-  // 티어별 장식 (비율 기반)
-  if (t2 === 0) {
-    // 전갈 집게 + 꼬리
-    px(b.x - bw * 0.09, by + bh * 0.42, bw * 0.13, bh * 0.11, fl ? '#fff' : '#6e5a34');
-    px(b.x - bw * 0.13, by + bh * 0.34, bw * 0.07, bh * 0.11, fl ? '#fff' : '#6e5a34');
-    px(b.x + bw - bw * 0.06, by - bh * 0.04, bw * 0.06, bh * 0.2, fl ? '#fff' : '#6e5a34');
-    px(b.x + bw - bw * 0.02, by - bh * 0.16, bw * 0.06, bh * 0.14, '#8a7040');
-    px(b.x + bw + bw * 0.02, by - bh * 0.2, bw * 0.04, bh * 0.07, eyeCol);
-  } else if (t2 === 1) {
-    // 사막 핀 + 모래 갑주
-    for (let i = 0; i < 3; i++) px(b.x + bw * 0.34 + i * bw * 0.2, by - bh * 0.06 - i * bh * 0.03, bw * 0.06, bh * 0.13 + i * bh * 0.03, fl ? '#fff' : '#9a7a44');
-    px(b.x + bw * 0.045, by + bh * 0.16, bw * 0.91, 2, '#d6ab5e');
-  } else if (t2 === 2) {
-    // 얼음 결정 스파이크
+    ctx.fillStyle = '#5c5c66';
     for (let i = 0; i < 4; i++) {
-      const ix = b.x + bw * 0.22 + i * bw * 0.2;
-      ctx.fillStyle = fl ? '#fff' : '#dceef8';
-      ctx.beginPath(); ctx.moveTo(ix, by); ctx.lineTo(ix + bw * 0.05, by - bh * 0.2); ctx.lineTo(ix + bw * 0.1, by); ctx.fill();
+      const t = ((tick * 0.16 + i) % 4) / 4;
+      const px0 = dx - dl * t, rr = dr * t;
+      ctx.fillRect(px0, dcy - rr, 4, rr * 2);
     }
-    px(b.x + bw * 0.045, by + bh * 0.4, bw * 0.91, 2, '#dceef8');
-  } else if (t2 === 3) {
-    // 리퍼 날개 + 붉은 안광
-    px(b.x + bw * 0.1, by - bh * 0.12, bw * 0.23, bh * 0.13, fl ? '#fff' : '#26262e');
-    px(b.x + bw - bw * 0.33, by - bh * 0.12, bw * 0.23, bh * 0.13, fl ? '#fff' : '#26262e');
-  } else if (t2 === 4) {
-    // 마그마 균열 (맥동광)
-    ctx.fillStyle = 'rgba(255,138,43,' + (0.6 + 0.3 * Math.sin(tick * 0.15)) + ')';
-    for (let i = 0; i < 4; i++) ctx.fillRect(b.x + bw * 0.13 + i * bw * 0.21, by + bh * 0.34 + (i % 2) * bh * 0.13, 3, bh * 0.2);
-    px(b.x + bw * 0.045, by + bh * 0.22, bw * 0.91, 2, '#ff8a2b');
-  } else if (t2 === 5) {
-    // 최종: 측면 포드 + 맥동 코어
-    px(b.x - bw * 0.06, by + bh * 0.28, bw * 0.07, bh * 0.36, fl ? '#fff' : '#3a4658');
-    px(b.x + bw - bw * 0.01, by + bh * 0.28, bw * 0.07, bh * 0.36, fl ? '#fff' : '#3a4658');
-    px(b.x - bw * 0.05, by + bh * 0.42, bw * 0.05, bh * 0.06, eyeCol);
-    px(b.x + bw, by + bh * 0.42, bw * 0.05, bh * 0.06, eyeCol);
-    const cr = bw * 0.05 + Math.sin(tick * 0.18) * 2;
-    const cg = ctx.createRadialGradient(b.x + bw / 2, by + bh * 0.54, 2, b.x + bw / 2, by + bh * 0.54, cr + bw * 0.05);
-    cg.addColorStop(0, '#eafcff'); cg.addColorStop(0.5, '#9fe8ff'); cg.addColorStop(1, 'rgba(159,232,255,0)');
-    ctx.fillStyle = cg;
-    ctx.beginPath(); ctx.arc(b.x + bw / 2, by + bh * 0.54, cr + bw * 0.05, 0, 7); ctx.fill();
   }
+  px(dx - dl - 3, dcy - 2, 5, 4, '#c8c8d0');
+  // 상부 배기관
+  [0.34, 0.46].forEach(f2 => {
+    px(b.x + bw * f2, by + bh * 0.22, bw * 0.05, bh * 0.14, D);
+    if (!SILH && tick % 20 < 10) fx.smoke(b.x + bw * f2 + 3, by + bh * 0.2, rnd(-0.2, 0.2), -0.6, 2, 0.28);
+  });
+}
 
-  // 포탑
-  ctx.save();
-  ctx.translate(b.x + bw * 0.2, by + bh * 0.24);
-  ctx.rotate(clamp(b.turret, Math.PI * 0.6, Math.PI * 1.4) - Math.PI);
-  px2(ctx, 0, -3, bw * 0.23, 6, '#2a2a2a');
-  px2(ctx, bw * 0.21, -4, 5, 8, '#555');
-  px2(ctx, 0, -3, bw * 0.23, 1, '#444');
-  ctx.restore();
+// ③ 이족보행 거인 메카 — 다리 2개 + 어깨 캐논
+function drawBossTitan(b, fl, cf) {
+  const C = fl ? '#fff' : cf.col, D = shade(cf.col, -0.4), L = shade(cf.col, 0.3);
+  const bw = b.w, bh = b.h, cx = b.x + bw / 2, by = b.y;
+  const sway = Math.sin(tick * 0.04) * 2;
+  // 다리 2개 (무릎 굽힘)
+  [-1, 1].forEach((sd, i) => {
+    const hx = cx + sd * bw * 0.17, ph = Math.sin(tick * 0.045 + i * Math.PI) * 4;
+    ctx.strokeStyle = SILH || D; ctx.lineWidth = 11;
+    ctx.beginPath();
+    ctx.moveTo(hx, by + bh * 0.56);
+    ctx.lineTo(hx + sd * bw * 0.06, by + bh * 0.76 + ph);
+    ctx.lineTo(hx + sd * bw * 0.02, by + bh);
+    ctx.stroke();
+    px(hx + sd * bw * 0.02 - 9, by + bh - 5, 18, 6, shade(cf.col, -0.55));
+  });
+  // 허리 + 흉부
+  px(cx - bw * 0.16, by + bh * 0.44 + sway, bw * 0.32, bh * 0.14, D);
+  px(cx - bw * 0.26, by + bh * 0.18 + sway, bw * 0.52, bh * 0.3, C);
+  px(cx - bw * 0.26, by + bh * 0.18 + sway, bw * 0.52, 4, L);
+  // 흉부 코어
+  bossEye(b, cf, cx - bw * 0.07, by + bh * 0.26 + sway, bw * 0.14, bh * 0.1);
+  // 어깨 캐논 2문
+  [-1, 1].forEach(sd => {
+    px(cx + sd * bw * 0.32 - bw * 0.08, by + bh * 0.16 + sway, bw * 0.16, bh * 0.13, D);
+    px(cx + sd * bw * 0.42 - (sd > 0 ? 0 : bw * 0.1), by + bh * 0.2 + sway, bw * 0.1, bh * 0.06, '#2a2a30');
+  });
+  // 머리
+  px(cx - bw * 0.09, by + bh * 0.04 + sway, bw * 0.18, bh * 0.14, C);
+  bossEye(b, cf, cx - bw * 0.06, by + bh * 0.08 + sway, bw * 0.12, bh * 0.04);
+  // 냉기 서리 장식
+  if (!SILH) for (let i = 0; i < 4; i++) px(cx - bw * 0.24 + i * bw * 0.14, by + bh * 0.46 + sway, 3, 7 + (i % 2) * 4, '#dceef8');
+}
 
-  if (tick % 20 < 10) { px(b.x + bw * 0.28, by + bh * 0.1, bw * 0.1, bh * 0.15, '#ff7a4c'); px(b.x + bw * 0.3, by + bh * 0.13, bw * 0.06, bh * 0.09, '#ffd27a'); }
+// ④ 스텔스 건십 — 후퇴익 비행체 + 로터 포드
+function drawBossGunship(b, fl, cf) {
+  const C = fl ? '#fff' : cf.col, D = shade(cf.col, -0.4), L = shade(cf.col, 0.3);
+  const bw = b.w, bh = b.h, cx = b.x + bw / 2, cy = b.y + bh * 0.5;
+  // 후퇴익 (각진 스텔스 실루엣)
+  ctx.fillStyle = SILH || D;
+  ctx.beginPath();
+  ctx.moveTo(cx - bw * 0.46, cy + bh * 0.06); ctx.lineTo(cx - bw * 0.1, cy - bh * 0.16);
+  ctx.lineTo(cx + bw * 0.1, cy - bh * 0.16); ctx.lineTo(cx + bw * 0.46, cy + bh * 0.06);
+  ctx.lineTo(cx + bw * 0.3, cy + bh * 0.2); ctx.lineTo(cx - bw * 0.3, cy + bh * 0.2);
+  ctx.closePath(); ctx.fill();
+  // 동체
+  px(cx - bw * 0.2, cy - bh * 0.22, bw * 0.4, bh * 0.36, C);
+  px(cx - bw * 0.2, cy - bh * 0.22, bw * 0.4, 4, L);
+  // 캐노피 + 안광
+  px(cx - bw * 0.07, cy - bh * 0.3, bw * 0.14, bh * 0.12, D);
+  bossEye(b, cf, cx - bw * 0.05, cy - bh * 0.27, bw * 0.1, bh * 0.06);
+  // 좌우 덕티드 로터 포드
+  [-1, 1].forEach(sd => {
+    const rx = cx + sd * bw * 0.34;
+    px(rx - bw * 0.07, cy - bh * 0.04, bw * 0.14, bh * 0.16, D);
+    const rw = bw * 0.11 + Math.sin(tick * 1.2 + sd) * bw * 0.04;
+    px(rx - rw / 2, cy - bh * 0.1, rw, 3, 'rgba(200,210,230,.85)');
+    if (!SILH) px(rx - 3, cy + bh * 0.12, 6, 4, 'rgba(255,90,60,.7)');
+  });
+  // 하부 무장 하드포인트
+  for (let i = -2; i <= 2; i++) px(cx + i * bw * 0.1 - 3, cy + bh * 0.2, 7, 5, '#22222c');
+  // 적색 항법등
+  if (!SILH && tick % 28 < 8) { px(cx - bw * 0.47, cy + bh * 0.04, 5, 4, '#ff2a4a'); px(cx + bw * 0.43, cy + bh * 0.04, 5, 4, '#ff2a4a'); }
+}
+
+// ⑤ 용암 골렘 — 비대칭 암석 거체 + 균열 발광
+function drawBossGolem(b, fl, cf) {
+  const C = fl ? '#fff' : cf.col, D = shade(cf.col, -0.45), L = shade(cf.col, 0.26);
+  const bw = b.w, bh = b.h, cx = b.x + bw / 2, by = b.y;
+  const breathe = Math.sin(tick * 0.05) * 2;
+  // 다리(짧고 두꺼운 암석 기둥)
+  [-1, 1].forEach(sd => {
+    px(cx + sd * bw * 0.2 - bw * 0.11, by + bh * 0.66, bw * 0.22, bh * 0.34, D);
+    px(cx + sd * bw * 0.2 - bw * 0.13, by + bh * 0.94, bw * 0.26, bh * 0.06, shade(cf.col, -0.6));
+  });
+  // 몸통(울퉁불퉁하게 3덩이)
+  px(cx - bw * 0.3, by + bh * 0.3 + breathe, bw * 0.6, bh * 0.38, C);
+  px(cx - bw * 0.24, by + bh * 0.22 + breathe, bw * 0.44, bh * 0.14, C);
+  px(cx - bw * 0.34, by + bh * 0.42 + breathe, bw * 0.16, bh * 0.2, L);
+  // 거대한 좌우 팔
+  [-1, 1].forEach(sd => {
+    px(cx + sd * bw * 0.38 - bw * 0.1, by + bh * 0.3 + breathe, bw * 0.2, bh * 0.3, D);
+    px(cx + sd * bw * 0.42 - bw * 0.12, by + bh * 0.56 + breathe, bw * 0.24, bh * 0.16, C);
+  });
+  // 균열 발광
+  if (!SILH) {
+    ctx.fillStyle = 'rgba(255,130,45,' + (0.55 + 0.35 * Math.sin(tick * 0.12)) + ')';
+    for (let i = 0; i < 5; i++) ctx.fillRect(cx - bw * 0.26 + i * bw * 0.12, by + bh * 0.34 + (i % 2) * bh * 0.14 + breathe, 4, bh * 0.16);
+    ctx.fillStyle = 'rgba(255,90,30,.5)';
+    ctx.fillRect(cx - bw * 0.3, by + bh * 0.64 + breathe, bw * 0.6, 3);
+  }
+  // 머리 — 눈만 빛나는 바위
+  px(cx - bw * 0.13, by + bh * 0.06 + breathe, bw * 0.26, bh * 0.18, C);
+  bossEye(b, cf, cx - bw * 0.1, by + bh * 0.12 + breathe, bw * 0.07, bh * 0.05);
+  bossEye(b, cf, cx + bw * 0.03, by + bh * 0.12 + breathe, bw * 0.07, bh * 0.05);
+  // 어깨 화산구 (연기)
+  if (!SILH && tick % 8 === 0) fx.smoke(cx + rnd(-bw * 0.25, bw * 0.25), by + bh * 0.24, rnd(-0.3, 0.3), -rnd(0.4, 1), 3, 0.3);
+}
+
+// ⑥ 궤도 코어 — 회전 링 + 중앙 에너지 코어 (부양)
+function drawBossCore(b, fl, cf) {
+  const C = fl ? '#fff' : cf.col, D = shade(cf.col, -0.4), L = shade(cf.col, 0.3);
+  const bw = b.w, bh = b.h, cx = b.x + bw / 2, cy = b.y + bh * 0.5;
+  // 외곽 회전 링 2개
+  if (!SILH) {
+    [[0.46, 0.024, '#7d93a8'], [0.36, -0.036, '#9fb4c8']].forEach(([rr, sp, col]) => {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(tick * sp);
+      ctx.strokeStyle = col; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.ellipse(0, 0, bw * rr, bh * rr * 0.9, 0, 0, 7); ctx.stroke();
+      ctx.fillStyle = cf.eye;
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI / 2;
+        ctx.fillRect(Math.cos(a) * bw * rr - 3, Math.sin(a) * bh * rr * 0.9 - 3, 6, 6);
+      }
+      ctx.restore();
+    });
+  }
+  // 상하 구조 프레임
+  px(cx - bw * 0.28, cy - bh * 0.34, bw * 0.56, bh * 0.14, C);
+  px(cx - bw * 0.28, cy - bh * 0.34, bw * 0.56, 4, L);
+  px(cx - bw * 0.28, cy + bh * 0.2, bw * 0.56, bh * 0.14, C);
+  px(cx - bw * 0.28, cy + bh * 0.3, bw * 0.56, 4, D);
+  // 측면 무장 포드
+  [-1, 1].forEach(sd => {
+    px(cx + sd * bw * 0.34 - bw * 0.05, cy - bh * 0.1, bw * 0.1, bh * 0.2, D);
+    px(cx + sd * bw * 0.4 - (sd > 0 ? 0 : bw * 0.06), cy - bh * 0.02, bw * 0.06, bh * 0.05, cf.eye);
+  });
+  // 중앙 코어
+  const cr = bw * 0.11 + Math.sin(tick * 0.18) * 3;
+  if (!SILH) {
+    const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, cr + bw * 0.07);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(0.4, cf.eye); g.addColorStop(1, 'rgba(159,232,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, cr + bw * 0.07, 0, 7); ctx.fill();
+  } else px(cx - cr, cy - cr, cr * 2, cr * 2, SILH);
+  // 부양 추진광
+  if (!SILH) {
+    ctx.fillStyle = 'rgba(159,232,255,' + (0.3 + 0.16 * Math.sin(tick * 0.2)) + ')';
+    ctx.fillRect(cx - bw * 0.22, cy + bh * 0.34, bw * 0.16, 7);
+    ctx.fillRect(cx + bw * 0.06, cy + bh * 0.34, bw * 0.16, 7);
+  }
 }
 
 
@@ -4532,6 +4944,9 @@ function drawPlayer() {
 
   if (p.invuln > 0 && tick % 6 < 3 && p.mode !== 'hulk' && p.rage <= 0) return;
 
+  if (p.mode === 'heli') return outlined(() => drawHeli(p));
+  if (p.mode === 'drone') return outlined(() => drawDrone(p));
+  if (p.mode === 'jet') return outlined(() => drawJet(p));
   if (p.mode === 'tank') return outlined(() => drawTank(p));
   if (p.mode === 'mech') return outlined(() => drawMech(p));
   if (p.mode === 'hulk') return outlined(() => drawHulk(p));
@@ -4860,7 +5275,7 @@ function drawHUD() {
   ctx.textAlign = 'left';
 
   // ── 체력바 ─────────────────────────────────────────────────
-  const inVeh = (p.mode === 'mech' || p.mode === 'tank');
+  const inVeh = hasVehHp(p.mode);
   const hpNow = inVeh ? p.vehHp : p.hp;
   const hpMax = inVeh ? p.vehMax : p.maxHp;
   px(8, 8, 104, 10, '#000');
