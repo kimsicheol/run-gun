@@ -156,6 +156,14 @@
   .shopit .pr{color:#ffd23f;display:block;margin-top:2px;}
   .shopit .shopicon{font-size:clamp(15px,2.6vw,20px);line-height:1;filter:drop-shadow(1px 1px 0 #000);}
   .shopit .shoplabel{letter-spacing:.2px;}
+  .shopit .shopdesc{font-size:clamp(5px,.85vw,6px);color:#9bb24a;line-height:1.5;}
+  .shopit.prem{border-color:#ffd23f;background:rgba(60,44,10,.65);box-shadow:0 0 0 1px rgba(255,210,63,.35) inset;}
+  .shopit.prem .shoplabel{color:#ffd23f;}
+  .shopit.prem::before{content:'특별';position:absolute;top:-7px;left:50%;transform:translateX(-50%);
+    background:#ffd23f;color:#1a1408;font-size:5px;padding:1px 4px;letter-spacing:1px;}
+  .shopit{position:relative;}
+  #shopClose.leftover{border-color:#ffd23f;animation:pulseBtn 1s infinite;}
+  @keyframes pulseBtn{0%,100%{box-shadow:0 0 0 0 rgba(255,210,63,.5);}50%{box-shadow:0 0 0 5px rgba(255,210,63,0);}}
 
   /* ── 일시정지 ─────────────────────────────────────────── */
   #pauseScreen .optrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
@@ -193,13 +201,14 @@
     <div id="menuInfo"></div>
     <div class="hint">←→ 이동 · ↑ 사다리/위 조준 · <b style="color:#ffcf3f;">↓ 엎드리기(낮은 적 조준)</b> · SPACE 점프 · J/Z 사격 · K/X 수류탄<br>
       L/C 필살기 <b style="color:#9fe8ff;">(탈것 탑승 중엔 탈것 특수기)</b> · Q/E 무기교체 · P/ESC 일시정지 · N 음소거<br>
-      군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · 상자를 부수고 · POW를 구출하고 · 중앙 상점에서 강해져라</div>
+      군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · 상자를 부수고 · POW를 구출하고 · <b style="color:#ffcf3f;">스테이지 클리어 후 보급</b>에서 강해져라</div>
   </div>
 
   <!-- ═══ 상점 ═══ -->
   <div id="shopScreen" class="screen hidden">
-    <div class="title" style="font-size:clamp(13px,2.6vw,22px);">SHOP</div>
+    <div class="title" style="font-size:clamp(13px,2.6vw,22px);" id="shopTitle">SHOP</div>
     <div class="hi" id="shopMoney">$0</div>
+    <div class="hint" id="shopHead"></div>
     <div class="hint" id="shopNote"></div>
     <div id="shopItems"></div>
     <button class="startbtn" id="shopClose">▶ 계속 진행</button>
@@ -963,6 +972,12 @@ const STAGES = [
     roster: ['jet', 'drone', 'gunner', 'ninja', 'rocket', 'sniper', 'shield'],
     pal: { a: '#3a6ea8', b: '#6aa8d8', c: '#a8d8f0', far: '#cfe8f8', mid: '#8ab8d8',
       gTop: '#8a94a2', gBody: '#5c6672', gDot: '#a2acb8', plat: '#6a7480', platTop: '#98a2ae' } },
+  // 비행 전용 스테이지 — 지상 발판이 거의 없고 적의 대부분이 비행체
+  { name: 'ORBITAL RUN', len: 4600, intensity: 1.7, enemyHpMul: 1.7, ultUses: 4, theme: 'sky',
+    windy: true, movp: true, airStage: true,
+    roster: ['jet', 'drone', 'jet', 'drone', 'sniper', 'ninja'],
+    pal: { a: '#101a3a', b: '#23386e', c: '#4a6ea8', far: '#5c7ab0', mid: '#1c2a52',
+      gTop: '#4a5470', gBody: '#2a3350', gDot: '#6a76a0', plat: '#3c4666', platTop: '#6c78a0' } },
 ];
 // 스테이지별 파생값
 STAGES.forEach((s, i) => {
@@ -984,6 +999,7 @@ const BOSSCFG = [
   { name: 'STEALTH GUNSHIP', hp: 500, col: '#2e2e40', size: { w: 178, h: 66 }, fireCd: [52, 34], spread: 5, lob: true,  special: 'summon', eye: '#ff2a5a', aura: 'rgba(255,60,90,.18)', shape: 'gunship', air: true },
   { name: 'MAGMA GOLEM',     hp: 600, col: '#6e3020', size: { w: 150, h: 112 }, fireCd: [50, 32], spread: 5, lob: true,  special: 'erupt', eye: '#ff8a2b', aura: 'rgba(255,90,30,.2)', shape: 'golem' },
   { name: 'ORBITAL CORE',    hp: 820, col: '#4a5a72', size: { w: 168, h: 120 }, fireCd: [46, 28], spread: 6, lob: false, special: 'final', eye: '#eafcff', aura: 'rgba(159,232,255,.22)', shape: 'core', air: true },
+  { name: 'VOID DREADNOUGHT', hp: 980, col: '#2c3660', size: { w: 208, h: 78 }, fireCd: [42, 26], spread: 6, lob: false, special: 'final', eye: '#b18cff', aura: 'rgba(150,110,255,.24)', shape: 'dread', air: true },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -1080,6 +1096,7 @@ let stageIndex = 0, stage = STAGES[0];
 let stageTime = 0, spawnTimer = 0, stageBanner = 0, intermission = 0;
 let bossAnnounced = false, lastSpecial = false, lastSwap = false;
 let lastRank = '', curMusic = 0, selStage = 0, pausedFrom = 'play';
+let bossIntro = 0, bossIntroMax = 130;   // 보스 등장 연출 타이머
 let combo = 0, comboT = 0;
 
 // 판 단위 통계(startGame에서 리셋) / 스테이지 단위 통계(startStage에서 리셋)
@@ -1108,6 +1125,7 @@ function makePlayer(ci) {
     ult: 0, ultT: 0, ultMode: null, beamX: 0, rage: 0, ultReady: false, ultUses: 0,
     fly: 0, climbing: false, jumps: 0, standPl: null,
     money: 0, shopLock: false, capMul: 1, hpRegen: 0,
+    perks: {}, spdBonus: 0, ultGainMul: 1, critBonus: 0, regenMul: 1,
     anim: { n: 'idle', f: 0 }, landT: 0, deadAnim: false, crouch: false, vehCd: 0, vskin: null,
   };
 }
@@ -1241,6 +1259,10 @@ function buildLevel() {
     decks.push({ x: Math.round(L * 0.34), w: 150, y: f3, lad: 'left' });
     decks.push({ x: Math.round(L * 0.62), w: 190, y: f2, lad: 'both' });
     decks.push({ x: Math.round(L * 0.72), w: 140, y: f3, lad: 'right' });
+  } else if (stage.airStage) {
+    // 궤도 구간: 사다리 없이 흩어진 부유 플랫폼만 — 비행체가 유리하다
+    for (let i = 0; i < 6; i++)
+      decks.push({ x: Math.round(L * (0.18 + i * 0.115)), w: 74, y: (i % 3 === 0 ? f3 : i % 3 === 1 ? f2 : GROUND_Y - 96), lad: 'none' });
   } else {
     decks.push({ x: Math.round(L * 0.30), w: 170, y: f2, lad: 'both' });
     decks.push({ x: Math.round(L * 0.62), w: 150, y: f2, lad: 'both' });
@@ -1282,8 +1304,19 @@ function buildLevel() {
   const route = ['w_mg', 'hp', 'w_shotgun', 'nade', 'fly', 'w_laser', 'w_spread'];
   let t = 0;
   for (let x = 720; x < stage.len - 500; x += Math.floor((stage.len - 1300) / 7)) {
-    pickups.push({ x, y: GROUND_Y - 14, type: route[t % route.length] });
+    pickups.push({ x, y: GROUND_Y - 18, type: route[t % route.length] });
     t++;
+  }
+  // ── 보급 정거장 ──────────────────────────────────────────────
+  // 스테이지 중간 상점을 없앤 대신 회복/수류탄을 일정 간격으로 배치해
+  // 다음 보급(스테이지 종료)까지 버틸 수 있게 한다
+  const stations = 4 + Math.floor(si / 2);
+  for (let k = 1; k <= stations; k++) {
+    const sx = Math.round(stage.len * (k / (stations + 1)));
+    pickups.push({ x: sx - 26, y: GROUND_Y - 18, type: 'hp' });
+    if (k % 2 === 0) pickups.push({ x: sx + 8, y: GROUND_Y - 18, type: 'nade' });
+    for (let c2 = 0; c2 < 5; c2++)
+      pickups.push({ x: sx - 40 + c2 * 20, y: GROUND_Y - 46 - Math.round(Math.sin(c2 / 4 * Math.PI) * 20), type: 'coin', val: 12 });
   }
   pickups.push({ x: mainDeck.x + Math.round(mainDeck.w * 0.75), y: mainDeck.y - 14, type: 'w_blade' });
   // 후반 스테이지엔 고급 무기 배치
@@ -1293,22 +1326,25 @@ function buildLevel() {
 
   // 탑승물 배치
   // 스테이지마다 등장 기종 자체가 다르다 (r = 진행률 기준 배치)
+  // 스테이지당 탈것은 딱 1기, 스테이지마다 기종이 전부 다르다
   const vehLayouts = [
-    [{ r: 0.30, type: 'mech' },  { r: 0.68, type: 'hulk' }],                            // 정글: 지상 위주
-    [{ r: 0.26, type: 'tank' },  { r: 0.55, type: 'heli' },  { r: 0.80, type: 'hulk' }], // 사막: 헬기 등장
-    [{ r: 0.24, type: 'drone' }, { r: 0.52, type: 'mech' },  { r: 0.78, type: 'tank' }], // 설원: 드론 등장
-    [{ r: 0.26, type: 'jet' },   { r: 0.54, type: 'hulk' },  { r: 0.80, type: 'heli' }], // 야간: 스텔스기 등장
-    [{ r: 0.25, type: 'tank' },  { r: 0.53, type: 'drone' }, { r: 0.79, type: 'mech' }], // 화산
-    [{ r: 0.22, type: 'jet' },   { r: 0.50, type: 'heli' },  { r: 0.76, type: 'drone' }], // 공중항모: 전부 비행
+    { r: 0.33, type: 'mech' },   // 정글    — 보행 메카
+    { r: 0.33, type: 'tank' },   // 사막    — 궤도 전차
+    { r: 0.33, type: 'hulk' },   // 설원    — 강화 외골격
+    { r: 0.33, type: 'heli' },   // 야간요새 — 공격 헬기
+    { r: 0.33, type: 'drone' },  // 화산    — 전투 드론
+    { r: 0.33, type: 'jet' },    // 공중항모 — 스텔스 전투기
+    { r: 0.16, type: 'jet' },    // 궤도    — 비행 전용, 초반에 지급
   ];
-  vehLayouts[si].forEach(v => {
+  {
+    const v = vehLayouts[si] || vehLayouts[0];
     const air = isAirVeh(v.type);
     pickups.push({ x: Math.round(stage.len * v.r), y: (air ? GROUND_Y - 76 : GROUND_Y - 20), type: v.type, w: 22, h: 20 });
-  });
+  }
 
   // 바닥 코인
-  for (let x = 600; x < stage.len - 300; x += Math.floor(stage.len / 14))
-    pickups.push({ x, y: GROUND_Y - 12, type: 'coin', val: 10 });
+  for (let x = 600; x < stage.len - 300; x += Math.floor(stage.len / 22))
+    pickups.push({ x, y: GROUND_Y - 12, type: 'coin', val: 12 });
 
   // 파괴 가능한 상자·배럴 (배럴은 유폭)
   for (let x = 520; x < stage.len - 400; x += Math.floor(stage.len / 9)) {
@@ -1353,9 +1389,10 @@ function initWeather() {
 function startStage(i) {
   stageIndex = i; stage = STAGES[i];
   cam = 0; stageTime = 0; spawnTimer = 70;
-  boss = null; stageBanner = 130; intermission = 0; bossAnnounced = false;
+  boss = null; stageBanner = 130; intermission = 0; bossAnnounced = false; shopNext = -1;
   bullets = []; ebullets = []; enemies = []; particles = []; nades = [];
   floaters = []; strikes = []; slashes = []; eshards = []; sentries = []; evolc = []; beams = [];
+  bossIntro = 0;
   combo = 0; comboT = 0;
   st = { deaths: 0, dmg: 0, maxCombo: 0, pow: 0, powCount: 0, midDone: false };
   buildLevel();
@@ -1383,6 +1420,11 @@ function startStage(i) {
 // 적 스포너
 // 진행도·경과시간에 따라 강도 상승, 후반 스테이지 엘리트 등장
 // ═══════════════════════════════════════════════════════════════
+// 비행 전용 스테이지에서는 지상 보병 대신 비행체가 주로 나온다
+function pickRosterType() {
+  const r = stage.roster;
+  return r[Math.floor(Math.random() * r.length)];
+}
 function currentIntensity() {
   return stage.intensity * (1 + clamp(cam / (stage.len - W), 0, 1) * 0.7) * (1 + (stageTime / 3600) * 0.3);
 }
@@ -1414,7 +1456,7 @@ function mkEnemy(x, y, type, I, elite, perch) {
     x, y, w: c.w, h: c.h, type, hp, maxhp: hp, pts, coin,
     vx: 0, vy: 0, onGround: type === 'turret',
     fireCd: rnd(50, 100) * diff.eFire, face: -1,
-    dead: false, hit: 0, walkFrame: 0, burn: 0,
+    dead: false, hit: 0, walkFrame: 0, burn: 0, lunge: 0, recoil: 0,
     perch: !!perch, elite: !!elite, fly: !!c.fly,
     aim: 0, fuse: -1, dashT: 0, st: 0, seed: rnd(0, 6.28), burst: 0, spawnCd: 300,
     baseY: y,
@@ -1484,32 +1526,70 @@ function damageCrate(c, dmg) {
 // ═══════════════════════════════════════════════════════════════
 // 상점 (스테이지 중앙 / VOLT 20% 할인)
 // ═══════════════════════════════════════════════════════════════
+// 스테이지 클리어 보급에서만 살 수 있는 영구 강화 — 스테이지마다 다른 1종
+// (한 번 사면 그 회차 동안 유지되며, 중복 구매 불가)
+const PREMIUM_ITEMS = [
+  { k: 'p_armor',  label: '방탄 장갑',   cost: 260, icon: '🛡️', desc: '최대 HP +30' },
+  { k: 'p_boots',  label: '강화 부츠',   cost: 240, icon: '👢', desc: '이동속도 +12%' },
+  { k: 'p_core',   label: 'SP 코어',     cost: 300, icon: '🔋', desc: 'SP 충전 +35%' },
+  { k: 'p_scope',  label: '정밀 조준기', cost: 320, icon: '🔭', desc: '치명타 +12%' },
+  { k: 'p_vamp',   label: '나노 회수기', cost: 340, icon: '🩸', desc: '처치 시 HP 회복' },
+  { k: 'p_magnet', label: '코인 자석',   cost: 200, icon: '🧲', desc: '코인 자동 흡수' },
+  { k: 'p_ammo',   label: '예비 탄창',   cost: 280, icon: '🎒', desc: '탄약 재충전 2배' },
+];
+function premiumFor(si) { return PREMIUM_ITEMS[si % PREMIUM_ITEMS.length]; }
+
 function shopCost(it) {
   return CHARS[player.char].trait === 'discount' ? Math.ceil(it.cost * 0.8) : it.cost;
 }
-function openShop() {
+// 상점은 스테이지 클리어 직후(결과 화면 다음)에만 열린다.
+// shopNext가 설정돼 있으면 상점을 닫을 때 그 스테이지로 진행한다.
+let shopNext = -1;
+function openShop(nextStage) {
   state = 'shop';
-  player.shopLock = true;
+  shopNext = (nextStage === undefined) ? -1 : nextStage;
   S.alert();
+  const clear = shopNext >= 0;
+  document.getElementById('shopTitle').textContent = clear ? '보급' : 'SHOP';
+  document.getElementById('shopHead').innerHTML = clear
+    ? '<span style="color:#5ad15a;">' + STAGES[stageIndex].name + ' 클리어</span> — 다음 출격 전 보급'
+    : '';
+  document.getElementById('shopClose').textContent = clear
+    ? '▶ ' + STAGES[shopNext].name + ' 출격'
+    : '▶ 계속 진행';
   buildShopDOM();
   document.getElementById('shopScreen').classList.remove('hidden');
 }
 function closeShop() {
   document.getElementById('shopScreen').classList.add('hidden');
-  state = 'play';
+  if (shopNext >= 0) {
+    const n = shopNext;
+    shopNext = -1;
+    startStage(n);
+  } else {
+    state = 'play';
+  }
 }
 function buildShopDOM() {
   const box = document.getElementById('shopItems');
   box.innerHTML = '';
   document.getElementById('shopMoney').textContent = '$' + player.money;
-  document.getElementById('shopNote').textContent =
-    CHARS[player.char].trait === 'discount' ? 'VOLT 특성: 전 품목 20% 할인 적용 중' : '';
-  SHOP_ITEMS.forEach(it => {
+  const noteEl = document.getElementById('shopNote');
+  const discount = CHARS[player.char].trait === 'discount' ? 'VOLT 특성: 전 품목 20% 할인 · ' : '';
+  noteEl.innerHTML = discount;
+  const list = SHOP_ITEMS.slice();
+  if (shopNext >= 0) {
+    const prem = premiumFor(stageIndex);
+    if (!player.perks[prem.k.slice(2)]) list.unshift(Object.assign({ premium: true }, prem));
+  }
+  list.forEach(it => {
     const cost = shopCost(it);
     const b = document.createElement('button');
     const can = player.money >= cost;
-    b.className = 'shopit' + (can ? '' : ' no');
-    b.innerHTML = '<span class="shopicon">' + it.icon + '</span><span class="shoplabel">' + it.label + '</span><span class="pr">$' + cost + '</span>';
+    b.className = 'shopit' + (can ? '' : ' no') + (it.premium ? ' prem' : '');
+    b.innerHTML = '<span class="shopicon">' + it.icon + '</span><span class="shoplabel">' + it.label + '</span>'
+      + (it.desc ? '<span class="shopdesc">' + it.desc + '</span>' : '')
+      + '<span class="pr">$' + cost + '</span>';
     b.addEventListener('click', () => {
       if (player.money < cost) return;
       player.money -= cost;
@@ -1519,8 +1599,34 @@ function buildShopDOM() {
     });
     box.appendChild(b);
   });
+
+  // ── 남은 돈 안내 (Q1) ────────────────────────────────────────
+  const costs = list.map(shopCost).filter(c => c <= player.money);
+  const cheapest = list.reduce((m, it) => Math.min(m, shopCost(it)), Infinity);
+  const closeBtn = document.getElementById('shopClose');
+  if (costs.length > 0) {
+    noteEl.innerHTML = discount +
+      '<span style="color:#ffd23f;">$' + player.money + ' 남았다 — ' + costs.length + '종 더 구매 가능!</span>';
+    closeBtn.classList.add('leftover');
+  } else {
+    noteEl.innerHTML = discount + (player.money > 0
+      ? '<span style="color:#8a8158;">잔액 $' + player.money + ' (다음 보급까지 이월, 최저가 $' + cheapest + ')</span>'
+      : '<span style="color:#8a8158;">잔액 없음 — 출격 준비 완료</span>');
+    closeBtn.classList.remove('leftover');
+  }
 }
 function buyItem(k) {
+  const p0 = player;
+  if (k === 'p_armor')  { p0.maxHp += 30; p0.hp += 30; p0.perks.armor = true; return; }
+  if (k === 'p_boots')  { p0.spdBonus = (p0.spdBonus || 0) + 0.12; p0.perks.boots = true; return; }
+  if (k === 'p_core')   { p0.ultGainMul = (p0.ultGainMul || 1) + 0.35; p0.perks.core = true; return; }
+  if (k === 'p_scope')  { p0.critBonus = (p0.critBonus || 0) + 0.12; p0.perks.scope = true; return; }
+  if (k === 'p_vamp')   { p0.perks.vamp = true; return; }
+  if (k === 'p_magnet') { p0.perks.magnet = true; return; }
+  if (k === 'p_ammo')   { p0.regenMul = (p0.regenMul || 1) * 2; p0.perks.ammo = true; return; }
+  return _buyItemBase(k);
+}
+function _buyItemBase(k) {
   const p = player;
   if (k === 'hp') p.hp = Math.min(p.maxHp, p.hp + 50);
   else if (k === 'life') p.lives++;
@@ -1574,6 +1680,28 @@ function playerFire() {
     S.shoot('mech');
     return;
   }
+  // 비행 탈것 조준 보조 — 전방 부채꼴 안의 가장 가까운 표적으로 탄도를 살짝 꺾어준다
+  // (고도를 정밀하게 맞추지 않아도 지상 적을 때릴 수 있게)
+  function airAim(ox, oy, maxAng) {
+    const base = p.face > 0 ? 0 : Math.PI;
+    if (aimUp) return -Math.PI / 2;
+    let best = null, bd = 260;
+    const cand = e => {
+      const ex = e.x + e.w / 2, ey = e.y + e.h / 2;
+      if ((ex - ox) * p.face < 8) return;          // 뒤쪽은 제외
+      const dd = Math.hypot(ex - ox, ey - oy);
+      if (dd > bd) return;
+      let a = Math.atan2(ey - oy, ex - ox);
+      let diff = Math.atan2(Math.sin(a - base), Math.cos(a - base));
+      if (Math.abs(diff) > maxAng) return;
+      bd = dd; best = base + diff;
+    };
+    enemies.forEach(e => { if (!e.dead) cand(e); });
+    if (boss && !boss.dead && !boss.hidden && boss.state !== 'enter') cand(boss);
+    p.lockOn = best !== null ? { x: ox + Math.cos(best) * bd, y: oy + Math.sin(best) * bd } : null;
+    return best !== null ? best : base;
+  }
+
   // ── 공격 헬기: 전방 기관포 + 아래로 폭탄 투하 ──
   if (p.mode === 'heli') {
     const mX = p.x + (p.face > 0 ? p.w : 0), mY = p.y + 12;
@@ -1581,11 +1709,11 @@ function playerFire() {
       nades.push({ x: p.x + p.w / 2, y: p.y + p.h, vx: p.vx * 0.5, vy: 1.4, t: 200, air: true });
       p.fireCd = 22; S.nade();
     } else {
-      const ang = aimUp ? -Math.PI / 2 : (p.face > 0 ? 0 : Math.PI);
+      const ang = airAim(mX, mY, 0.85);
       for (let i = -1; i <= 1; i += 2)
         bullets.push({ x: mX, y: mY + i * 3, vx: Math.cos(ang) * 8.5, vy: Math.sin(ang) * 8.5, life: 60, dmg: pdmg(9), r: 2 });
       p.fireCd = 5;
-      fx.muzzle(mX, mY, p.face > 0 ? 0 : Math.PI, 0.8);
+      fx.muzzle(mX, mY, ang, 0.8);
       S.shoot('mg');
     }
     addShake(1);
@@ -1593,18 +1721,18 @@ function playerFire() {
   }
   // ── 전투 드론: 초고속 연사 (단발 위력은 낮음) ──
   if (p.mode === 'drone') {
-    const ang = aimUp ? -Math.PI / 2 : (p.face > 0 ? 0 : Math.PI);
     const mX = p.x + (p.face > 0 ? p.w : 0), mY = p.y + 8;
+    const ang = airAim(mX, mY, 1.05);
     bullets.push({ x: mX, y: mY, vx: Math.cos(ang) * 10 + rnd(-0.3, 0.3), vy: Math.sin(ang) * 10 + rnd(-0.4, 0.4), life: 50, dmg: pdmg(6), r: 2 });
     p.fireCd = 3;
-    fx.muzzle(mX, mY, p.face > 0 ? 0 : Math.PI, 0.6);
+    fx.muzzle(mX, mY, ang, 0.6);
     S.shoot('mg');
     return;
   }
   // ── 스텔스 전투기: 관통 레이저 + 유도 미사일 교대 ──
   if (p.mode === 'jet') {
-    const ang = aimUp ? -Math.PI / 2 : (p.face > 0 ? 0 : Math.PI);
     const mX = p.x + (p.face > 0 ? p.w : 0), mY = p.y + 9;
+    const ang = airAim(mX, mY, 0.7);
     p.jetAlt = !p.jetAlt;
     if (p.jetAlt) {
       bullets.push({ x: mX, y: mY, vx: Math.cos(ang) * 13, vy: Math.sin(ang) * 13, life: 55, dmg: pdmg(13), r: 2, pierce: true, hitList: [] });
@@ -1614,7 +1742,7 @@ function playerFire() {
       S.shoot('homing');
     }
     p.fireCd = 9;
-    fx.muzzle(mX, mY, p.face > 0 ? 0 : Math.PI, 0.7);
+    fx.muzzle(mX, mY, ang, 0.7);
     return;
   }
   // ── 헐크 슈트 ──
@@ -1722,6 +1850,7 @@ function throwNade() {
 // beam: 궤도 레이저 / sentry: 자동 포탑 2기 / time: 불릿타임
 // ═══════════════════════════════════════════════════════════════
 function gainUlt(n) {
+  n *= (player.ultGainMul || 1);
   const p = player;
   if (p.ult >= 100 || p.ultUses <= 0) return;
   p.ult = Math.min(100, p.ult + n * CHARS[p.char].ultGain);
@@ -1963,10 +2092,10 @@ function onEnemyKilled(e) {
 function hurtEnemy(e, dmg) {
   if (e.dead) return;
   let d = dmg;
-  // KAI 특성: 치명타 (불릿타임 중에는 확률·배율 모두 강화)
-  if (CHARS[player.char].trait === 'crit' && d > 1) {
+  // 치명타 — KAI 특성 또는 정밀 조준기 구매 시
+  if ((CHARS[player.char].trait === 'crit' || player.perks.scope) && d > 1) {
     const boosted = player.ultMode === 'time';
-    if (Math.random() < (boosted ? 0.4 : 0.15)) {
+    if (Math.random() < (boosted ? 0.4 : 0.15) + (player.critBonus || 0)) {
       d *= boosted ? 2.6 : 2;
       addFloat(e.x, e.y - 14, 'CRIT!', '#ffe27a');
     }
@@ -1980,6 +2109,10 @@ function hurtEnemy(e, dmg) {
   if (d >= 20) addHitstop(2);
   if (e.hp <= 0 && !e.dead) {
     e.dead = true;
+    if (player.perks.vamp && player.hp < player.maxHp) {
+      player.hp = Math.min(player.maxHp, player.hp + 2);
+      addFloat(player.x, player.y - 20, '+2', '#5ad15a');
+    }
     onEnemyKilled(e);
     gainUlt(5);
     S.edie();
@@ -2137,8 +2270,10 @@ function updateEnemy(e, T) {
     if (tick % 10 === 0) particles.push({ x: e.x + rnd(0, e.w), y: e.y + rnd(0, e.h), vx: 0, vy: -0.8, life: 12, c: '#ff8a2b', r: 1.5, g: 0 });
     if (e.dead) return;
   }
-  e.face = (p.x < e.x) ? -1 : 1;
-  const dist = Math.abs(e.x - p.x);
+  const pcx = p.x + p.w / 2, ecx = e.x + e.w / 2;
+  e.face = (pcx < ecx) ? -1 : 1;
+  const dist = Math.abs(ecx - pcx);              // 중심 간 거리
+  const egap = dist - (e.w + p.w) / 2;           // 스프라이트 사이 실제 틈
   if (!e.fly && e.type !== 'turret') e.vy += GRAVITY * T;
 
   switch (e.type) {
@@ -2152,7 +2287,7 @@ function updateEnemy(e, T) {
       break;
     }
     case 'grunt':
-      if (dist > 56) { e.x += e.face * 0.9 * T; e.walkFrame += 0.2 * T; }
+      if (egap > 40) { e.x += e.face * 0.9 * T; e.walkFrame += 0.2 * T; }
       break;
     case 'gunner':
       if (dist > 150) { e.x += e.face * 0.75 * T; e.walkFrame += 0.2 * T; }
@@ -2164,9 +2299,28 @@ function updateEnemy(e, T) {
       e.fireCd -= T;
       if (e.fireCd <= 0 && dist < 300 && e.x < cam + W) { lobNade(e); e.fireCd = rnd(120, 180) * diff.eFire; }
       break;
-    case 'dog':
-      if (dist > 32) { e.x += e.face * 2.1 * T; e.walkFrame += 0.45 * T; }
+    case 'dog': {
+      // 물고 나면 반드시 뒤로 물러났다가 다시 달려든다 (플레이어에게 붙어 있지 않는다)
+      if (e.recoil > 0) {
+        e.recoil -= T;
+        e.x -= e.face * 2.0 * T;                 // 확실히 떨어지도록 후퇴
+        e.walkFrame += 0.34 * T;
+      } else if (e.lunge > 0) {
+        e.lunge -= T;
+        e.x += e.face * 3.2 * T;                 // 짧고 빠른 돌진
+        e.walkFrame += 0.6 * T;
+        if (egap < 10) { e.lunge = 0; e.recoil = 54; }   // 닿는 즉시 물러남
+      } else if (egap > 44) {
+        e.x += e.face * 2.1 * T;                 // 접근
+        e.walkFrame += 0.45 * T;
+      } else {
+        e.lunge = 14;                            // 사거리 안 → 돌진 개시
+        S.shoot('blade');
+      }
+      // 어떤 경우에도 캐릭터를 파고들지 않게 최소 간격 확보
+      if (egap < 2) e.x = pcx + e.face * ((e.w + p.w) / 2 + 2) - e.w / 2;
       break;
+    }
     case 'rocket':
       if (dist > 250) e.x += e.face * 0.55 * T;
       else if (dist < 160) e.x -= e.face * 0.4 * T;
@@ -2187,7 +2341,7 @@ function updateEnemy(e, T) {
     }
     case 'shield':
       // 방패를 앞세우고 꾸준히 전진 — 정면 사격은 대부분 막힌다
-      if (dist > 46) { e.x += e.face * 0.5 * T; e.walkFrame += 0.14 * T; }
+      if (egap > 30) { e.x += e.face * 0.5 * T; e.walkFrame += 0.14 * T; }
       break;
     case 'jet': {
       // 제트병: 상공에서 접근, 머리 위에서 수류탄 투하
@@ -2219,12 +2373,19 @@ function updateEnemy(e, T) {
     }
     case 'ninja': {
       // 고속 접근 + 주기적 대시 돌진
-      if (e.dashT > 0) {
+      if (e.recoil > 0) {
+        // 벤 뒤에는 반드시 물러난다 (플레이어에게 달라붙지 않게)
+        e.recoil -= T;
+        e.x -= e.face * 1.8 * T;
+        e.walkFrame += 0.3 * T;
+      } else if (e.dashT > 0) {
         e.dashT -= T;
         e.x += e.face * 5 * T;
         if (tick % 2 === 0) particles.push({ x: e.x + e.w / 2, y: e.y + e.h / 2, vx: 0, vy: 0, life: 8, c: '#b18cff', r: 3, g: 0 });
+        if (egap < 8) { e.dashT = 0; e.recoil = 46; }      // 닿으면 즉시 이탈
       } else {
-        if (dist > 34) { e.x += e.face * 2.4 * T; e.walkFrame += 0.4 * T; }
+        if (egap > 34) { e.x += e.face * 2.4 * T; e.walkFrame += 0.4 * T; }
+        else e.recoil = 30;                                 // 사거리 안이면 거리 재조정
         e.fireCd -= T;
         if (e.fireCd <= 0 && dist < 180 && dist > 40) {
           e.dashT = 14;
@@ -2232,6 +2393,7 @@ function updateEnemy(e, T) {
           e.fireCd = rnd(90, 150) * diff.eFire;
         }
       }
+      if (egap < 2) e.x = pcx + e.face * ((e.w + p.w) / 2 + 2) - e.w / 2;
       break;
     }
     case 'bomber': {
@@ -2309,11 +2471,30 @@ function spawnBoss() {
     spCd2: rnd(160, 240), breathT: 0, breathDir: 1,
     cfg: b, tier: stageIndex,
   };
+  bossIntro = bossIntroMax;
+  addShake(8);
+  flashScreen = Math.max(flashScreen, 6);
+  S.alert();
   curMusic = 6;
   S.startMusic(6);   // 보스전 테마
 }
 
 function updateBoss() {
+  if (bossIntro > 0) {
+    bossIntro--;
+    const b = boss;
+    if (b) {
+      // 등장 연출: 화면 밖에서 서서히 밀고 들어온다
+      b.x += (bossRestX(b) - b.x) * 0.035;
+      if (b.cfg.air) b.y = GROUND_Y - b.h - (b.tier === 3 ? 54 : 30) + Math.sin(tick * 0.05) * 7;
+      b.hit = 0;
+      if (bossIntro === Math.floor(bossIntroMax * 0.55)) { addShake(10); S.boom(true); flashScreen = Math.max(flashScreen, 8); }
+    }
+    return;
+  }
+  _updateBossFight();
+}
+function _updateBossFight() {
   const b = boss, p = player, T = ts();
   if (b.hit > 0) b.hit--;
 
@@ -2668,7 +2849,7 @@ function update() {
   // 인터미션(스테이지 클리어 결과 화면)
   if (state === 'intermission') {
     intermission--;
-    if (intermission <= 0) startStage(stageIndex + 1);
+    if (intermission <= 0) openShop(stageIndex + 1);
     return;
   }
   if (state !== 'play') return;
@@ -2725,7 +2906,7 @@ function update() {
   let mv = 0;
   if (keys.left) mv--;
   if (keys.right) mv++;
-  let topSpd = d.spd * (p.mode === 'foot' ? c.spd : (p.vskin ? p.vskin.spdMul : 1));
+  let topSpd = d.spd * (p.mode === 'foot' ? c.spd * (1 + (p.spdBonus || 0)) : (p.vskin ? p.vskin.spdMul : 1));
   if (p.crouch) topSpd *= 0.38;                       // 웅크린 채로는 느리게 기어간다
   if (mv !== 0 && !p.dead) {
     p.face = mv;
@@ -2867,7 +3048,7 @@ function update() {
       particles.push({ x: p.x + rnd(0, p.w), y: p.y + p.h, vx: rnd(-1, 1), vy: -1.5, life: 14, c: '#ff5a3c', r: 2, g: -0.05 });
   }
   // 보유 무기 에너지 재충전
-  p.inv.forEach(w => { if (!WEAPONS[w].inf) setAmmo(w, ammoOf(w) + WEAPONS[w].regen); });
+  p.inv.forEach(w => { if (!WEAPONS[w].inf) setAmmo(w, ammoOf(w) + WEAPONS[w].regen * (p.regenMul || 1)); });
   // 콤보 타이머
   if (comboT > 0) { comboT--; if (comboT <= 0) combo = 0; }
 
@@ -2889,6 +3070,7 @@ function update() {
   }
 
   // ── 입력 액션 ───────────────────────────────────────────────
+  if (bossIntro > 0) { p.vx *= 0.7; }
   if (keys.special && !lastSpecial && !p.dead) {
     if (p.mode !== 'foot') vehicleSpecial();
     else triggerUlt();
@@ -2900,8 +3082,6 @@ function update() {
   if (keys.nade && p.nadeCd <= 0 && !p.dead && (p.mode === 'foot' || p.mode === 'hulk')) throwNade();
 
   // ── 상점 진입 트리거 ────────────────────────────────────────
-  if (!boss && Math.abs((p.x + p.w / 2) - stage.shopX) < 22 && p.onGround && !p.shopLock && !p.climbing) openShop();
-  if (Math.abs((p.x + p.w / 2) - stage.shopX) > 60) p.shopLock = false;
 
   // ── 스폰 / 중간보스 / 보스 ──────────────────────────────────
   runSpawner();
@@ -3037,7 +3217,12 @@ function update() {
   // ── 픽업 ────────────────────────────────────────────────────
   pickups.forEach(pk => {
     if (pk.taken) return;
-    if (hitBox(pk.x, pk.y, pk.w || 12, pk.h || 12, p.x, p.y, p.w, p.h)) {
+    if (p.perks.magnet && pk.type === 'coin') {
+      const dx = (p.x + p.w / 2) - (pk.x + 5), dy = (p.y + p.h / 2) - (pk.y + 5);
+      const dd = Math.hypot(dx, dy);
+      if (dd < 90 && dd > 1) { pk.x += dx / dd * 3.2; pk.y += dy / dd * 3.2; }
+    }
+    if (hitBox(pk.x, pk.y, pk.w || 16, pk.h || 16, p.x, p.y, p.w, p.h)) {
       pk.taken = true;
       applyPickup(pk);
     }
@@ -3101,10 +3286,22 @@ function draw() {
   drawHazards();
   drawPlatforms();
   drawLadders();
-  drawShopBooth();
   outlined(drawCrates);
   pickups.forEach(pk => outlined(() => drawPickup(pk)));
   drawSentries();
+  // 비행 탈것 조준 보조 레티클
+  if (player && isAirVeh(player.mode) && player.lockOn) {
+    const lo = player.lockOn;
+    ctx.strokeStyle = 'rgba(255,210,63,.8)'; ctx.lineWidth = 1;
+    const r2 = 9 + Math.sin(tick * 0.3) * 1.5;
+    ctx.beginPath(); ctx.arc(lo.x, lo.y, r2, 0, 7); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(lo.x - r2 - 4, lo.y); ctx.lineTo(lo.x - r2 + 2, lo.y);
+    ctx.moveTo(lo.x + r2 - 2, lo.y); ctx.lineTo(lo.x + r2 + 4, lo.y);
+    ctx.moveTo(lo.x, lo.y - r2 - 4); ctx.lineTo(lo.x, lo.y - r2 + 2);
+    ctx.moveTo(lo.x, lo.y + r2 - 2); ctx.lineTo(lo.x, lo.y + r2 + 4);
+    ctx.stroke();
+  }
   drawCorpses();
   enemies.forEach(e => outlined(() => drawEnemy(e)));
 
@@ -3639,26 +3836,6 @@ function drawLadders() {
     for (let y = L.top + 4; y < L.bottom; y += 8) ctx.fillRect(L.x, y, 8, 2);
   });
 }
-function drawShopBooth() {
-  const sx = stage.shopX;
-  if (sx > cam + W + 30 || sx < cam - 30) return;
-  px(sx - 18, GROUND_Y - 30, 36, 30, '#3a2a18');
-  px(sx - 18, GROUND_Y - 30, 36, 4, '#5a4226');
-  px(sx - 20, GROUND_Y - 34, 40, 5, '#6e5230');
-  px(sx - 14, GROUND_Y - 24, 28, 16, '#caa24a');
-  ctx.fillStyle = '#3a2a18';
-  ctx.font = '8px "Press Start 2P"';
-  ctx.textAlign = 'center';
-  ctx.fillText('$', sx, GROUND_Y - 12);
-  ctx.textAlign = 'left';
-  if (player && Math.abs((player.x + player.w / 2) - sx) < 60 && !player.shopLock) {
-    ctx.fillStyle = tick % 30 < 15 ? '#ffd23f' : '#fff';
-    ctx.font = '6px "Press Start 2P"';
-    ctx.textAlign = 'center';
-    ctx.fillText('SHOP', sx, GROUND_Y - 40);
-    ctx.textAlign = 'left';
-  }
-}
 function drawCrates() {
   crates.forEach(c => {
     if (c.dead || c.x > cam + W + 20 || c.x < cam - 20) return;
@@ -3711,11 +3888,6 @@ function drawPickup(pk) {
     }
     return;
   }
-  ctx.fillStyle = 'rgba(255,255,255,.07)';
-  ctx.beginPath();
-  ctx.arc(x + (pk.w || 12) / 2, y + (pk.h || 12) / 2, (pk.w || 12), 0, 7);
-  ctx.fill();
-
   if (pk.type === 'mech') {
     const vk = vskinOf('mech', stageIndex);
     px(x, y, 22, 20, '#0a0a0a'); px(x + 1, y + 1, 20, 18, vk.body);
@@ -3772,29 +3944,117 @@ function drawPickup(pk) {
     ctx.fillText('J', x + 11, y + 22); ctx.textAlign = 'left';
     return;
   }
-  if (pk.type === 'fly') {
-    px(x, y, 12, 12, '#0a0a0a'); px(x + 1, y + 1, 10, 10, '#5fd6cf');
-    px(x + 3, y + 10, 2, 3, '#ff8a2b'); px(x + 7, y + 10, 2, 3, '#ff8a2b');
-    ctx.fillStyle = '#0a0a0a'; ctx.font = '6px "Press Start 2P"'; ctx.textAlign = 'center';
-    ctx.fillText('F', x + 6, y + 8); ctx.textAlign = 'left';
-    return;
+  if (pk.type === 'fly') { drawItemIcon(pk, x, y, 'fly'); return; }
+  if (pk.type && pk.type.indexOf('w_') === 0) { drawItemIcon(pk, x, y, pk.type.slice(2), true); return; }
+  drawItemIcon(pk, x, y, pk.type);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 아이템 아이콘 — 한눈에 구분되도록 설계
+//  · 종류별 고유 색 + 뒤쪽 발광 헤일로 (멀리서도 계열이 보인다)
+//  · 글리프를 문자 대신 실제 형태로 (총·검·불꽃·로켓 등)
+//  · 가까이 가면 이름표가 떠오른다
+// ═══════════════════════════════════════════════════════════════
+const ITEM_INFO = {
+  hp:      { col: '#5ad15a', name: '회복',   glyph: 'cross' },
+  nade:    { col: '#9bb24a', name: '수류탄', glyph: 'bomb' },
+  fly:     { col: '#5fd6cf', name: '제트팩', glyph: 'jet' },
+  mg:      { col: '#ffcf3f', name: '기관총', glyph: 'gun' },
+  shotgun: { col: '#e0a050', name: '샷건',   glyph: 'shotgun' },
+  blade:   { col: '#cfd6e0', name: '블레이드', glyph: 'blade' },
+  laser:   { col: '#9fe8ff', name: '레이저', glyph: 'beam' },
+  flame:   { col: '#ff8a2b', name: '화염방사', glyph: 'flame' },
+  spread:  { col: '#9bff7a', name: '스프레드', glyph: 'spread' },
+  homing:  { col: '#cffcff', name: '유도탄', glyph: 'target' },
+  rocket:  { col: '#e8412c', name: '로켓',   glyph: 'rocket' },
+  rail:    { col: '#b18cff', name: '레일건', glyph: 'bolt' },
+};
+
+function drawItemIcon(pk, x, y, key, isWeapon) {
+  const info = ITEM_INFO[key] || { col: '#aaa', name: key, glyph: 'box' };
+  const C = info.col, S2 = 16;                      // 아이콘 크기 확대 (12 → 16)
+  const cx = x + S2 / 2, cy = y + S2 / 2;
+
+  // 뒤쪽 발광 헤일로 — 멀리서도 아이템 계열이 보인다
+  if (!SILH) {
+    const pr = 11 + Math.sin(tick * 0.12 + x * 0.05) * 2.5;
+    ctx.globalAlpha = 0.26;
+    ctx.fillStyle = C;
+    ctx.beginPath(); ctx.arc(cx, cy, pr, 0, 7); ctx.fill();
+    ctx.globalAlpha = 0.14;
+    ctx.beginPath(); ctx.arc(cx, cy, pr * 1.5, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
   }
-  if (pk.type && pk.type.indexOf('w_') === 0) {
-    const wk = pk.type.slice(2);
-    const cmap2 = { blade: '#cfd6e0', laser: '#9fe8ff', shotgun: '#e0a050', flame: '#ff8a2b', rocket: '#e8412c', spread: '#9bff7a', homing: '#cffcff', rail: '#eafcff', mg: '#ffcf3f' };
-    const lmap = { blade: 'K', laser: 'L', shotgun: 'S', flame: 'F', rocket: 'R', spread: 'W', homing: 'H', rail: 'Z', mg: 'G' };
-    px(x, y, 12, 12, '#0a0a0a');
-    px(x + 1, y + 1, 10, 10, cmap2[wk] || '#ffcf3f');
-    ctx.fillStyle = '#0a0a0a'; ctx.font = '6px "Press Start 2P"'; ctx.textAlign = 'center';
-    ctx.fillText(lmap[wk] || 'G', x + 6, y + 8); ctx.textAlign = 'left';
-    return;
+
+  // 받침 패널 (무기는 각진 금테, 소모품은 둥근 느낌)
+  px(x - 1, y - 1, S2 + 2, S2 + 2, '#0b0a07');
+  px(x, y, S2, S2, shade(C, -0.62));
+  px(x, y, S2, 3, shade(C, 0.2));
+  if (isWeapon) { px(x, y, S2, 1, '#ffd23f'); px(x, y + S2 - 1, S2, 1, '#ffd23f'); px(x, y, 1, S2, '#ffd23f'); px(x + S2 - 1, y, 1, S2, '#ffd23f'); }
+
+  // 글리프
+  const G = info.glyph;
+  if (G === 'cross') {                                  // 회복: 십자
+    px(cx - 5, cy - 2, 10, 4, C); px(cx - 2, cy - 5, 4, 10, C);
+    px(cx - 4, cy - 1, 8, 1, '#fff');
+  } else if (G === 'bomb') {                            // 수류탄: 둥근 몸통 + 심지
+    px(cx - 4, cy - 2, 8, 7, C); px(cx - 3, cy - 4, 6, 2, C);
+    px(cx - 1, cy - 6, 2, 2, '#8a7a3a'); px(cx + 1, cy - 7, 2, 2, '#ff8a2b');
+    px(cx - 3, cy, 3, 2, 'rgba(255,255,255,.45)');
+  } else if (G === 'jet') {                             // 제트팩: 탱크 2개 + 화염
+    px(cx - 4, cy - 5, 3, 8, C); px(cx + 1, cy - 5, 3, 8, C);
+    px(cx - 4, cy + 3, 3, 3, '#ff8a2b'); px(cx + 1, cy + 3, 3, 3, '#ff8a2b');
+  } else if (G === 'gun') {                             // 기관총
+    px(cx - 6, cy - 2, 11, 3, C); px(cx + 3, cy - 3, 3, 2, C);
+    px(cx - 4, cy + 1, 3, 4, shade(C, -0.35)); px(cx - 6, cy - 3, 3, 2, shade(C, 0.25));
+  } else if (G === 'shotgun') {                         // 샷건: 굵은 2연장
+    px(cx - 6, cy - 3, 11, 2, C); px(cx - 6, cy, 11, 2, C);
+    px(cx - 3, cy + 2, 4, 3, shade(C, -0.35));
+  } else if (G === 'blade') {                           // 블레이드: 검
+    px(cx - 1, cy - 6, 3, 9, C); px(cx - 3, cy + 3, 7, 2, shade(C, -0.4));
+    px(cx - 1, cy + 5, 3, 2, '#8a6a3a'); px(cx, cy - 5, 1, 7, '#fff');
+  } else if (G === 'beam') {                            // 레이저: 빔 라인
+    px(cx - 6, cy - 1, 13, 2, C); px(cx - 6, cy - 2, 13, 1, '#fff');
+    px(cx + 4, cy - 3, 2, 6, shade(C, -0.3));
+  } else if (G === 'flame') {                           // 화염: 불꽃
+    px(cx - 2, cy - 6, 4, 4, '#ffe27a'); px(cx - 3, cy - 3, 6, 5, C);
+    px(cx - 4, cy + 1, 8, 4, shade(C, -0.2)); px(cx - 1, cy - 4, 2, 3, '#fff8d8');
+  } else if (G === 'spread') {                          // 스프레드: 3갈래
+    px(cx - 5, cy - 1, 10, 2, C);
+    px(cx - 3, cy - 5, 8, 2, shade(C, -0.15)); px(cx - 3, cy + 3, 8, 2, shade(C, -0.15));
+  } else if (G === 'target') {                          // 유도탄: 조준 원
+    ctx.strokeStyle = SILH || C; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, 4.5, 0, 7); ctx.stroke();
+    px(cx - 1, cy - 1, 2, 2, '#fff');
+    px(cx - 7, cy - 1, 3, 2, C); px(cx + 4, cy - 1, 3, 2, C);
+  } else if (G === 'rocket') {                          // 로켓
+    px(cx - 1, cy - 6, 4, 8, C); px(cx - 1, cy - 8, 4, 2, '#fff');
+    px(cx - 4, cy + 1, 3, 3, shade(C, -0.3)); px(cx + 3, cy + 1, 3, 3, shade(C, -0.3));
+    px(cx - 1, cy + 2, 4, 3, '#ff8a2b');
+  } else if (G === 'bolt') {                            // 레일건: 번개
+    px(cx, cy - 7, 3, 5, C); px(cx - 3, cy - 2, 6, 2, '#fff');
+    px(cx - 2, cy, 3, 5, C); px(cx - 4, cy + 4, 5, 2, shade(C, -0.2));
+  } else {
+    px(cx - 4, cy - 4, 8, 8, C);
   }
-  const cmap = { hp: '#5ad15a', nade: '#9bb24a' };
-  px(x, y, 12, 12, '#0a0a0a');
-  px(x + 1, y + 1, 10, 10, cmap[pk.type] || '#aaa');
-  px(x + 1, y + 1, 10, 2, 'rgba(255,255,255,.4)');
-  ctx.fillStyle = '#0a0a0a'; ctx.font = '6px "Press Start 2P"'; ctx.textAlign = 'center';
-  ctx.fillText(pk.type === 'hp' ? '+' : 'N', x + 6, y + 8); ctx.textAlign = 'left';
+
+  // 이름표 — 가까이 가면 떠오른다
+  if (!SILH && player) {
+    const d = Math.abs((player.x + player.w / 2) - cx);
+    if (d < 82) {
+      const a2 = clamp((82 - d) / 30, 0, 1);
+      ctx.globalAlpha = a2;
+      ctx.font = '5px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      const tw = ctx.measureText(info.name).width + 8;
+      ctx.fillStyle = 'rgba(10,9,6,.85)';
+      ctx.fillRect(cx - tw / 2, y - 13, tw, 10);
+      ctx.fillStyle = C;
+      ctx.fillText(info.name, cx, y - 5);
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'left';
+    }
+  }
 }
 
 // VOLT 센트리 포탑
@@ -4244,7 +4504,7 @@ function drawBoss() {
   }
   const F = {
     spider: drawBossSpider, drill: drawBossDrill, titan: drawBossTitan,
-    gunship: drawBossGunship, golem: drawBossGolem, core: drawBossCore,
+    gunship: drawBossGunship, golem: drawBossGolem, core: drawBossCore, dread: drawBossDread,
   }[cf.shape] || drawBossSpider;
   F(b, fl, cf);
 }
@@ -4429,6 +4689,57 @@ function drawBossGolem(b, fl, cf) {
   bossEye(b, cf, cx + bw * 0.03, by + bh * 0.12 + breathe, bw * 0.07, bh * 0.05);
   // 어깨 화산구 (연기)
   if (!SILH && tick % 8 === 0) fx.smoke(cx + rnd(-bw * 0.25, bw * 0.25), by + bh * 0.24, rnd(-0.3, 0.3), -rnd(0.4, 1), 3, 0.3);
+}
+
+// ⑦ 보이드 드레드노트 — 길게 뻗은 전함 함체 + 다연장 포탑 + 추진 노즐
+function drawBossDread(b, fl, cf) {
+  const C = fl ? '#fff' : cf.col, D = shade(cf.col, -0.42), L = shade(cf.col, 0.3);
+  const bw = b.w, bh = b.h, cx = b.x + bw / 2, cy = b.y + bh * 0.5;
+  // 하부 격납 리브
+  px(b.x + bw * 0.16, cy + bh * 0.16, bw * 0.68, bh * 0.16, D);
+  for (let i = 0; i < 7; i++) px(b.x + bw * 0.2 + i * bw * 0.09, cy + bh * 0.2, 5, bh * 0.1, shade(cf.col, -0.6));
+  // 주 함체 (앞으로 뾰족한 쐐기)
+  ctx.fillStyle = SILH || C;
+  ctx.beginPath();
+  ctx.moveTo(b.x, cy + bh * 0.04);
+  ctx.lineTo(b.x + bw * 0.14, cy - bh * 0.22);
+  ctx.lineTo(b.x + bw * 0.9, cy - bh * 0.22);
+  ctx.lineTo(b.x + bw, cy - bh * 0.02);
+  ctx.lineTo(b.x + bw * 0.9, cy + bh * 0.22);
+  ctx.lineTo(b.x + bw * 0.12, cy + bh * 0.22);
+  ctx.closePath(); ctx.fill();
+  px(b.x + bw * 0.14, cy - bh * 0.22, bw * 0.76, 4, L);
+  px(b.x + bw * 0.14, cy + bh * 0.16, bw * 0.76, 4, D);
+  // 상부 함교
+  px(cx + bw * 0.16, cy - bh * 0.42, bw * 0.2, bh * 0.22, C);
+  px(cx + bw * 0.16, cy - bh * 0.42, bw * 0.2, 3, L);
+  bossEye(b, cf, cx + bw * 0.2, cy - bh * 0.36, bw * 0.12, bh * 0.07);
+  // 다연장 포탑 3기 (플레이어를 향해 회전)
+  [0.24, 0.44, 0.64].forEach(f2 => {
+    const tx = b.x + bw * f2, ty = cy - bh * 0.22;
+    px(tx - bw * 0.05, ty - bh * 0.12, bw * 0.1, bh * 0.12, D);
+    ctx.save();
+    ctx.translate(tx, ty - bh * 0.06);
+    ctx.rotate(clamp(Math.atan2((player.y + 12) - (ty - bh * 0.06), player.x - tx), -2.6, -0.5));
+    px2(ctx, 0, -2.5, bw * 0.11, 5, '#22222c');
+    px2(ctx, bw * 0.1, -3.5, 4, 7, '#4a4a58');
+    ctx.restore();
+  });
+  // 후방 추진 노즐 3구
+  [-1, 0, 1].forEach(k => {
+    const ny = cy + k * bh * 0.14;
+    px(b.x + bw * 0.96, ny - 4, bw * 0.06, 8, D);
+    if (!SILH) {
+      const gl = 10 + Math.sin(tick * 0.25 + k) * 5;
+      ctx.fillStyle = 'rgba(177,140,255,.7)';
+      ctx.fillRect(b.x + bw * 1.02, ny - 3, gl, 6);
+      ctx.fillStyle = '#eafcff';
+      ctx.fillRect(b.x + bw * 1.02, ny - 1.5, gl * 0.5, 3);
+    }
+  });
+  // 함수 안광 밴드
+  bossEye(b, cf, b.x + bw * 0.04, cy - bh * 0.04, bw * 0.09, bh * 0.09);
+  if (!SILH && tick % 30 < 8) { px(b.x + bw * 0.3, cy - bh * 0.3, 5, 4, '#ff2a4a'); px(b.x + bw * 0.7, cy - bh * 0.3, 5, 4, '#ff2a4a'); }
 }
 
 // ⑥ 궤도 코어 — 회전 링 + 중앙 에너지 코어 (부양)
@@ -5376,7 +5687,6 @@ function drawHUD() {
   // 상점 / 중간보스 / 보스 마커
   const mk = (ratio, col) => px(pbx + 1 + Math.round((pbw - 2) * ratio), pby - 1, 2, 7, col);
   mk(stage.apcX / stage.len, '#e8a03f');
-  mk(stage.shopX / stage.len, '#ffd23f');
   mk(0.985, '#e8412c');
   px(pbx + 1 + Math.round((pbw - 2) * prog) - 1, pby - 1, 3, 7, '#f3ead2');
   ctx.font = '6px "Press Start 2P", monospace';
@@ -5401,6 +5711,9 @@ function drawHUD() {
     ctx.fillText(boss.cfg.name + (enr ? ' [RAGE]' : ''), W / 2, by - 5);
     ctx.textAlign = 'left';
   }
+
+  // ── 보스 등장 연출 ─────────────────────────────────────────
+  if (bossIntro > 0 && boss) drawBossIntro();
 
   // ── 스테이지 배너 ──────────────────────────────────────────
   if (stageBanner > 0) {
@@ -5439,6 +5752,79 @@ function drawHUD() {
 
   // ── 인터미션 결과 화면 ─────────────────────────────────────
   if (state === 'intermission') drawIntermission();
+}
+
+// 보스 등장 연출: 레터박스 + 경고 스트라이프 + 이름 슬램인
+function drawBossIntro() {
+  const t = bossIntroMax - bossIntro;             // 경과 프레임
+  const k = clamp(t / 14, 0, 1);                  // 레터박스 진입
+  const out = clamp(bossIntro / 18, 0, 1);        // 퇴장 페이드
+  const barH = Math.round(30 * k * out);
+  // 레터박스
+  ctx.fillStyle = '#07060a';
+  ctx.fillRect(0, 0, W, barH);
+  ctx.fillRect(0, H - barH, W, barH);
+  // 경고 스트라이프 (흐르는 사선)
+  if (barH > 5) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W, barH); ctx.rect(0, H - barH, W, barH); ctx.clip();
+    ctx.globalAlpha = 0.5 * out;
+    for (let i = -2; i < 28; i++) {
+      const sx = i * 22 - (tick * 1.6) % 22;
+      ctx.fillStyle = i % 2 ? '#ffcf3f' : '#1a1408';
+      ctx.beginPath();
+      ctx.moveTo(sx, 0); ctx.lineTo(sx + 11, 0); ctx.lineTo(sx - 3, barH); ctx.lineTo(sx - 14, barH);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(sx, H - barH); ctx.lineTo(sx + 11, H - barH); ctx.lineTo(sx - 3, H); ctx.lineTo(sx - 14, H);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+  // 보스를 향한 스포트라이트
+  if (t > 10) {
+    const bx = boss.x + boss.w / 2, by = boss.y + boss.h / 2;
+    const g = ctx.createRadialGradient(bx, by, 10, bx, by, boss.w * 0.9);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(4,3,8,' + (0.5 * out) + ')');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+  // WARNING 깜빡임
+  if (t < 62 && t % 16 < 9) {
+    ctx.textAlign = 'center';
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ff2a3a';
+    ctx.fillText('!! WARNING !!', W / 2, 52);
+    ctx.textAlign = 'left';
+  }
+  // 이름 슬램인 (좌측에서 튀어 들어와 살짝 오버슛)
+  if (t > 26) {
+    const p2 = clamp((t - 26) / 12, 0, 1);
+    const ease = 1 - Math.pow(1 - p2, 3);
+    const ox = (1 - ease) * -260;
+    const sc = 1 + (1 - ease) * 0.5;
+    ctx.save();
+    ctx.translate(W / 2 + ox, H / 2 - 4);
+    ctx.scale(sc, sc);
+    ctx.textAlign = 'center';
+    ctx.font = '15px "Press Start 2P", monospace';
+    ctx.globalAlpha = out;
+    ctx.fillStyle = '#07060a'; ctx.fillText(boss.cfg.name, 3, 3);
+    ctx.fillStyle = boss.cfg.eye; ctx.fillText(boss.cfg.name, 0, 0);
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = '#cdbf95';
+    ctx.fillText('STAGE ' + (stageIndex + 1) + ' BOSS', 0, 16);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    ctx.textAlign = 'left';
+  }
+  // 스캔라인 러시
+  if (t < 20) {
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.16 * (1 - t / 20)) + ')';
+    for (let y = (tick * 6) % 8; y < H; y += 8) ctx.fillRect(0, y, W, 2);
+  }
 }
 
 const RANKCOL = { S: '#ffd23f', A: '#5ad15a', B: '#9fe8ff', C: '#cdbf95' };
@@ -5629,6 +6015,7 @@ function togglePause() {
 
 function quitToMenu() {
   state = 'menu';
+  shopNext = -1;
   boss = null;
   S.stopMusic();
   elPause.classList.add('hidden');
