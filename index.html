@@ -1006,13 +1006,13 @@ STAGES.forEach((s, i) => {
 // shape: 렌더 실루엣 종류 (전부 다른 형태 — 전차형은 하나뿐)
 // air:   부양체 여부
 const BOSSCFG = [
-  { name: 'ARACHNID WALKER', hp: 240, col: '#5a6a3a', size: { w: 132, h: 84 }, fireCd: [80, 50], spread: 3, lob: false, special: 'charge', eye: '#ff3a2a', aura: 'rgba(255,90,40,.16)', shape: 'spider' },
-  { name: 'SAND DRILL RIG',  hp: 340, col: '#8a6a34', size: { w: 150, h: 82 }, fireCd: [64, 42], spread: 4, lob: false, special: 'burrow', eye: '#ffcf3f', aura: 'rgba(224,168,90,.16)', shape: 'drill' },
-  { name: 'FROST TITAN',     hp: 420, col: '#7d9ab0', size: { w: 128, h: 108 }, fireCd: [62, 40], spread: 4, lob: false, special: 'icicle', eye: '#9fe8ff', aura: 'rgba(159,232,255,.18)', shape: 'titan' },
-  { name: 'STEALTH GUNSHIP', hp: 500, col: '#2e2e40', size: { w: 178, h: 66 }, fireCd: [52, 34], spread: 5, lob: true,  special: 'summon', eye: '#ff2a5a', aura: 'rgba(255,60,90,.18)', shape: 'gunship', air: true },
-  { name: 'MAGMA GOLEM',     hp: 600, col: '#6e3020', size: { w: 150, h: 112 }, fireCd: [50, 32], spread: 5, lob: true,  special: 'erupt', eye: '#ff8a2b', aura: 'rgba(255,90,30,.2)', shape: 'golem' },
-  { name: 'ORBITAL CORE',    hp: 820, col: '#4a5a72', size: { w: 168, h: 120 }, fireCd: [46, 28], spread: 6, lob: false, special: 'final', eye: '#eafcff', aura: 'rgba(159,232,255,.22)', shape: 'core', air: true },
-  { name: 'VOID DREADNOUGHT', hp: 980, col: '#2c3660', size: { w: 208, h: 78 }, fireCd: [42, 26], spread: 6, lob: false, special: 'final', eye: '#b18cff', aura: 'rgba(150,110,255,.24)', shape: 'dread', air: true },
+  { name: 'ARACHNID WALKER', hp: 700, armor: 0.22, cap: 46, col: '#5a6a3a', size: { w: 132, h: 84 }, fireCd: [62, 38], spread: 3, lob: false, special: 'charge', eye: '#ff3a2a', aura: 'rgba(255,90,40,.16)', shape: 'spider' },
+  { name: 'SAND DRILL RIG', hp: 880, armor: 0.24, cap: 48, col: '#8a6a34', size: { w: 150, h: 82 }, fireCd: [52, 32], spread: 4, lob: false, special: 'burrow', eye: '#ffcf3f', aura: 'rgba(224,168,90,.16)', shape: 'drill' },
+  { name: 'FROST TITAN', hp: 1030, armor: 0.26, cap: 50, col: '#7d9ab0', size: { w: 128, h: 108 }, fireCd: [48, 30], spread: 4, lob: false, special: 'icicle', eye: '#9fe8ff', aura: 'rgba(159,232,255,.18)', shape: 'titan' },
+  { name: 'STEALTH GUNSHIP', hp: 1180, armor: 0.27, cap: 52, col: '#2e2e40', size: { w: 178, h: 66 }, fireCd: [42, 26], spread: 5, lob: true,  special: 'summon', eye: '#ff2a5a', aura: 'rgba(255,60,90,.18)', shape: 'gunship', air: true },
+  { name: 'MAGMA GOLEM', hp: 1330, armor: 0.28, cap: 54, col: '#6e3020', size: { w: 150, h: 112 }, fireCd: [40, 25], spread: 5, lob: true,  special: 'erupt', eye: '#ff8a2b', aura: 'rgba(255,90,30,.2)', shape: 'golem' },
+  { name: 'ORBITAL CORE', hp: 1520, armor: 0.30, cap: 56, col: '#4a5a72', size: { w: 168, h: 120 }, fireCd: [36, 22], spread: 6, lob: false, special: 'final', eye: '#eafcff', aura: 'rgba(159,232,255,.22)', shape: 'core', air: true },
+  { name: 'VOID DREADNOUGHT', hp: 1750, armor: 0.32, cap: 58, col: '#2c3660', size: { w: 208, h: 78 }, fireCd: [33, 20], spread: 6, lob: false, special: 'final', eye: '#b18cff', aura: 'rgba(150,110,255,.24)', shape: 'dread', air: true },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -1109,7 +1109,7 @@ if (!('ontouchstart' in window)) document.body.classList.add('no-touch');
 // 전역 상태
 // ═══════════════════════════════════════════════════════════════
 let state = 'menu';          // menu | play | shop | pause | intermission | win | over
-let cam = 0, shake = 0, tick = 0, flashScreen = 0;
+let cam = 0, camMax = 0, shake = 0, tick = 0, flashScreen = 0;
 // ── 구역(아레나) 전투 ──────────────────────────────────────────
 // 스테이지를 여러 화면으로 쪼갠다. 구역에 들어서면 카메라가 잠기고
 // 전방이 봉쇄되며, 그 화면의 적을 전멸시켜야 다음으로 넘어갈 수 있다.
@@ -1154,6 +1154,7 @@ function makePlayer(ci) {
     money: 0, shopLock: false, capMul: 1, hpRegen: 0,
     perks: {}, spdBonus: 0, ultGainMul: 1, critBonus: 0, regenMul: 1,
     anim: { n: 'idle', f: 0 }, landT: 0, deadAnim: false, crouch: false, vehCd: 0, vskin: null,
+    coyote: 0, jumpBuf: 0, camLead: 0, blockHint: 0,
   };
 }
 function wMax(wp) { return Math.round((WEAPONS[wp].max || 0) * (player ? player.capMul : 1)); }
@@ -1460,7 +1461,7 @@ function initWeather() {
 // ═══════════════════════════════════════════════════════════════
 function startStage(i) {
   stageIndex = i; stage = STAGES[i];
-  cam = 0; stageTime = 0; spawnTimer = 70;
+  cam = 0; camMax = 0; stageTime = 0; spawnTimer = 70;
   arena = null; arenaClearT = 0; arenaBanner = 0;
   buildArenas();
   boss = null; stageBanner = 130; intermission = 0; bossAnnounced = false; shopNext = -1;
@@ -1613,7 +1614,7 @@ function updateArena() {
 
 function runSpawner() {
   if (boss || arena) return;
-  if (cam >= stage.len - W - 40) return;
+  if (camMax >= stage.len - W - 40) return;
   spawnTimer -= ts();
   if (spawnTimer > 0) return;
   const I = currentIntensity();
@@ -2335,18 +2336,73 @@ function hurtEnemy(e, dmg) {
 }
 
 function hurtBoss(dmg) {
-  if (!boss || boss.dead || boss.hidden) return;
-  boss.hp -= dmg;
-  boss.hit = 4;
-  gainUlt(dmg * 0.18);
+  const b = boss;
+  if (!b || b.dead || b.hidden) return;
+  if (b.shield > 0) {
+    // 페이즈 전환 중에는 실드가 피해를 튕겨낸다
+    b.hit = 2;
+    if (tick % 4 === 0) {
+      particles.push(spark(b.x + rnd(0, b.w), b.y + rnd(0, b.h), '#9fe8ff'));
+      S.impact();
+    }
+    if (tick % 22 === 0) addFloat(b.x + b.w / 2, b.y - 10, 'BLOCKED', '#9fe8ff');
+    return;
+  }
+  // 장갑: 일정 비율 경감 + 단발 피해 상한 (한 방에 녹지 않게)
+  const cf = b.cfg;
+  let d = dmg * (1 - (cf.armor || 0));
+  const cap = (cf.cap || 30) * diff.eHp;
+  if (d > cap) d = cap + (d - cap) * 0.25;
+  b.hp -= d;
+  b.hit = 4;
+  gainUlt(d * 0.14);
   for (let i = 0; i < 2; i++)
-    particles.push(spark(boss.x + rnd(0, boss.w), boss.y + rnd(0, boss.h), '#ffcf3f'));
-  if (boss.hp <= 0) {
-    boss.dead = true;
-    boss.deathT = 90;
+    particles.push(spark(b.x + rnd(0, b.w), b.y + rnd(0, b.h), '#ffcf3f'));
+
+  // ── 페이즈 전환 (70% / 40% / 15%) ───────────────────────────
+  const ratio = b.hp / b.maxhp;
+  const marks = [0.7, 0.4, 0.15];
+  if (b.phase < marks.length && ratio <= marks[b.phase]) {
+    b.phase++;
+    bossPhaseShift(b);
+  }
+  if (b.hp <= 0) {
+    b.dead = true;
+    b.deathT = 90;
     addScore(1500 + stageIndex * 300);
     unlockAch('BOSS_DOWN');
     S.bossDie();
+  }
+}
+
+// 페이즈 전환: 잠깐 무적 실드를 두르고 반격한 뒤, 더 빠르고 사납게 돌아온다
+function bossPhaseShift(b) {
+  b.shield = 110;
+  b.spCd = 40; b.spCd2 = 60;
+  b.rate = (b.rate || 1) * 0.78;          // 공격 간격 단축 (누적)
+  addShake(12);
+  flashScreen = Math.max(flashScreen, 8);
+  S.alert(); S.boom(true);
+  addFloat(b.x + b.w / 2, b.y - 18, 'PHASE ' + (b.phase + 1) + ' — 각성!', b.cfg.eye);
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  fx.shock(cx, cy, b.w * 1.6, b.cfg.eye, 3.5);
+  fx.shock(cx, cy, b.w * 1.1, '#ffffff', 2);
+  // 전방위 반격탄
+  const n = 10 + b.phase * 4;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * 6.283;
+    ebullets.push({
+      x: cx, y: cy, vx: Math.cos(a) * 3.4 * diff.eBulletSpd, vy: Math.sin(a) * 3.4 * diff.eBulletSpd,
+      life: 150, dmgP: 8, col: b.cfg.eye,
+    });
+  }
+  // 호위 병력 소환
+  const adds = 1 + b.phase;
+  for (let i = 0; i < adds; i++) {
+    const type = stage.roster[Math.floor(Math.random() * stage.roster.length)];
+    const c = ECFG[type];
+    const y = c.fly ? GROUND_Y - (60 + rnd(0, 26)) : GROUND_Y - c.h;
+    enemies.push(mkEnemy(cam + W - 40 - i * 34, y, type, currentIntensity() * 1.2, false));
   }
 }
 
@@ -2677,6 +2733,7 @@ function spawnBoss() {
     dead: false, hit: 0, deathT: 0, hidden: false,
     lobCd: rnd(120, 200), spCd: rnd(180, 260), spT: 0, homeCd: 200,
     spCd2: rnd(160, 240), breathT: 0, breathDir: 1,
+    phase: 0, shield: 0, rate: 1,
     cfg: b, tier: stageIndex,
   };
   bossIntro = bossIntroMax;
@@ -2703,6 +2760,16 @@ function updateBoss() {
   _updateBossFight();
 }
 function _updateBossFight() {
+  if (boss && boss.shield > 0) {
+    boss.shield--;
+    boss.turret = Math.atan2((player.y + 12) - (boss.y + boss.h * 0.3), player.x - (boss.x + boss.w * 0.2));
+    if (tick % 3 === 0) {
+      const a = rnd(0, 6.283), r = boss.w * 0.6;
+      particles.push({ k: 'streak', x: boss.x + boss.w / 2 + Math.cos(a) * r, y: boss.y + boss.h / 2 + Math.sin(a) * r,
+        vx: -Math.cos(a) * 2, vy: -Math.sin(a) * 2, life: 14, c: boss.cfg.eye, g: 0, r: 1.5 });
+    }
+    return;
+  }
   const b = boss, p = player, T = ts();
   if (b.hit > 0) b.hit--;
 
@@ -2795,14 +2862,22 @@ function _updateBossFight() {
   const enraged = b.hp < b.maxhp * 0.4;
   const fc = enraged ? b.cfg.fireCd[1] : b.cfg.fireCd[0];
   if (b.fireCd <= 0) {
-    const n = b.cfg.spread + (b.tier === 5 && enraged ? 2 : 0);
+    const n = b.cfg.spread + b.phase + (enraged ? 1 : 0);
     for (let i = 0; i < n; i++) {
       const off = (i - (n - 1) / 2) * 0.2;
       const ang = Math.atan2((p.y + 10) - (b.y + 14), p.x - b.x) + off;
-      const s = 3.0 * diff.eBulletSpd;
-      ebullets.push({ x: b.x + 8, y: b.y + 14, vx: Math.cos(ang) * s, vy: Math.sin(ang) * s, life: 150 });
+      const s = (3.0 + b.phase * 0.35) * diff.eBulletSpd;
+      ebullets.push({ x: b.x + 8, y: b.y + 14, vx: Math.cos(ang) * s, vy: Math.sin(ang) * s, life: 150, dmgP: 8 + b.phase });
     }
-    b.fireCd = fc * diff.eFire;
+    // 페이즈 2 이상: 교차하는 역방향 부채꼴을 덧씌운다
+    if (b.phase >= 2) {
+      for (let i = 0; i < 3; i++) {
+        const ang = Math.atan2((p.y + 10) - (b.y + 14), p.x - b.x) + (i - 1) * 0.45;
+        const s = 2.4 * diff.eBulletSpd;
+        ebullets.push({ x: b.x + b.w * 0.6, y: b.y + b.h * 0.5, vx: Math.cos(ang) * s, vy: Math.sin(ang) * s, life: 170, dmgP: 9, col: b.cfg.eye });
+      }
+    }
+    b.fireCd = fc * diff.eFire * (b.rate || 1);
     S.shoot('gun');
   }
 
@@ -2812,7 +2887,7 @@ function _updateBossFight() {
     if (b.lobCd <= 0) {
       const dx = p.x - b.x, t2 = 46;
       ebullets.push({ x: b.x + 12, y: b.y, vx: dx / t2, vy: -7, g: GRAVITY * 0.6, life: 160, lob: true, r: 4 });
-      b.lobCd = rnd(150, 240) * diff.eFire;
+      b.lobCd = rnd(150, 240) * diff.eFire * (b.rate || 1);
       S.nade();
     }
   }
@@ -2876,7 +2951,7 @@ function _updateBossFight() {
   b.spCd2 -= T;
   if (b.spCd2 <= 0 && b.state === 'fight') {
     fireBossSignature(b, enraged);
-    b.spCd2 = enraged ? rnd(150, 220) : rnd(220, 320);
+    b.spCd2 = (enraged ? rnd(150, 220) : rnd(220, 320)) * (b.rate || 1);
   }
 
   // 보스 접촉 피해
@@ -3189,10 +3264,17 @@ function update() {
     } else {
       // JADEN 특성: 2단 점프
       const canDjump = c.trait === 'djump' && p.mode === 'foot';
-      if (keys.jump && !p.jumpHeld && !p.dead) {
+      // 코요테 타임: 발판에서 막 벗어난 직후에도 잠깐 점프를 허용
+      if (p.onGround) p.coyote = 7; else if (p.coyote > 0) p.coyote--;
+      // 점프 선입력: 착지 직전에 누른 점프를 기억했다가 착지 순간 발동
+      if (keys.jump && !p.jumpHeld) p.jumpBuf = 7; else if (p.jumpBuf > 0) p.jumpBuf--;
+      const wantJump = (keys.jump && !p.jumpHeld) || (p.jumpBuf > 0 && p.onGround);
+      if (wantJump && !p.dead) {
         const jm = (p.mode !== 'foot' && p.vskin) ? p.vskin.jumpMul : 1;
-        if (p.onGround) { p.vy = d.jump * jm; p.onGround = false; p.jumps = 1; S.jump(); }
-        else if (canDjump && p.jumps === 1) {
+        if (p.onGround || p.coyote > 0) {
+          p.vy = d.jump * jm; p.onGround = false; p.jumps = 1; p.coyote = 0; p.jumpBuf = 0; S.jump();
+        }
+        else if (canDjump && p.jumps === 1 && keys.jump && !p.jumpHeld) {
           p.vy = d.jump * 0.85;
           p.jumps = 2;
           for (let i = 0; i < 6; i++) particles.push(spark(p.x + p.w / 2, p.y + p.h, '#5fd6cf'));
@@ -3208,7 +3290,8 @@ function update() {
     p.x += p.vx;
     p.y += p.vy;
     if (arena) p.x = clamp(p.x, cam + 4, cam + W - p.w - 6);
-    else p.x = clamp(p.x, cam, stage.len - p.w);
+    else if (boss && !boss.dead) p.x = clamp(p.x, cam + 4, stage.len - p.w);
+    else p.x = clamp(p.x, 0, stage.len - p.w);   // 되돌아가기 허용
     // 경로 차단물: 비행 탈것은 넘어가고, 지상은 우회해야 한다
     if (!isAirVeh(p.mode)) {
       for (const bar of barriers) {
@@ -3260,11 +3343,23 @@ function update() {
 
   // 카메라: 전진만 허용
   if (arena) {
-    // 구역 전투 중: 카메라 고정
-    cam = arena.lockCam;
+    // 구역 전투 중에만 카메라를 고정한다
+    cam += (arena.lockCam - cam) * 0.2;
+    if (Math.abs(cam - arena.lockCam) < 0.5) cam = arena.lockCam;
+  } else if (boss && !boss.dead) {
+    // 보스전: 결전장 고정
+    const bl = clamp(stage.len - W, 0, stage.len - W);
+    cam += (bl - cam) * 0.14;
+    if (Math.abs(bl - cam) < 0.4) cam = bl;
   } else {
-    cam = clamp(Math.max(cam, clamp(p.x - 150, cam, stage.len - W)), 0, stage.len - W);
+    // 평소에는 좌우 어느 쪽으로든 따라간다 (되돌아가기 가능)
+    // 진행 방향을 조금 더 넓게 보여준다 (선행 시야)
+    p.camLead = (p.camLead || 0) + ((p.face > 0 ? 34 : -34) - (p.camLead || 0)) * 0.04;
+    const target = clamp(p.x + p.w / 2 - W * 0.5 + p.camLead, 0, stage.len - W);
+    cam += (target - cam) * 0.12;
+    if (Math.abs(target - cam) < 0.3) cam = target;
   }
+  camMax = Math.max(camMax, cam);
 
   // ── 타이머 갱신 ─────────────────────────────────────────────
   if (p.invuln > 0) p.invuln--;
@@ -3322,13 +3417,13 @@ function update() {
   checkArenaEnter();
   updateArena();
   runSpawner();
-  if (!boss && !st.midDone && cam + W > stage.apcX) {
+  if (!boss && !st.midDone && camMax + W > stage.apcX) {
     st.midDone = true;
     enemies.push(mkEnemy(cam + W + 30, GROUND_Y - ECFG.apc.h, 'apc', 1));
     addFloat(cam + W - 90, 110, '!! ARMORED APC !!', '#ff5a3c');
     S.alert();
   }
-  if (!boss && !arena && cam >= stage.len - W - 5) {
+  if (!boss && !arena && camMax >= stage.len - W - 5) {
     spawnBoss();
     if (!bossAnnounced) { bossAnnounced = true; S.alert(); }
   }
@@ -3517,7 +3612,7 @@ function draw() {
   ctx.save();
   const sx = shake ? rnd(-shake, shake) : 0;
   const sy = shake ? rnd(-shake, shake) : 0;
-  ctx.translate(-cam + sx, sy);
+  ctx.translate(-Math.round(cam) + sx, sy);
 
   drawGround();
   drawHazards();
@@ -4784,6 +4879,18 @@ function drawBoss() {
     gunship: drawBossGunship, golem: drawBossGolem, core: drawBossCore, dread: drawBossDread,
   }[cf.shape] || drawBossSpider;
   F(b, fl, cf);
+
+  // 페이즈 전환 실드 — 피해가 완전히 차단되는 상태를 눈으로 알린다
+  if (b.shield > 0 && !SILH) {
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    const rr = b.w * 0.62 + Math.sin(tick * 0.3) * 4;
+    const a2 = 0.35 + 0.25 * Math.abs(Math.sin(tick * 0.18));
+    ctx.strokeStyle = cf.eye; ctx.lineWidth = 3; ctx.globalAlpha = a2;
+    ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * 0.78, 0, 0, 7); ctx.stroke();
+    ctx.lineWidth = 1; ctx.globalAlpha = a2 * 0.6;
+    ctx.beginPath(); ctx.ellipse(cx, cy, rr * 0.82, rr * 0.64, 0, 0, 7); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
 }
 
 // 맥동하는 안광 (모든 보스 공통)
@@ -5985,7 +6092,16 @@ function drawHUD() {
     ctx.font = '7px "Press Start 2P", monospace';
     ctx.fillStyle = '#f3ead2';
     ctx.textAlign = 'center';
+    // 페이즈 분기점 표시
+    [0.7, 0.4, 0.15].forEach(m => px(bx + bw * m - 1, by - 2, 2, 14, '#0b0a07'));
+    // 장갑 수치 + 페이즈 표시
     ctx.fillText(boss.cfg.name + (enr ? ' [RAGE]' : ''), W / 2, by - 5);
+    ctx.font = '5px "Press Start 2P", monospace';
+    ctx.fillStyle = boss.shield > 0 ? '#9fe8ff' : '#8a8158';
+    ctx.fillText(boss.shield > 0 ? '실드 전개 — 피해 무효'
+      : 'PHASE ' + (boss.phase + 1) + '  ·  장갑 ' + Math.round((boss.cfg.armor || 0) * 100) + '%',
+      W / 2, by + 20);
+    ctx.font = '7px "Press Start 2P", monospace';
     ctx.textAlign = 'left';
   }
 
@@ -6495,7 +6611,7 @@ function loop() {
     drawSky();
     drawParallax();
     ctx.save();
-    ctx.translate(-cam, 0);
+    ctx.translate(-Math.round(cam), 0);
     drawGround();
     ctx.restore();
     drawWeather();
