@@ -142,9 +142,22 @@
 
   /* ── 상점 ─────────────────────────────────────────────── */
   #shopItems{
-    display:grid;grid-template-columns:repeat(4,1fr);
-    gap:7px;max-width:620px;width:94%;
+    display:flex;flex-direction:column;gap:5px;
+    max-width:660px;width:94%;
+    max-height:58vh;overflow-y:auto;padding-right:4px;
   }
+  #shopItems::-webkit-scrollbar{width:6px;}
+  #shopItems::-webkit-scrollbar-thumb{background:#4a3f22;}
+  .shopgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:2px;}
+  .shopcat{
+    display:flex;align-items:center;gap:6px;
+    border-left:3px solid #4a3f22;padding:3px 0 3px 7px;margin-top:4px;
+    font-size:clamp(6px,1.1vw,8px);letter-spacing:1px;
+  }
+  .shopcaticon{font-size:clamp(10px,1.8vw,13px);}
+  .shopcatname{font-weight:normal;}
+  .shopcatdesc{color:#6e6650;font-size:clamp(5px,.85vw,6px);letter-spacing:0;}
+  @media(max-width:560px){ .shopgrid{grid-template-columns:repeat(3,1fr);} }
   .shopit{
     background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#f3ead2;
     font-family:inherit;cursor:pointer;padding:9px 4px 7px;
@@ -1005,23 +1018,33 @@ const BOSSCFG = [
 // ═══════════════════════════════════════════════════════════════
 // 상점 품목 (VOLT 특성: 20% 할인)
 // ═══════════════════════════════════════════════════════════════
+// cat: atk(공격) / def(방어) / eng(에너지·보조) / prem(특별 보급)
+const SHOP_CATS = [
+  { id: 'atk',  name: '공격',      icon: '⚔️', col: '#e8412c', desc: '무기 · 화력' },
+  { id: 'def',  name: '방어',      icon: '🛡️', col: '#5ad15a', desc: '생존 · 체력' },
+  { id: 'eng',  name: '에너지·보조', icon: '⚡', col: '#9fe8ff', desc: '탄약 · 기동 · 필살기' },
+  { id: 'prem', name: '특별 보급',  icon: '🏅', col: '#ffd23f', desc: '이번 스테이지 한정 영구 강화' },
+];
 const SHOP_ITEMS = [
-  { k: 'hp',      label: 'HP +50',     cost: 50,  icon: '❤️' },
-  { k: 'life',    label: '+1 LIFE',    cost: 300, icon: '💗' },
-  { k: 'nade',    label: 'NADE +3',    cost: 40,  icon: '💣' },
-  { k: 'fly',     label: 'JETPACK',    cost: 140, icon: '🚀' },
-  { k: 'mg',      label: 'MG GUN',     cost: 80,  icon: '🔫' },
-  { k: 'shotgun', label: 'SHOTGUN',    cost: 120, icon: '💥' },
-  { k: 'blade',   label: 'BLADE',      cost: 70,  icon: '🗡️' },
-  { k: 'laser',   label: 'LASER',      cost: 160, icon: '⚡' },
-  { k: 'flame',   label: 'FLAME',      cost: 130, icon: '🔥' },
-  { k: 'spread',  label: 'SPREAD',     cost: 150, icon: '✴️' },
-  { k: 'homing',  label: 'HOMING',     cost: 200, icon: '🎯' },
-  { k: 'rocket',  label: 'ROCKET',     cost: 220, icon: '🚀' },
-  { k: 'rail',    label: 'RAILGUN',    cost: 260, icon: '🌩️' },
-  { k: 'spuse',   label: 'SP +1 USE',  cost: 120, icon: '⭐' },
-  { k: 'capup',   label: 'AMMO CAP+25%', cost: 180, icon: '📦' },
-  { k: 'regen',   label: 'HP 리젠 소량', cost: 220, icon: '💚' },
+  // ── 공격 ──
+  { k: 'mg',      label: 'MG GUN',     cost: 80,  icon: '🔫', cat: 'atk', desc: '연사 기관총' },
+  { k: 'blade',   label: 'BLADE',      cost: 70,  icon: '🗡️', cat: 'atk', desc: '근접 · 방패 관통' },
+  { k: 'shotgun', label: 'SHOTGUN',    cost: 120, icon: '💥', cat: 'atk', desc: '근거리 5발 산탄' },
+  { k: 'flame',   label: 'FLAME',      cost: 130, icon: '🔥', cat: 'atk', desc: '화상 지속피해' },
+  { k: 'spread',  label: 'SPREAD',     cost: 150, icon: '✴️', cat: 'atk', desc: '3갈래 확산' },
+  { k: 'laser',   label: 'LASER',      cost: 160, icon: '⚡', cat: 'atk', desc: '관통 광선' },
+  { k: 'homing',  label: 'HOMING',     cost: 200, icon: '🎯', cat: 'atk', desc: '자동 추적' },
+  { k: 'rocket',  label: 'ROCKET',     cost: 220, icon: '🚀', cat: 'atk', desc: '폭발 광역' },
+  { k: 'rail',    label: 'RAILGUN',    cost: 260, icon: '🌩️', cat: 'atk', desc: '관통 · 방패무시' },
+  // ── 방어 ──
+  { k: 'hp',      label: 'HP +50',     cost: 50,  icon: '❤️', cat: 'def', desc: '즉시 회복' },
+  { k: 'regen',   label: 'HP 리젠',    cost: 220, icon: '💚', cat: 'def', desc: '초당 자동 회복' },
+  { k: 'life',    label: '+1 LIFE',    cost: 300, icon: '💗', cat: 'def', desc: '잔기 추가' },
+  // ── 에너지·보조 ──
+  { k: 'nade',    label: 'NADE +3',    cost: 40,  icon: '💣', cat: 'eng', desc: '수류탄 보급' },
+  { k: 'spuse',   label: 'SP +1 USE',  cost: 120, icon: '⭐', cat: 'eng', desc: '필살기 횟수' },
+  { k: 'fly',     label: 'JETPACK',    cost: 140, icon: '🪂', cat: 'eng', desc: '일시 비행' },
+  { k: 'capup',   label: '탄약 +25%',  cost: 180, icon: '📦', cat: 'eng', desc: '최대 탄약 증가' },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -1088,7 +1111,7 @@ if (!('ontouchstart' in window)) document.body.classList.add('no-touch');
 let state = 'menu';          // menu | play | shop | pause | intermission | win | over
 let cam = 0, shake = 0, tick = 0, flashScreen = 0;
 let bullets = [], ebullets = [], enemies = [], particles = [], pickups = [];
-let nades = [], floaters = [], platforms = [], strikes = [], eshards = [];
+let nades = [], floaters = [], platforms = [], strikes = [], eshards = [], barriers = [];
 let slashes = [], ladders = [], crates = [], hazards = [], sentries = [];
 let evolc = [], weatherP = [], toasts = [], beams = [];
 let player = null, boss = null, score = 0;
@@ -1205,7 +1228,7 @@ function exitMode(burst) {
 // 발판 / 2층+사다리 / 저격 포탑 / 상자·배럴 / POW / 환경 기믹
 // ═══════════════════════════════════════════════════════════════
 function buildLevel() {
-  platforms = []; ladders = []; pickups = []; crates = []; hazards = [];
+  platforms = []; ladders = []; pickups = []; crates = []; hazards = []; barriers = [];
   const si = stageIndex;
 
   // 점프 발판 (테마별로 폭·높이 분포가 다르게)
@@ -1299,6 +1322,49 @@ function buildLevel() {
   ];
   st.powCount = 2 + (si >= 3 ? 1 : 0);
   for (let i = 0; i < st.powCount; i++) pickups.push({ x: powSpots[i].x, y: powSpots[i].y, type: 'pow', w: 12, h: 16 });
+
+  // ═══════════════════════════════════════════════════════════
+  // 경로 차단물 — 한쪽 길을 막아 우회를 강제한다
+  //   wall  : 지상을 완전히 막는 벽 → 2층/발판으로 우회
+  //   duct  : 천장이 낮은 통로 → ↓ 엎드려서만 통과
+  //   pylon : 중간 높이 기둥 → 점프로 넘거나 비행체로 통과
+  // 스테이지마다 배치와 조합이 다르다
+  // ═══════════════════════════════════════════════════════════
+  const routeCfg = {
+    jungle:  [{ r: 0.44, kind: 'duct' }],
+    desert:  [{ r: 0.38, kind: 'wall' }, { r: 0.72, kind: 'pylon' }],
+    snow:    [{ r: 0.34, kind: 'pylon' }, { r: 0.62, kind: 'duct' }],
+    night:   [{ r: 0.30, kind: 'wall' }, { r: 0.58, kind: 'duct' }, { r: 0.80, kind: 'pylon' }],
+    volcano: [{ r: 0.36, kind: 'duct' }, { r: 0.66, kind: 'wall' }],
+    sky:     [{ r: 0.40, kind: 'pylon' }, { r: 0.70, kind: 'pylon' }],
+  }[stage.theme] || [{ r: 0.45, kind: 'wall' }];
+
+  routeCfg.forEach(rc => {
+    const bx = Math.round(stage.len * rc.r);
+    if (rc.kind === 'wall') {
+      // 지상 완전 차단 — 반드시 위로 우회해야 한다
+      barriers.push({ x: bx, y: GROUND_Y - 74, w: 20, h: 74, kind: 'wall' });
+      // 우회용 발판 계단
+      platforms.push({ x: bx - 96, y: GROUND_Y - 34, w: 58, tier: 1 });
+      platforms.push({ x: bx - 26, y: GROUND_Y - 74, w: 76, tier: 2, floor: true });
+      platforms.push({ x: bx + 62, y: GROUND_Y - 40, w: 58, tier: 1 });
+      pickups.push({ x: bx + 2, y: GROUND_Y - 92, type: 'coin', val: 25 });
+    } else if (rc.kind === 'duct') {
+      // 천장이 낮은 통로 — 엎드려야만 지나갈 수 있다
+      barriers.push({ x: bx, y: GROUND_Y - 62, w: 108, h: 42, kind: 'duct' });
+      platforms.push({ x: bx, y: GROUND_Y - 62, w: 108, tier: 2, floor: true });
+      // 아래 경로(포복): 빠르지만 좁다 — 회복 보상
+      pickups.push({ x: bx + 42, y: GROUND_Y - 18, type: 'hp' });
+      // 위 경로(등반): 올라가야 하지만 코인이 많다 — 진입용 발판 포함
+      platforms.push({ x: bx - 62, y: GROUND_Y - 34, w: 46, tier: 1 });
+      for (let c3 = 0; c3 < 4; c3++)
+        pickups.push({ x: bx + 16 + c3 * 24, y: GROUND_Y - 78, type: 'coin', val: 20 });
+    } else {
+      // 중간 기둥 — 점프로 넘거나 비행으로 통과
+      barriers.push({ x: bx, y: GROUND_Y - 40, w: 16, h: 40, kind: 'pylon' });
+      pickups.push({ x: bx - 2, y: GROUND_Y - 58, type: 'coin', val: 20 });
+    }
+  });
 
   // 지원 루트 (무기·회복 배치)
   const route = ['w_mg', 'hp', 'w_shotgun', 'nade', 'fly', 'w_laser', 'w_spread'];
@@ -1529,13 +1595,13 @@ function damageCrate(c, dmg) {
 // 스테이지 클리어 보급에서만 살 수 있는 영구 강화 — 스테이지마다 다른 1종
 // (한 번 사면 그 회차 동안 유지되며, 중복 구매 불가)
 const PREMIUM_ITEMS = [
-  { k: 'p_armor',  label: '방탄 장갑',   cost: 260, icon: '🛡️', desc: '최대 HP +30' },
-  { k: 'p_boots',  label: '강화 부츠',   cost: 240, icon: '👢', desc: '이동속도 +12%' },
-  { k: 'p_core',   label: 'SP 코어',     cost: 300, icon: '🔋', desc: 'SP 충전 +35%' },
-  { k: 'p_scope',  label: '정밀 조준기', cost: 320, icon: '🔭', desc: '치명타 +12%' },
-  { k: 'p_vamp',   label: '나노 회수기', cost: 340, icon: '🩸', desc: '처치 시 HP 회복' },
-  { k: 'p_magnet', label: '코인 자석',   cost: 200, icon: '🧲', desc: '코인 자동 흡수' },
-  { k: 'p_ammo',   label: '예비 탄창',   cost: 280, icon: '🎒', desc: '탄약 재충전 2배' },
+  { k: 'p_armor',  label: '방탄 장갑',   cost: 260, icon: '🛡️', desc: '최대 HP +30', cat: 'prem' },
+  { k: 'p_boots',  label: '강화 부츠',   cost: 240, icon: '👢', desc: '이동속도 +12%', cat: 'prem' },
+  { k: 'p_core',   label: 'SP 코어',     cost: 300, icon: '🔋', desc: 'SP 충전 +35%', cat: 'prem' },
+  { k: 'p_scope',  label: '정밀 조준기', cost: 320, icon: '🔭', desc: '치명타 +12%', cat: 'prem' },
+  { k: 'p_vamp',   label: '나노 회수기', cost: 340, icon: '🩸', desc: '처치 시 HP 회복', cat: 'prem' },
+  { k: 'p_magnet', label: '코인 자석',   cost: 200, icon: '🧲', desc: '코인 자동 흡수', cat: 'prem' },
+  { k: 'p_ammo',   label: '예비 탄창',   cost: 280, icon: '🎒', desc: '탄약 재충전 2배', cat: 'prem' },
 ];
 function premiumFor(si) { return PREMIUM_ITEMS[si % PREMIUM_ITEMS.length]; }
 
@@ -1582,22 +1648,37 @@ function buildShopDOM() {
     const prem = premiumFor(stageIndex);
     if (!player.perks[prem.k.slice(2)]) list.unshift(Object.assign({ premium: true }, prem));
   }
-  list.forEach(it => {
-    const cost = shopCost(it);
-    const b = document.createElement('button');
-    const can = player.money >= cost;
-    b.className = 'shopit' + (can ? '' : ' no') + (it.premium ? ' prem' : '');
-    b.innerHTML = '<span class="shopicon">' + it.icon + '</span><span class="shoplabel">' + it.label + '</span>'
-      + (it.desc ? '<span class="shopdesc">' + it.desc + '</span>' : '')
-      + '<span class="pr">$' + cost + '</span>';
-    b.addEventListener('click', () => {
-      if (player.money < cost) return;
-      player.money -= cost;
-      buyItem(it.k);
-      S.pickup();
-      buildShopDOM();
+  // 계열(공격 / 방어 / 에너지·보조 / 특별)별로 구획을 나눠 배치한다
+  SHOP_CATS.forEach(cat => {
+    const items = list.filter(it => it.cat === cat.id);
+    if (!items.length) return;
+    const head = document.createElement('div');
+    head.className = 'shopcat';
+    head.style.borderColor = cat.col;
+    head.innerHTML = '<span class="shopcaticon">' + cat.icon + '</span>'
+      + '<span class="shopcatname" style="color:' + cat.col + '">' + cat.name + '</span>'
+      + '<span class="shopcatdesc">' + cat.desc + '</span>';
+    box.appendChild(head);
+    const grid = document.createElement('div');
+    grid.className = 'shopgrid';
+    items.forEach(it => {
+      const cost = shopCost(it);
+      const b = document.createElement('button');
+      const can = player.money >= cost;
+      b.className = 'shopit' + (can ? '' : ' no') + (it.cat === 'prem' ? ' prem' : '');
+      b.innerHTML = '<span class="shopicon">' + it.icon + '</span><span class="shoplabel">' + it.label + '</span>'
+        + (it.desc ? '<span class="shopdesc">' + it.desc + '</span>' : '')
+        + '<span class="pr">$' + cost + '</span>';
+      b.addEventListener('click', () => {
+        if (player.money < cost) return;
+        player.money -= cost;
+        buyItem(it.k);
+        S.pickup();
+        buildShopDOM();
+      });
+      grid.appendChild(b);
     });
-    box.appendChild(b);
+    box.appendChild(grid);
   });
 
   // ── 남은 돈 안내 (Q1) ────────────────────────────────────────
@@ -2261,6 +2342,15 @@ function shieldBlocks(e, b) {
 // ═══════════════════════════════════════════════════════════════
 // 적 AI 갱신 (T = 불릿타임 배율)
 // ═══════════════════════════════════════════════════════════════
+function blockEnemy(e) {
+  if (e.fly || e.type === 'turret') return;
+  for (const bar of barriers) {
+    if (e.x + e.w > bar.x && e.x < bar.x + bar.w && e.y + e.h > bar.y && e.y < bar.y + bar.h) {
+      e.x = (e._px !== undefined ? e._px : e.x);
+      break;
+    }
+  }
+}
 function updateEnemy(e, T) {
   const p = player;
   if (e.hit > 0) e.hit--;
@@ -2275,6 +2365,7 @@ function updateEnemy(e, T) {
   const dist = Math.abs(ecx - pcx);              // 중심 간 거리
   const egap = dist - (e.w + p.w) / 2;           // 스프라이트 사이 실제 틈
   if (!e.fly && e.type !== 'turret') e.vy += GRAVITY * T;
+  e._px = e.x;
 
   switch (e.type) {
     case 'turret': {
@@ -2996,9 +3087,29 @@ function update() {
     p.jumpHeld = keys.jump;
 
     const fallV = p.vy, prevBottom = p.y + p.h;
+    const prevX = p.x;
     p.x += p.vx;
     p.y += p.vy;
     p.x = clamp(p.x, cam, stage.len - p.w);
+    // 경로 차단물: 비행 탈것은 넘어가고, 지상은 우회해야 한다
+    if (!isAirVeh(p.mode)) {
+      for (const bar of barriers) {
+        if (p.x + p.w > bar.x && p.x < bar.x + bar.w &&
+            p.y + p.h > bar.y && p.y < bar.y + bar.h) {
+          if (prevX + p.w <= bar.x + 2) p.x = bar.x - p.w;
+          else if (prevX >= bar.x + bar.w - 2) p.x = bar.x + bar.w;
+          else p.x = prevX;
+          p.vx = 0;
+          if (!p.blockHint || p.blockHint <= 0) {
+            p.blockHint = 90;
+            addFloat(p.x + p.w / 2, p.y - 22,
+              bar.kind === 'duct' ? '↓ 엎드려 통과' : bar.kind === 'wall' ? '위로 우회!' : '점프!',
+              '#ffcf3f');
+          }
+          break;
+        }
+      }
+    }
     p.onGround = false;
     p.standPl = null;
     if (p.vy >= 0 && !isAirVeh(p.mode)) {
@@ -3034,6 +3145,7 @@ function update() {
 
   // ── 타이머 갱신 ─────────────────────────────────────────────
   if (p.invuln > 0) p.invuln--;
+  if (p.blockHint > 0) p.blockHint--;
   if (p.vehCd > 0) p.vehCd--;
   if (p.fireCd > 0) p.fireCd--;
   if (p.nadeCd > 0) p.nadeCd--;
@@ -3209,7 +3321,7 @@ function update() {
   slashes = slashes.filter(s => s.life > 0);
 
   // ── 적 / 센트리 / 보스 ──────────────────────────────────────
-  enemies.forEach(e => { if (!e.dead) updateEnemy(e, T); });
+  enemies.forEach(e => { if (!e.dead) { updateEnemy(e, T); blockEnemy(e); } });
   enemies = enemies.filter(e => !e.dead && e.x > cam - 220);
   updateSentries();
   if (boss) updateBoss();
@@ -3286,6 +3398,7 @@ function draw() {
   drawHazards();
   drawPlatforms();
   drawLadders();
+  outlined(drawBarriers);
   outlined(drawCrates);
   pickups.forEach(pk => outlined(() => drawPickup(pk)));
   drawSentries();
@@ -3836,6 +3949,44 @@ function drawLadders() {
     for (let y = L.top + 4; y < L.bottom; y += 8) ctx.fillRect(L.x, y, 8, 2);
   });
 }
+// 경로 차단물 렌더 — 무엇을 해야 통과할 수 있는지 형태로 알려준다
+function drawBarriers() {
+  const pl = stage.pal;
+  barriers.forEach(bar => {
+    if (bar.x > cam + W + 60 || bar.x + bar.w < cam - 60) return;
+    if (bar.kind === 'duct') {
+      // 낮은 통로: 위쪽만 막힌 구조물 — 아래 빈틈으로 엎드려 통과
+      px(bar.x, bar.y, bar.w, bar.h, pl.plat);
+      px(bar.x, bar.y, bar.w, 4, pl.platTop);
+      px(bar.x, bar.y + bar.h - 3, bar.w, 3, 'rgba(0,0,0,.4)');
+      for (let i = bar.x + 8; i < bar.x + bar.w - 6; i += 18) px(i, bar.y + 8, 4, bar.h - 18, 'rgba(0,0,0,.22)');
+      // 통과 높이 안내 화살표
+      if (!SILH && tick % 40 < 24) {
+        px(bar.x + bar.w / 2 - 6, GROUND_Y - 15, 12, 3, '#ffcf3f');
+        px(bar.x + bar.w / 2 - 3, GROUND_Y - 12, 6, 3, '#ffcf3f');
+        px(bar.x + bar.w / 2 - 1, GROUND_Y - 9, 2, 3, '#ffcf3f');
+      }
+    } else if (bar.kind === 'wall') {
+      // 완전 차단벽: 위로 우회
+      px(bar.x - 2, bar.y - 4, bar.w + 4, 6, '#2a2a30');
+      px(bar.x, bar.y, bar.w, bar.h, pl.plat);
+      px(bar.x, bar.y, bar.w, 4, pl.platTop);
+      for (let y2 = bar.y + 10; y2 < bar.y + bar.h; y2 += 14) px(bar.x + 3, y2, bar.w - 6, 3, 'rgba(0,0,0,.3)');
+      if (!SILH) {
+        // 경고 사선
+        for (let y2 = bar.y + 4; y2 < bar.y + bar.h - 4; y2 += 10)
+          px(bar.x + 3, y2, bar.w - 6, 4, (Math.floor(y2 / 10) % 2) ? '#ffcf3f' : '#1a1408');
+      }
+    } else {
+      // 기둥: 점프로 넘는다
+      px(bar.x, bar.y, bar.w, bar.h, pl.plat);
+      px(bar.x, bar.y, bar.w, 4, pl.platTop);
+      px(bar.x - 3, bar.y - 3, bar.w + 6, 4, '#3a3a42');
+      if (!SILH) px(bar.x + 3, bar.y + 8, bar.w - 6, 3, '#ffcf3f');
+    }
+  });
+}
+
 function drawCrates() {
   crates.forEach(c => {
     if (c.dead || c.x > cam + W + 20 || c.x < cam - 20) return;
