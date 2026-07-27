@@ -1110,6 +1110,10 @@ if (!('ontouchstart' in window)) document.body.classList.add('no-touch');
 // ═══════════════════════════════════════════════════════════════
 let state = 'menu';          // menu | play | shop | pause | intermission | win | over
 let cam = 0, shake = 0, tick = 0, flashScreen = 0;
+// ── 구역(아레나) 전투 ──────────────────────────────────────────
+// 스테이지를 여러 화면으로 쪼갠다. 구역에 들어서면 카메라가 잠기고
+// 전방이 봉쇄되며, 그 화면의 적을 전멸시켜야 다음으로 넘어갈 수 있다.
+let arenas = [], arena = null, arenaClearT = 0, arenaBanner = 0;
 let bullets = [], ebullets = [], enemies = [], particles = [], pickups = [];
 let nades = [], floaters = [], platforms = [], strikes = [], eshards = [], barriers = [];
 let slashes = [], ladders = [], crates = [], hazards = [], sentries = [];
@@ -1343,12 +1347,14 @@ function buildLevel() {
     const bx = Math.round(stage.len * rc.r);
     if (rc.kind === 'wall') {
       // 지상 완전 차단 — 반드시 위로 우회해야 한다
-      barriers.push({ x: bx, y: GROUND_Y - 74, w: 20, h: 74, kind: 'wall' });
-      // 우회용 발판 계단
-      platforms.push({ x: bx - 96, y: GROUND_Y - 34, w: 58, tier: 1 });
-      platforms.push({ x: bx - 26, y: GROUND_Y - 74, w: 76, tier: 2, floor: true });
-      platforms.push({ x: bx + 62, y: GROUND_Y - 40, w: 58, tier: 1 });
-      pickups.push({ x: bx + 2, y: GROUND_Y - 92, type: 'coin', val: 25 });
+      barriers.push({ x: bx, y: GROUND_Y - 66, w: 20, h: 66, kind: 'wall' });
+      // 우회 계단 — 낮은 단부터 시작해 확실히 오를 수 있게
+      platforms.push({ x: bx - 150, y: GROUND_Y - 24, w: 64, tier: 1 });
+      platforms.push({ x: bx - 78, y: GROUND_Y - 46, w: 64, tier: 1 });
+      platforms.push({ x: bx - 30, y: GROUND_Y - 66, w: 92, tier: 2, floor: true });
+      platforms.push({ x: bx + 70, y: GROUND_Y - 42, w: 70, tier: 1 });
+      platforms.push({ x: bx + 148, y: GROUND_Y - 22, w: 64, tier: 1 });
+      pickups.push({ x: bx + 2, y: GROUND_Y - 84, type: 'coin', val: 25 });
     } else if (rc.kind === 'duct') {
       // 천장이 낮은 통로 — 엎드려야만 지나갈 수 있다
       barriers.push({ x: bx, y: GROUND_Y - 62, w: 108, h: 42, kind: 'duct' });
@@ -1455,6 +1461,8 @@ function initWeather() {
 function startStage(i) {
   stageIndex = i; stage = STAGES[i];
   cam = 0; stageTime = 0; spawnTimer = 70;
+  arena = null; arenaClearT = 0; arenaBanner = 0;
+  buildArenas();
   boss = null; stageBanner = 130; intermission = 0; bossAnnounced = false; shopNext = -1;
   bullets = []; ebullets = []; enemies = []; particles = []; nades = [];
   floaters = []; strikes = []; slashes = []; eshards = []; sentries = []; evolc = []; beams = [];
@@ -1494,8 +1502,117 @@ function pickRosterType() {
 function currentIntensity() {
   return stage.intensity * (1 + clamp(cam / (stage.len - W), 0, 1) * 0.7) * (1 + (stageTime / 3600) * 0.3);
 }
+// 스테이지를 3~5개 구역으로 분할한다. 뒤로 갈수록 웨이브와 물량이 늘어난다.
+function buildArenas() {
+  arenas = [];
+  const si = stageIndex;
+  const n = 3 + Math.min(2, Math.floor(si / 2));          // 3~5 구역
+  for (let i = 0; i < n; i++) {
+    const r = 0.16 + (i * 0.66) / Math.max(1, n - 1);      // 진행률 16%~82%
+    arenas.push({
+      x: Math.round(stage.len * r),
+      waves: 1 + Math.floor((i + si) / 4),                  // 후반일수록 웨이브 증가 (최대 3)
+      per: 3 + Math.floor(si * 0.34) + Math.floor(i * 0.7), // 웨이브당 마릿수
+      done: false, idx: i + 1, total: n,
+    });
+  }
+}
+
+// 구역 진입 판정
+function checkArenaEnter() {
+  if (arena || boss) return;
+  const pcx = player.x + player.w / 2;
+  for (const a of arenas) {
+    if (!a.done && pcx > a.x) {
+      arena = a;
+      a.wave = 0;
+      a.lockCam = clamp(cam, 0, stage.len - W);
+      a.foes = [];
+      spawnArenaWave();
+      arenaBanner = 90;
+      S.alert();
+      addShake(4);
+      break;
+    }
+  }
+}
+
+function spawnArenaWave() {
+  const a = arena;
+  a.wave++;
+  const I = currentIntensity();
+  const left = a.lockCam, right = a.lockCam + W;
+  for (let k = 0; k < a.per; k++) {
+    const type = stage.roster[Math.floor(Math.random() * stage.roster.length)];
+    const c = ECFG[type];
+    const elite = type !== 'turret' && type !== 'apc' && Math.random() < (0.08 + stageIndex * 0.03);
+    const y = c.fly ? GROUND_Y - (58 + rnd(0, 30)) : GROUND_Y - c.h;
+    // 화면 좌우에서 번갈아 진입 (고정형은 화면 안에 직접 배치)
+    const stationary = (type === 'turret' || type === 'mortar');
+    const fromRight = k % 4 !== 0;
+    const ex = stationary
+      ? left + 90 + ((k * 71) % Math.max(60, W - 190))
+      : (fromRight ? right + 16 + k * 26 : left - 30 - k * 22);
+    const e = mkEnemy(ex, y, type, I, elite);
+    e.arenaLock = true;
+    a.foes.push(e);
+    enemies.push(e);
+  }
+}
+
+// 구역 갱신 — 전멸 확인 및 해제
+function updateArena() {
+  if (!arena) { if (arenaClearT > 0) arenaClearT--; return; }
+  const a = arena;
+  a.t = (a.t || 0) + 1;
+  // 구역 밖으로 벗어나지 못하게 (닿을 수 없는 곳으로 도망가면 깰 수 없다)
+  a.foes.forEach(e => { e.x = clamp(e.x, a.lockCam - 24, a.lockCam + W + 24); });
+
+  // ── 교착 방지 ────────────────────────────────────────────────
+  // 지형 때문에 서로 닿지 못하는 상황(고지대 등)에서 무한정 묶이지 않도록,
+  // 시간이 지나면 남은 적이 플레이어 쪽으로 밀려온다.
+  if (a.t > 1500) {
+    const pcx3 = player.x + player.w / 2;
+    a.foes.forEach(e => {
+      const dx = pcx3 - (e.x + e.w / 2);
+      if (Math.abs(dx) > 36) e.x += Math.sign(dx) * 0.75;
+      // 높이 차가 크면 서서히 같은 높이로 (공중 적 포함)
+      const dy = player.y - e.y;
+      if (Math.abs(dy) > 30) { e.y += Math.sign(dy) * 0.5; e.vy = 0; }
+    });
+    if (a.t % 150 === 0) addFloat(player.x, player.y - 34, '적이 몰려온다!', '#ff6a3c');
+  }
+  // 최후 안전장치: 그래도 정리되지 않으면 구역을 강제로 종료한다
+  if (a.t > 3300) {
+    a.foes.forEach(e => { if (!e.dead) hurtEnemy(e, 99999); });
+  }
+  // 죽었거나 어떤 이유로든 월드에서 사라진 적은 처치로 간주
+  a.foes = a.foes.filter(e => !e.dead && enemies.indexOf(e) >= 0);
+  if (a.foes.length === 0) {
+    if (a.wave < a.waves) {
+      spawnArenaWave();
+      arenaBanner = 60;
+      S.alert();
+    } else {
+      a.done = true;
+      const cx2 = a.lockCam + W / 2;
+      arena = null;
+      arenaClearT = 150;
+      S.fanfare();
+      addFloat(player.x, player.y - 40, '구역 제압!', '#5ad15a');
+      addScore(120 * (stageIndex + 1));
+      flashScreen = Math.max(flashScreen, 4);
+      // 보상: 회복 + 코인 다발 (+ 후반 구역엔 수류탄)
+      pickups.push({ x: cx2 - 40, y: GROUND_Y - 18, type: 'hp' });
+      if (a.idx >= 2) pickups.push({ x: cx2 + 24, y: GROUND_Y - 18, type: 'nade' });
+      for (let c4 = 0; c4 < 6; c4++)
+        pickups.push({ x: cx2 - 60 + c4 * 24, y: GROUND_Y - 44, type: 'coin', val: 25 });
+    }
+  }
+}
+
 function runSpawner() {
-  if (boss) return;
+  if (boss || arena) return;
   if (cam >= stage.len - W - 40) return;
   spawnTimer -= ts();
   if (spawnTimer > 0) return;
@@ -3090,7 +3207,8 @@ function update() {
     const prevX = p.x;
     p.x += p.vx;
     p.y += p.vy;
-    p.x = clamp(p.x, cam, stage.len - p.w);
+    if (arena) p.x = clamp(p.x, cam + 4, cam + W - p.w - 6);
+    else p.x = clamp(p.x, cam, stage.len - p.w);
     // 경로 차단물: 비행 탈것은 넘어가고, 지상은 우회해야 한다
     if (!isAirVeh(p.mode)) {
       for (const bar of barriers) {
@@ -3141,7 +3259,12 @@ function update() {
   }
 
   // 카메라: 전진만 허용
-  cam = clamp(Math.max(cam, clamp(p.x - 150, cam, stage.len - W)), 0, stage.len - W);
+  if (arena) {
+    // 구역 전투 중: 카메라 고정
+    cam = arena.lockCam;
+  } else {
+    cam = clamp(Math.max(cam, clamp(p.x - 150, cam, stage.len - W)), 0, stage.len - W);
+  }
 
   // ── 타이머 갱신 ─────────────────────────────────────────────
   if (p.invuln > 0) p.invuln--;
@@ -3196,6 +3319,8 @@ function update() {
   // ── 상점 진입 트리거 ────────────────────────────────────────
 
   // ── 스폰 / 중간보스 / 보스 ──────────────────────────────────
+  checkArenaEnter();
+  updateArena();
   runSpawner();
   if (!boss && !st.midDone && cam + W > stage.apcX) {
     st.midDone = true;
@@ -3203,7 +3328,7 @@ function update() {
     addFloat(cam + W - 90, 110, '!! ARMORED APC !!', '#ff5a3c');
     S.alert();
   }
-  if (!boss && cam >= stage.len - W - 5) {
+  if (!boss && !arena && cam >= stage.len - W - 5) {
     spawnBoss();
     if (!bossAnnounced) { bossAnnounced = true; S.alert(); }
   }
@@ -3322,7 +3447,7 @@ function update() {
 
   // ── 적 / 센트리 / 보스 ──────────────────────────────────────
   enemies.forEach(e => { if (!e.dead) { updateEnemy(e, T); blockEnemy(e); } });
-  enemies = enemies.filter(e => !e.dead && e.x > cam - 220);
+  enemies = enemies.filter(e => !e.dead && (e.arenaLock || e.x > cam - 220));
   updateSentries();
   if (boss) updateBoss();
 
@@ -3546,6 +3671,7 @@ function draw() {
 
   ctx.restore();
 
+  drawArenaWalls();
   drawWeather();
   drawForeground();
 
@@ -5863,6 +5989,8 @@ function drawHUD() {
     ctx.textAlign = 'left';
   }
 
+  drawArenaHUD();
+
   // ── 보스 등장 연출 ─────────────────────────────────────────
   if (bossIntro > 0 && boss) drawBossIntro();
 
@@ -5975,6 +6103,135 @@ function drawBossIntro() {
   if (t < 20) {
     ctx.fillStyle = 'rgba(255,255,255,' + (0.16 * (1 - t / 20)) + ')';
     for (let y = (tick * 6) % 8; y < H; y += 8) ctx.fillRect(0, y, W, 2);
+  }
+}
+
+// 구역 봉쇄 장벽 — 좌우가 에너지 벽으로 막힌다
+function drawArenaWalls() {
+  if (!arena) return;
+  const t = tick * 0.12;
+  [[cam + 2, 1], [cam + W - 6, -1]].forEach(([wx, dir]) => {
+    const g = ctx.createLinearGradient(wx - cam, 0, wx - cam + dir * 26, 0);
+    g.addColorStop(0, 'rgba(255,90,60,.55)');
+    g.addColorStop(1, 'rgba(255,90,60,0)');
+    ctx.save();
+    ctx.translate(cam, 0);
+    ctx.fillStyle = g;
+    ctx.fillRect(wx - cam, 0, dir * 26, GROUND_Y);
+    // 흐르는 에너지 라인
+    ctx.fillStyle = 'rgba(255,190,120,.75)';
+    for (let y = (t * 22) % 18 - 18; y < GROUND_Y; y += 18)
+      ctx.fillRect(wx - cam, y, dir * 4, 9);
+    ctx.fillStyle = '#ffd8b0';
+    ctx.fillRect(wx - cam, 0, dir * 2, GROUND_Y);
+    ctx.restore();
+  });
+}
+
+// 구역 전투 HUD — 남은 적 수 / 웨이브 / 클리어 안내
+function drawArenaHUD() {
+  if (arena) {
+    const a = arena;
+    ctx.textAlign = 'center';
+    // 상단 배지
+    ctx.font = '6px "Press Start 2P", monospace';
+    const label = 'AREA ' + a.idx + '/' + a.total + '   WAVE ' + a.wave + '/' + a.waves;
+    const tw = ctx.measureText(label).width + 16;
+    ctx.fillStyle = 'rgba(12,10,6,.85)';
+    ctx.fillRect(W / 2 - tw / 2, 64, tw, 14);
+    ctx.strokeStyle = '#e8412c'; ctx.lineWidth = 1;
+    ctx.strokeRect(W / 2 - tw / 2 + 0.5, 64.5, tw - 1, 13);
+    ctx.fillStyle = '#ffcf3f';
+    ctx.fillText(label, W / 2, 74);
+    // 남은 적
+    const left = a.foes.length;
+    ctx.font = '7px "Press Start 2P", monospace';
+    ctx.fillStyle = '#e8412c';
+    ctx.fillText('적 ' + left + ' 남음', W / 2, 90);
+    // 남은 적 아이콘 바
+    const bw2 = Math.min(140, left * 9);
+    for (let i = 0; i < Math.min(left, 15); i++)
+      px(W / 2 - bw2 / 2 + i * 9, 94, 6, 5, i % 2 ? '#c02a20' : '#e8412c');
+    ctx.textAlign = 'left';
+
+    // 화면 밖/뒤쪽에 남은 적 방향 표시 — 어디를 봐야 하는지 알려준다
+    const pcx2 = player.x + player.w / 2;
+    let nLeft = 0, nRight = 0;
+    a.foes.forEach(e => {
+      const ecx2 = e.x + e.w / 2;
+      if (ecx2 < pcx2 - 90) nLeft++;
+      else if (ecx2 > pcx2 + 90) nRight++;
+    });
+    const blink = tick % 34 < 22;
+    if (nLeft > 0 && blink) {
+      const ay2 = H / 2 + 10;
+      ctx.fillStyle = '#ff6a3c';
+      ctx.beginPath();
+      ctx.moveTo(14, ay2); ctx.lineTo(28, ay2 - 9); ctx.lineTo(28, ay2 + 9);
+      ctx.closePath(); ctx.fill();
+      ctx.font = '6px "Press Start 2P", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('x' + nLeft, 32, ay2 + 3);
+    }
+    if (nRight > 0 && blink) {
+      const ay2 = H / 2 + 10;
+      ctx.fillStyle = '#ff6a3c';
+      ctx.beginPath();
+      ctx.moveTo(W - 14, ay2); ctx.lineTo(W - 28, ay2 - 9); ctx.lineTo(W - 28, ay2 + 9);
+      ctx.closePath(); ctx.fill();
+      ctx.font = '6px "Press Start 2P", monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('x' + nRight, W - 32, ay2 + 3);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  // 구역 진입 배너
+  if (arenaBanner > 0) {
+    arenaBanner--;
+    const a2 = clamp(arenaBanner / 24, 0, 1);
+    ctx.globalAlpha = a2;
+    ctx.textAlign = 'center';
+    ctx.font = '13px "Press Start 2P", monospace';
+    ctx.fillStyle = '#07060a'; ctx.fillText('적 출현!', W / 2 + 2, H / 2 - 24);
+    ctx.fillStyle = '#e8412c'; ctx.fillText('적 출현!', W / 2, H / 2 - 26);
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = '#cdbf95';
+    ctx.fillText('전멸시켜야 전진할 수 있다', W / 2, H / 2 - 10);
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+  }
+
+  // 구역 제압 → 전진 안내
+  if (arenaClearT > 0) {
+    const k = arenaClearT;
+    ctx.textAlign = 'center';
+    if (k > 96) {
+      const a3 = clamp((150 - k) / 12, 0, 1);
+      ctx.globalAlpha = a3;
+      ctx.font = '14px "Press Start 2P", monospace';
+      ctx.fillStyle = '#07060a'; ctx.fillText('구역 제압!', W / 2 + 2, H / 2 - 22);
+      ctx.fillStyle = '#5ad15a'; ctx.fillText('구역 제압!', W / 2, H / 2 - 24);
+      ctx.globalAlpha = 1;
+    }
+    // 오른쪽으로 진행하라는 화살표 (깜빡이며 흐름)
+    if (tick % 30 < 20) {
+      const ax = W - 54 + Math.sin(tick * 0.18) * 5;
+      const ay = H / 2 - 6;
+      ctx.fillStyle = '#ffd23f';
+      for (let i = 0; i < 3; i++) {
+        const ox = i * 13, al = 1 - i * 0.28;
+        ctx.globalAlpha = al;
+        ctx.beginPath();
+        ctx.moveTo(ax + ox, ay - 9); ctx.lineTo(ax + ox + 10, ay); ctx.lineTo(ax + ox, ay + 9);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.font = '6px "Press Start 2P", monospace';
+      ctx.fillStyle = '#ffd23f';
+      ctx.fillText('▶ 전진', W - 40, ay + 26);
+    }
+    ctx.textAlign = 'left';
   }
 }
 
