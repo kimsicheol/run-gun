@@ -213,8 +213,9 @@
     </div>
     <div id="menuInfo"></div>
     <div class="hint">←→ 이동 · ↑ 사다리/위 조준 · <b style="color:#ffcf3f;">↓ 엎드리기(낮은 적 조준)</b> · SPACE 점프 · J/Z 사격 · K/X 수류탄<br>
-      L/C 필살기 <b style="color:#9fe8ff;">(탈것 탑승 중엔 탈것 특수기)</b> · Q/E 무기교체 · P/ESC 일시정지 · N 음소거<br>
-      군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · 상자를 부수고 · POW를 구출하고 · <b style="color:#ffcf3f;">스테이지 클리어 후 보급</b>에서 강해져라</div>
+      L/C 필살기 <b style="color:#9fe8ff;">(탈것 탑승 중엔 탈것 특수기 · ↓+점프로 하차)</b> · Q/E 무기교체 · P/ESC 일시정지 · N 음소거<br>
+      군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · 상자를 부수고 · POW를 구출하고 · <b style="color:#ffcf3f;">스테이지 클리어 후 보급</b>에서 강해져라<br>
+      <b style="color:#ffd23f;">★ 3스테이지 클리어마다 보너스 게임</b> — 사막 질주(DUNE DASH)와 운석 피하기(METEOR STORM)로 군자금을 벌어라</div>
   </div>
 
   <!-- ═══ 상점 ═══ -->
@@ -1154,7 +1155,7 @@ function makePlayer(ci) {
     money: 0, shopLock: false, capMul: 1, hpRegen: 0,
     perks: {}, spdBonus: 0, ultGainMul: 1, critBonus: 0, regenMul: 1,
     anim: { n: 'idle', f: 0 }, landT: 0, deadAnim: false, crouch: false, vehCd: 0, vskin: null,
-    coyote: 0, jumpBuf: 0, camLead: 0, blockHint: 0,
+    coyote: 0, jumpBuf: 0, camLead: 0, blockHint: 0, ultMsgCd: 0,
   };
 }
 function wMax(wp) { return Math.round((WEAPONS[wp].max || 0) * (player ? player.capMul : 1)); }
@@ -1336,30 +1337,33 @@ function buildLevel() {
   // 스테이지마다 배치와 조합이 다르다
   // ═══════════════════════════════════════════════════════════
   const routeCfg = {
-    jungle:  [{ r: 0.44, kind: 'duct' }],
-    desert:  [{ r: 0.38, kind: 'wall' }, { r: 0.72, kind: 'pylon' }],
-    snow:    [{ r: 0.34, kind: 'pylon' }, { r: 0.62, kind: 'duct' }],
-    night:   [{ r: 0.30, kind: 'wall' }, { r: 0.58, kind: 'duct' }, { r: 0.80, kind: 'pylon' }],
-    volcano: [{ r: 0.36, kind: 'duct' }, { r: 0.66, kind: 'wall' }],
+    jungle:  [{ r: 0.44, kind: 'pylon' }],
+    desert:  [{ r: 0.38, kind: 'pylon' }, { r: 0.72, kind: 'pylon' }],
+    snow:    [{ r: 0.34, kind: 'pylon' }, { r: 0.62, kind: 'pylon' }],
+    night:   [{ r: 0.30, kind: 'pylon' }, { r: 0.58, kind: 'pylon' }, { r: 0.80, kind: 'pylon' }],
+    volcano: [{ r: 0.36, kind: 'pylon' }, { r: 0.66, kind: 'pylon' }],
     sky:     [{ r: 0.40, kind: 'pylon' }, { r: 0.70, kind: 'pylon' }],
-  }[stage.theme] || [{ r: 0.45, kind: 'wall' }];
+  }[stage.theme] || [{ r: 0.45, kind: 'pylon' }];
 
   routeCfg.forEach(rc => {
     const bx = Math.round(stage.len * rc.r);
     if (rc.kind === 'wall') {
       // 지상 완전 차단 — 반드시 위로 우회해야 한다
-      barriers.push({ x: bx, y: GROUND_Y - 66, w: 20, h: 66, kind: 'wall' });
-      // 우회 계단 — 낮은 단부터 시작해 확실히 오를 수 있게
-      platforms.push({ x: bx - 150, y: GROUND_Y - 24, w: 64, tier: 1 });
-      platforms.push({ x: bx - 78, y: GROUND_Y - 46, w: 64, tier: 1 });
-      platforms.push({ x: bx - 30, y: GROUND_Y - 66, w: 92, tier: 2, floor: true });
-      platforms.push({ x: bx + 70, y: GROUND_Y - 42, w: 70, tier: 1 });
-      platforms.push({ x: bx + 148, y: GROUND_Y - 22, w: 64, tier: 1 });
-      pickups.push({ x: bx + 2, y: GROUND_Y - 84, type: 'coin', val: 25 });
+      const wallH = 60;
+      barriers.push({ x: bx, y: GROUND_Y - wallH, w: 20, h: wallH, kind: 'wall' });
+      // 넘어가는 통로: 넉넉한 폭의 상단 발판 + 양쪽 사다리
+      // (계단만 두면 2단 점프가 있는 캐릭터만 안정적으로 넘는 문제가 있었다)
+      platforms.push({ x: bx - 44, y: GROUND_Y - wallH, w: 118, tier: 2, floor: true });
+      ladders.push({ x: bx - 38, top: GROUND_Y - wallH, bottom: GROUND_Y });
+      ladders.push({ x: bx + 62, top: GROUND_Y - wallH, bottom: GROUND_Y });
+      // 보조 계단(점프로 넘고 싶은 사람용)
+      platforms.push({ x: bx - 128, y: GROUND_Y - 26, w: 62, tier: 1 });
+      platforms.push({ x: bx + 96, y: GROUND_Y - 26, w: 62, tier: 1 });
+      pickups.push({ x: bx + 2, y: GROUND_Y - wallH - 18, type: 'coin', val: 25 });
     } else if (rc.kind === 'duct') {
       // 천장이 낮은 통로 — 엎드려야만 지나갈 수 있다
-      barriers.push({ x: bx, y: GROUND_Y - 62, w: 108, h: 42, kind: 'duct' });
-      platforms.push({ x: bx, y: GROUND_Y - 62, w: 108, tier: 2, floor: true });
+      barriers.push({ x: bx, y: GROUND_Y - 64, w: 108, h: 34, kind: 'duct' });   // 아래 30px 통로
+      platforms.push({ x: bx, y: GROUND_Y - 64, w: 108, tier: 2, floor: true });
       // 아래 경로(포복): 빠르지만 좁다 — 회복 보상
       pickups.push({ x: bx + 42, y: GROUND_Y - 18, type: 'hp' });
       // 위 경로(등반): 올라가야 하지만 코인이 많다 — 진입용 발판 포함
@@ -1489,6 +1493,333 @@ function startStage(i) {
   state = 'play';
   curMusic = i;
   S.startMusic(i);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 보너스 스테이지 — 3스테이지 클리어마다 미니게임 1판 (본편과 다른 룰)
+//   race  : DUNE DASH    — 제한시간 내 결승선까지 질주 (허들·코인 아치)
+//   dodge : METEOR STORM — 쏟아지는 운석을 피하며 생존 (낙하 코인 획득)
+// 사망·피해 없음: 실수하면 코인만 차감된다. 끝나면 보급(상점)으로 이동.
+// ═══════════════════════════════════════════════════════════════
+let bonus = null;
+let bonusPlayed = 0;   // 이번 런에서 소화한 보너스 수 (경주/피하기 교대)
+
+function startBonus() {
+  const kind = bonusPlayed % 2 === 0 ? 'race' : 'dodge';
+  bonusPlayed++;
+  const p = player;
+  if (p.mode !== 'foot') exitMode(false);
+  bullets = []; ebullets = []; enemies = []; particles = []; nades = [];
+  floaters = []; strikes = []; slashes = []; eshards = []; sentries = []; evolc = []; beams = [];
+  corpses = []; boss = null; arena = null; shake = 0; combo = 0; comboT = 0;
+  bonus = {
+    kind, t: 0, dur: kind === 'race' ? 1560 : 1440, endT: 0, earned: 0,
+    len: kind === 'race' ? 2800 : W, obstacles: [], coins: [], warns: [], meteors: [],
+    spawnCd: 60, streak: 0, done: false, banner: 150, msg: '',
+    title: kind === 'race' ? 'DUNE DASH' : 'METEOR STORM',
+    sub: kind === 'race' ? '제한시간 내 결승선 돌파! 허들은 점프!' : '운석을 피해 생존! 낙하 코인 획득!',
+  };
+  p.x = 30; p.y = GROUND_Y - p.h; p.vx = 0; p.vy = 0; p.onGround = true; p.face = 1;
+  p.crouch = false; p.climbing = false; p.fly = 0; p.rage = 0; p.ultMode = null; p.ultT = 0;
+  p.deadAnim = false; p.hurtT = 0; p.invuln = 0; p.coyote = 0; p.jumpBuf = 0;
+  cam = 0;
+  if (kind === 'race') {
+    // 허들 + 그 위 코인 아치
+    for (let x = 430; x < bonus.len - 320; x += 200 + Math.floor(rnd(0, 90))) {
+      const hh = Math.random() < 0.35 ? 34 : 22;
+      bonus.obstacles.push({ x, y: GROUND_Y - hh, w: 12, h: hh, broken: false });
+      for (let i = -2; i <= 2; i++)
+        bonus.coins.push({ x: x + 6 + i * 15, y: GROUND_Y - hh - 22 - Math.round(Math.cos(i * 0.62) * 12), taken: false });
+    }
+    // 직선 구간 바닥 코인
+    for (let x = 260; x < bonus.len - 200; x += 130)
+      bonus.coins.push({ x, y: GROUND_Y - 14, taken: false });
+  }
+  state = 'bonus';
+  curMusic = (stageIndex + 1) % 6;
+  S.alert();
+  S.startMusic(curMusic);
+}
+
+function finishBonus(msg, reward) {
+  const b = bonus;
+  b.done = true; b.endT = 170; b.msg = msg;
+  b.earned += reward;
+  addMoney(reward);
+  addFloat(player.x + player.w / 2, player.y - 30, '+$' + reward, '#ffd23f');
+  flashScreen = Math.max(flashScreen, 5);
+  S.fanfare();
+}
+
+function updateBonus() {
+  const b = bonus, p = player;
+  if (!b) { state = 'menu'; return; }
+  b.t++;
+  if (b.banner > 0) b.banner--;
+
+  // 공통 이펙트 갱신 (본편 update()의 해당 구간과 동일한 처리)
+  updateParticles(); updateFx();
+  floaters.forEach(f => { f.y -= 0.5; f.life--; });
+  floaters = floaters.filter(f => f.life > 0);
+  if (shake > 0) { shake *= 0.85; if (shake < 0.3) shake = 0; }
+  if (p.invuln > 0) p.invuln--;
+  if (p.hurtT > 0) p.hurtT--;
+
+  // 종료 연출 → 보급으로
+  if (b.done) {
+    b.endT--;
+    if (b.endT <= 0) { bonus = null; openShop(stageIndex + 1); }
+    return;
+  }
+
+  // ── 이동/점프 (무기·탈것 없는 경량 물리) ─────────────────────
+  let mv = 0;
+  if (keys.left) mv--;
+  if (keys.right) mv++;
+  const topSpd = 1.8 * CHARS[p.char].spd * (b.kind === 'race' ? 1.3 : 1.12);
+  if (mv !== 0) { p.face = mv; p.vx = mv * topSpd; p.walkFrame += 0.32; }
+  else p.vx *= 0.6;
+  if (p.onGround) p.coyote = 7; else if (p.coyote > 0) p.coyote--;
+  if (keys.jump && !p.jumpHeld && (p.onGround || p.coyote > 0)) {
+    p.vy = -8.4; p.onGround = false; p.coyote = 0; S.jump();
+  }
+  p.jumpHeld = keys.jump;
+  p.vy += GRAVITY;
+  p.x += p.vx; p.y += p.vy;
+  p.onGround = false;
+  if (p.y + p.h >= GROUND_Y) { p.y = GROUND_Y - p.h; p.vy = 0; p.onGround = true; }
+  p.x = clamp(p.x, b.kind === 'race' ? cam + 2 : 4,
+    b.kind === 'race' ? b.len - p.w - 4 : W - p.w - 4);
+
+  if (b.kind === 'race') {
+    cam += (clamp(p.x - W * 0.35, 0, b.len - W) - cam) * 0.15;
+    // 허들: 부딪히면 부서지며 코인 차감 + 넉백
+    b.obstacles.forEach(o => {
+      if (o.broken) return;
+      if (hitBox(p.x, p.y, p.w, p.h, o.x, o.y, o.w, o.h)) {
+        o.broken = true;
+        p.x -= p.face * 10;
+        p.vx = 0; p.hurtT = 10;
+        const pen = Math.min(15, p.money);
+        if (pen > 0) { p.money -= pen; addFloat(p.x + p.w / 2, p.y - 18, '-$' + pen, '#ff6a3c'); }
+        addShake(4); S.impact();
+        for (let i = 0; i < 6; i++) fx.debris(o.x + 6, o.y + 6, rnd(-2, 2), rnd(-3, -0.5), '#a07a40');
+      }
+    });
+    // 코인
+    b.coins.forEach(c2 => {
+      if (c2.taken) return;
+      if (Math.abs(p.x + p.w / 2 - c2.x) < 12 && Math.abs(p.y + p.h / 2 - c2.y) < 16) {
+        c2.taken = true; b.earned += 12; addMoney(12);
+        addFloat(c2.x, c2.y - 8, '+$12', '#ffd23f'); S.pickup();
+      }
+    });
+    // 결승선
+    if (p.x + p.w >= b.len - 60) {
+      const timeBonus = Math.round(Math.max(0, b.dur - b.t) / 60) * 18;
+      finishBonus('FINISH! 시간 보너스 +$' + timeBonus, 160 + timeBonus);
+      return;
+    }
+    if (b.t >= b.dur) {
+      finishBonus('시간 종료!', Math.round(100 * clamp(p.x / b.len, 0, 1)));
+      return;
+    }
+  } else {
+    // ── 운석 피하기 ────────────────────────────────────────────
+    cam = 0;
+    b.spawnCd--;
+    if (b.spawnCd <= 0) {
+      b.spawnCd = Math.max(22, 52 - Math.floor(b.t / 90) * 4);   // 갈수록 빨라진다
+      b.warns.push({ x: rnd(16, W - 16), t: 40 });
+      // 가끔 플레이어 머리 위 조준 낙하
+      if (Math.random() < 0.35) b.warns.push({ x: clamp(p.x + p.w / 2 + rnd(-30, 30), 12, W - 12), t: 46 });
+    }
+    b.warns.forEach(w2 => {
+      w2.t--;
+      if (w2.t <= 0) b.meteors.push({ x: w2.x, y: -12, vy: 2.4 + rnd(0, 1.4) + Math.min(2, b.t / 700), r: 4 + rnd(0, 3) });
+    });
+    b.warns = b.warns.filter(w2 => w2.t > 0);
+    // 낙하 코인
+    if (b.t % 130 === 0) b.coins.push({ x: rnd(20, W - 20), y: -10, vy: 1.1, taken: false });
+    b.coins.forEach(c2 => {
+      if (c2.taken) return;
+      c2.y += c2.vy || 0;
+      if (c2.y > GROUND_Y - 8) { c2.y = GROUND_Y - 8; c2.vy = 0; }
+      if (Math.abs(p.x + p.w / 2 - c2.x) < 12 && Math.abs(p.y + p.h / 2 - c2.y) < 16) {
+        c2.taken = true; b.earned += 20; addMoney(20);
+        addFloat(c2.x, c2.y - 8, '+$20', '#ffd23f'); S.pickup();
+      }
+    });
+    // 운석 낙하/명중 판정
+    b.meteors.forEach(m => {
+      m.y += m.vy;
+      if (tick % 3 === 0)
+        particles.push({ k: 'streak', x: m.x + rnd(-1, 1), y: m.y - m.r, vx: rnd(-0.3, 0.3), vy: -m.vy * 0.4, life: 8, c: '#ffb03a', g: 0, r: 1.2 });
+      if (m.y + m.r >= GROUND_Y) {
+        m.dead = true;
+        fx.shock(m.x, GROUND_Y - 2, 16, '#ffb03a', 1.6);
+        for (let i = 0; i < 4; i++) fx.fire(m.x + rnd(-3, 3), GROUND_Y - 3, rnd(-1, 1), -rnd(0.5, 1.8), 3);
+        addShake(1); S.boom(false);
+      } else if (p.invuln <= 0 && hitBox(m.x - m.r, m.y - m.r, m.r * 2, m.r * 2, p.x, p.y, p.w, p.h)) {
+        m.dead = true;
+        p.invuln = 45; p.hurtT = 12; b.streak = 0;
+        const pen = Math.min(25, p.money);
+        if (pen > 0) { p.money -= pen; addFloat(p.x + p.w / 2, p.y - 18, '-$' + pen, '#ff6a3c'); }
+        addShake(6); S.impact();
+        fx.shock(m.x, m.y, 20, '#ff6a3c', 2);
+      }
+    });
+    b.meteors = b.meteors.filter(m => !m.dead && m.y < GROUND_Y + 20);
+    // 생존 보너스: 무피격 5초마다
+    b.streak++;
+    if (b.streak > 0 && b.streak % 300 === 0) {
+      b.earned += 30; addMoney(30);
+      addFloat(p.x + p.w / 2, p.y - 26, '생존 +$30', '#5ad15a'); S.pickup();
+    }
+    if (b.t >= b.dur) { finishBonus('생존 성공!', 120); return; }
+  }
+}
+
+function drawBonus() {
+  const b = bonus;
+  if (!b) return;
+  const race = b.kind === 'race';
+  // 하늘
+  const g = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+  if (race) { g.addColorStop(0, '#2a1626'); g.addColorStop(0.55, '#9c5536'); g.addColorStop(1, '#e8b56a'); }
+  else { g.addColorStop(0, '#070a1c'); g.addColorStop(0.6, '#141c3e'); g.addColorStop(1, '#2c2a52'); }
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  if (race) {
+    // 석양
+    ctx.fillStyle = '#ffe0a0';
+    ctx.beginPath(); ctx.arc(W * 0.78, 60, 26, 0, 7); ctx.fill();
+    // 원경 모래 언덕 (약한 패럴랙스)
+    ctx.fillStyle = '#6e4524';
+    for (let i = -1; i < 5; i++) {
+      const hx = i * 180 - Math.round(cam * 0.3) % 180;
+      ctx.beginPath();
+      ctx.moveTo(hx, GROUND_Y); ctx.lineTo(hx + 90, GROUND_Y - 46); ctx.lineTo(hx + 180, GROUND_Y);
+      ctx.closePath(); ctx.fill();
+    }
+  } else {
+    // 별하늘
+    ctx.fillStyle = '#cfd8ff';
+    for (let i = 0; i < 40; i++) {
+      ctx.globalAlpha = 0.3 + ((i * 37) % 60) / 100;
+      ctx.fillRect((i * 97) % W, (i * 61) % (GROUND_Y - 40), 1, 1);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.save();
+  const sx = shake ? rnd(-shake, shake) : 0;
+  const sy = shake ? rnd(-shake, shake) : 0;
+  ctx.translate(-Math.round(cam) + sx, sy);
+
+  // 지면
+  const gl = Math.floor(cam) - 20, gr2 = Math.floor(cam) + W + 20;
+  ctx.fillStyle = race ? '#d6ab5e' : '#3e3e4a';
+  ctx.fillRect(gl, GROUND_Y, gr2 - gl, H - GROUND_Y);
+  ctx.fillStyle = race ? '#a87e3e' : '#26262e';
+  ctx.fillRect(gl, GROUND_Y, gr2 - gl, 4);
+  ctx.fillStyle = race ? '#ecc986' : '#56565f';
+  for (let x = Math.floor(gl / 24) * 24; x < gr2; x += 24)
+    ctx.fillRect(x, GROUND_Y + 8 + (x % 48 === 0 ? 3 : 0), 6, 2);
+
+  if (race) {
+    // 허들
+    b.obstacles.forEach(o => {
+      if (o.broken) return;
+      px(o.x, o.y, o.w, o.h, '#8a652e');
+      px(o.x, o.y, o.w, 3, '#ffcf3f');
+      px(o.x + 2, o.y + 3, 2, o.h - 3, '#5e441e');
+    });
+    // 결승선: 체크무늬 기둥 + 깃발
+    const fin = b.len - 60;
+    for (let yy = 0; yy < 7; yy++)
+      for (let xx = 0; xx < 2; xx++)
+        px(fin + xx * 5, GROUND_Y - 70 + yy * 10, 5, 10, (xx + yy) % 2 ? '#111' : '#fff');
+    px(fin - 2, GROUND_Y - 74, 14, 4, '#e8412c');
+  } else {
+    // 경고 마커 + 운석
+    b.warns.forEach(w2 => {
+      ctx.globalAlpha = 0.35 + 0.4 * Math.abs(Math.sin(tick * 0.4));
+      px(w2.x - 5, GROUND_Y - 6, 10, 4, '#ff5a3c');
+      ctx.globalAlpha = 1;
+      px(w2.x - 1, 2, 2, 6, '#ff5a3c');
+    });
+    b.meteors.forEach(m => {
+      px(m.x - m.r, m.y - m.r, m.r * 2, m.r * 2, '#7a3a1e');
+      px(m.x - m.r + 1, m.y - m.r + 1, m.r * 2 - 2, m.r * 2 - 2, '#b0561e');
+      px(m.x - 1, m.y - m.r - 4, 2, 4, '#ffb03a');
+    });
+  }
+  // 코인
+  b.coins.forEach(c2 => {
+    if (c2.taken) return;
+    const bob = Math.sin(tick * 0.12 + c2.x * 0.05) * 1.5;
+    px(c2.x - 4, c2.y - 5 + bob, 8, 10, '#c8871e');
+    px(c2.x - 3, c2.y - 4 + bob, 6, 8, '#ffd23f');
+    px(c2.x - 1, c2.y - 2 + bob, 2, 4, '#fff0a0');
+  });
+
+  drawPlayer();
+  drawParticles();
+
+  // 플로팅 텍스트
+  ctx.font = '6px "Press Start 2P"';
+  ctx.textAlign = 'center';
+  floaters.forEach(f => {
+    ctx.globalAlpha = clamp(f.life / 30, 0, 1);
+    ctx.fillStyle = f.c;
+    ctx.fillText(f.txt, f.x, f.y);
+  });
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  if (flashScreen > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,' + (flashScreen / 12) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ── HUD: 타이틀 배너 / 타이머 바 / 소지금 ──
+  ctx.textAlign = 'center';
+  if (b.banner > 0) {
+    ctx.globalAlpha = clamp(b.banner / 40, 0, 1);
+    ctx.fillStyle = 'rgba(6,5,3,.55)';
+    ctx.fillRect(0, 86, W, 44);
+    ctx.font = '12px "Press Start 2P"';
+    ctx.fillStyle = '#ffd23f';
+    ctx.fillText('★ BONUS: ' + b.title + ' ★', W / 2, 106);
+    ctx.font = '6px "Press Start 2P"';
+    ctx.fillStyle = '#eaddb3';
+    ctx.fillText(b.sub, W / 2, 121);
+    ctx.globalAlpha = 1;
+  }
+  const ratio = clamp(1 - b.t / b.dur, 0, 1);
+  ctx.fillStyle = 'rgba(6,5,3,.6)';
+  ctx.fillRect(W / 2 - 82, 8, 164, 12);
+  ctx.fillStyle = ratio < 0.25 ? '#e8412c' : '#ffcf3f';
+  ctx.fillRect(W / 2 - 80, 10, Math.round(160 * ratio), 8);
+  ctx.font = '6px "Press Start 2P"';
+  ctx.fillStyle = '#ffe8a0';
+  ctx.fillText('BONUS ' + Math.ceil(Math.max(0, b.dur - b.t) / 60) + 's', W / 2, 30);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#ffd23f';
+  ctx.fillText('$' + player.money + '  (+' + b.earned + ')', W - 8, 16);
+  ctx.textAlign = 'center';
+  if (b.done) {
+    ctx.fillStyle = 'rgba(6,5,3,.6)';
+    ctx.fillRect(0, 100, W, 52);
+    ctx.font = '10px "Press Start 2P"';
+    ctx.fillStyle = '#5ad15a';
+    ctx.fillText(b.msg, W / 2, 122);
+    ctx.font = '6px "Press Start 2P"';
+    ctx.fillStyle = '#ffd23f';
+    ctx.fillText('보너스 합계 +$' + b.earned + ' — 보급으로 이동…', W / 2, 138);
+  }
+  ctx.textAlign = 'left';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2069,7 +2400,11 @@ const VEH_CD = { tank: 110, mech: 130, hulk: 120, heli: 140, drone: 100, jet: 13
 function vehicleSpecial() {
   const p = player;
   if (p.vehCd > 0) {
-    if (tick % 12 === 0) addFloat(p.x, p.y - 26, '재충전 ' + Math.ceil(p.vehCd / 60) + 's', '#8a8158');
+    if ((p.ultMsgCd || 0) <= 0) {
+      p.ultMsgCd = 30;
+      addFloat(p.x, p.y - 26, '특수기 재충전 ' + (p.vehCd / 60).toFixed(1) + 's', '#8a8158');
+      S.impact();
+    }
     return;
   }
   p.vehCd = VEH_CD[p.mode] || 120;
@@ -2135,11 +2470,28 @@ function vehicleSpecial() {
   }
 }
 
+// 필살기를 쓸 수 없는 이유를 명확히 알려준다.
+// (조용히 무시하면 "이 캐릭터는 필살기가 없나?"라고 오해하게 된다)
+function ultBlockReason(p) {
+  if (p.mode !== 'foot') return ['탈것 탑승 중 — L은 탈것 특수기', '#9fe8ff'];
+  if (p.ultT > 0) return [CHARS[p.char].ultName + ' 발동 중', '#b18cff'];
+  if (p.ultUses <= 0) return ['필살기 사용 횟수 소진 — 상점에서 SP +1', '#e8412c'];
+  if (CHARS[p.char].ult === 'rage' && p.rage > 0) return ['RAGE 지속 중', '#ff6a3c'];
+  if (p.ult < 100) return ['SP ' + Math.floor(p.ult) + '% — 적을 처치해 충전', '#ffcf3f'];
+  return null;
+}
+
 function triggerUlt() {
   const p = player;
-  if (p.ult < 100 || p.ultUses <= 0 || p.ultT > 0) return;
-  if (p.mode !== 'foot') return;
-  if (CHARS[p.char].ult === 'rage' && p.rage > 0) return;
+  const blocked = ultBlockReason(p);
+  if (blocked) {
+    if ((p.ultMsgCd || 0) <= 0) {
+      p.ultMsgCd = 40;
+      addFloat(p.x, p.y - 34, blocked[0], blocked[1]);
+      S.impact();
+    }
+    return;
+  }
   p.ult = 0; p.ultReady = false; p.ultUses--;
   const u = CHARS[p.char].ult;
   addFloat(p.x, p.y - 34, CHARS[p.char].ultName + '!', '#ff8a5c');
@@ -3129,16 +3481,40 @@ function update() {
   tick++;
   if (flashScreen > 0) flashScreen--;
 
+  // 보너스 스테이지 (미니게임)
+  if (state === 'bonus') { updateBonus(); return; }
+
   // 인터미션(스테이지 클리어 결과 화면)
   if (state === 'intermission') {
     intermission--;
-    if (intermission <= 0) openShop(stageIndex + 1);
+    if (intermission <= 0) {
+      // 3스테이지 클리어마다 보너스 스테이지 (마지막 스테이지 뒤는 엔딩이라 제외)
+      if ((stageIndex + 1) % 3 === 0 && stageIndex < STAGES.length - 1) startBonus();
+      else openShop(stageIndex + 1);
+    }
     return;
   }
   if (state !== 'play') return;
 
   stageTime++;
   if (stageBanner > 0) stageBanner--;
+
+  // ── 탈것 수동 하차 (지상 탈것에서 ↓ + 점프) ─────────────────
+  // 크롤러(tank)는 점프력이 낮아 기둥(pylon)을 못 넘는다. 하차 수단이
+  // 없으면 탈것이 파괴될 때까지 영구히 갇히므로(사막 스테이지 진행 불가
+  // 버그의 원인) 언제든 내려서 걸어서 우회할 수 있게 한다.
+  {
+    const pd = player;
+    if (!pd.dead && pd.mode !== 'foot' && !isAirVeh(pd.mode) &&
+        keys.down && keys.jump && !pd.jumpHeld) {
+      exitMode(false);
+      pd.vy = -5.2;                          // 뛰어내리는 홉
+      pd.invuln = Math.max(pd.invuln, 30);
+      pd.jumpHeld = true;                    // 같은 입력으로 곧바로 재점프 방지
+      addFloat(pd.x, pd.y - 16, '하차!', '#9fe8ff');
+      S.pickup();
+    }
+  }
   const p = player, d = DIMS[p.mode], c = CHARS[p.char];
   const T = ts();
 
@@ -3180,7 +3556,7 @@ function update() {
     const fd = footDims(p.char);
     const bottom = p.y + p.h;
     p.crouch = wantCrouch;
-    p.h = wantCrouch ? Math.max(11, Math.round(fd.h * 0.56)) : fd.h;
+    p.h = wantCrouch ? clamp(Math.round(fd.h * 0.54), 11, 22) : fd.h;
     p.y = bottom - p.h;
     if (wantCrouch) for (let i = 0; i < 4; i++) fx.dust(p.x + p.w / 2 + rnd(-5, 5), GROUND_Y, rnd(-0.7, 0.7), -rnd(0.1, 0.4));
   }
@@ -3303,8 +3679,12 @@ function update() {
           p.vx = 0;
           if (!p.blockHint || p.blockHint <= 0) {
             p.blockHint = 90;
+            // 지상 탈것은 점프력이 부족해 못 넘을 수 있다 → 하차 안내
+            const rideBlocked = p.mode !== 'foot' &&
+              (d.jump * ((p.vskin && p.vskin.jumpMul) || 1)) ** 2 / (2 * GRAVITY) < bar.h + 2;
             addFloat(p.x + p.w / 2, p.y - 22,
-              bar.kind === 'duct' ? '↓ 엎드려 통과' : bar.kind === 'wall' ? '위로 우회!' : '점프!',
+              rideBlocked ? '↓+점프로 하차!'
+                : bar.kind === 'duct' ? '↓ 엎드려 통과' : bar.kind === 'wall' ? '위로 우회!' : '점프!',
               '#ffcf3f');
           }
           break;
@@ -3365,6 +3745,7 @@ function update() {
   if (p.invuln > 0) p.invuln--;
   if (p.blockHint > 0) p.blockHint--;
   if (p.vehCd > 0) p.vehCd--;
+  if (p.ultMsgCd > 0) p.ultMsgCd--;
   if (p.fireCd > 0) p.fireCd--;
   if (p.nadeCd > 0) p.nadeCd--;
   if (p.flash > 0) p.flash--;
@@ -3606,6 +3987,8 @@ function outlined(fn, col) {
 // 메인 드로우
 // ═══════════════════════════════════════════════════════════════
 function draw() {
+  // 보너스 스테이지는 전용 렌더러 사용 (일시정지 중에도 보너스 장면 유지)
+  if (state === 'bonus' || (state === 'pause' && pausedFrom === 'bonus')) { drawBonus(); return; }
   drawSky();
   drawParallax();
 
@@ -5621,7 +6004,7 @@ let _wasGround = true, _lastVy = 0;
 
 function drawPlayer() {
   const p = player, C = CHARS[p.char];
-  if (state === 'play') {
+  if (state === 'play' || state === 'bonus') {
     // 착지 프레임 + 착지 먼지
     if (p.onGround && !_wasGround && p.mode === 'foot') {
       p.landT = 12;
@@ -6226,21 +6609,19 @@ function drawBossIntro() {
 function drawArenaWalls() {
   if (!arena) return;
   const t = tick * 0.12;
-  [[cam + 2, 1], [cam + W - 6, -1]].forEach(([wx, dir]) => {
-    const g = ctx.createLinearGradient(wx - cam, 0, wx - cam + dir * 26, 0);
-    g.addColorStop(0, 'rgba(255,90,60,.55)');
+  // 화면 좌표계 기준 (카메라 오프셋을 더하면 안 된다)
+  [[2, 1], [W - 6, -1]].forEach(([wx, dir]) => {
+    const g = ctx.createLinearGradient(wx, 0, wx + dir * 30, 0);
+    g.addColorStop(0, 'rgba(255,90,60,.6)');
     g.addColorStop(1, 'rgba(255,90,60,0)');
-    ctx.save();
-    ctx.translate(cam, 0);
     ctx.fillStyle = g;
-    ctx.fillRect(wx - cam, 0, dir * 26, GROUND_Y);
+    ctx.fillRect(wx, 0, dir * 30, GROUND_Y);
     // 흐르는 에너지 라인
-    ctx.fillStyle = 'rgba(255,190,120,.75)';
+    ctx.fillStyle = 'rgba(255,190,120,.8)';
     for (let y = (t * 22) % 18 - 18; y < GROUND_Y; y += 18)
-      ctx.fillRect(wx - cam, y, dir * 4, 9);
+      ctx.fillRect(wx, y, dir * 5, 10);
     ctx.fillStyle = '#ffd8b0';
-    ctx.fillRect(wx - cam, 0, dir * 2, GROUND_Y);
-    ctx.restore();
+    ctx.fillRect(wx, 0, dir * 3, GROUND_Y);
   });
 }
 
@@ -6487,6 +6868,7 @@ function startGame(dk) {
   hiScore = save.hi;
   combo = 0; comboT = 0; shake = 0; flashScreen = 0;
   toasts = [];
+  bonus = null; bonusPlayed = 0;
   run = { kills: 0, maxCombo: 0, pow: 0, vehicles: {} };
   player = makePlayer(selChar);
   player.lives = diff.lives;
@@ -6522,8 +6904,8 @@ function endGame(win) {
 }
 
 function togglePause() {
-  if (state === 'play') {
-    pausedFrom = 'play';
+  if (state === 'play' || state === 'bonus') {
+    pausedFrom = state;
     state = 'pause';
     S.stopMusic();
     S.pauseB();
@@ -6541,6 +6923,7 @@ function quitToMenu() {
   state = 'menu';
   shopNext = -1;
   boss = null;
+  bonus = null;
   S.stopMusic();
   elPause.classList.add('hidden');
   elShop.classList.add('hidden');
@@ -6594,7 +6977,7 @@ addEventListener('pointerdown', () => S.resume());
 // ═══════════════════════════════════════════════════════════════
 function loop() {
   requestAnimationFrame(loop);
-  if (state === 'play' || state === 'intermission') {
+  if (state === 'play' || state === 'intermission' || state === 'bonus') {
     if (hitstop > 0) { hitstop--; tick++; }
     else update();
     draw();
