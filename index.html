@@ -214,7 +214,8 @@
     <div id="menuInfo"></div>
     <div class="hint">←→ 이동 · ↑ 사다리/위 조준 · <b style="color:#ffcf3f;">↓ 엎드리기(낮은 적 조준)</b> · SPACE 점프 · J/Z 사격 · K/X 수류탄<br>
       L/C 필살기 <b style="color:#9fe8ff;">(탈것 탑승 중엔 탈것 특수기 · ↓+점프로 하차)</b> · Q/E 무기교체 · P/ESC 일시정지 · N 음소거<br>
-      군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · 상자를 부수고 · POW를 구출하고 · <b style="color:#ffcf3f;">스테이지 클리어 후 보급</b>에서 강해져라<br>
+      군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · <b style="color:#ff8a5c;">돌진하는 적에게 들이받히면 잠시 기절</b> — 바닥의 경고 마커와 예고 동작을 보고 피해라<br>
+      상자를 부수고 · POW를 구출하고 · <b style="color:#ffcf3f;">스테이지 클리어 후 보급</b>에서 강해져라<br>
       <b style="color:#ffd23f;">★ 3스테이지 클리어마다 보너스 게임</b> — 사막 질주(DUNE DASH)와 운석 피하기(METEOR STORM)로 군자금을 벌어라</div>
   </div>
 
@@ -1118,7 +1119,7 @@ let arenas = [], arena = null, arenaClearT = 0, arenaBanner = 0;
 let bullets = [], ebullets = [], enemies = [], particles = [], pickups = [];
 let nades = [], floaters = [], platforms = [], strikes = [], eshards = [], barriers = [];
 let slashes = [], ladders = [], crates = [], hazards = [], sentries = [];
-let evolc = [], weatherP = [], toasts = [], beams = [];
+let evolc = [], weatherP = [], toasts = [], beams = [], btargets = [];
 let player = null, boss = null, score = 0;
 let stageIndex = 0, stage = STAGES[0];
 let stageTime = 0, spawnTimer = 0, stageBanner = 0, intermission = 0;
@@ -1147,7 +1148,7 @@ function makePlayer(ci) {
     vx: 0, vy: 0, face: 1, onGround: false, char: ci,
     hp: c.maxHp, maxHp: c.maxHp, lives: diff.lives,
     fireCd: 0, weapon: 'gun', inv: ['gun'], ammoMap: {},
-    nades: c.nades, nadeCd: 0, invuln: 0,
+    nades: c.nades, nadeCd: 0, invuln: 0, stunT: 0,
     walkFrame: 0, dead: false,
     mode: 'foot', vehHp: 0, vehMax: 0, modeT: 0, flash: 0, hurtT: 0,
     ult: 0, ultT: 0, ultMode: null, beamX: 0, rage: 0, ultReady: false, ultUses: 0,
@@ -1470,7 +1471,7 @@ function startStage(i) {
   buildArenas();
   boss = null; stageBanner = 130; intermission = 0; bossAnnounced = false; shopNext = -1;
   bullets = []; ebullets = []; enemies = []; particles = []; nades = [];
-  floaters = []; strikes = []; slashes = []; eshards = []; sentries = []; evolc = []; beams = [];
+  floaters = []; strikes = []; slashes = []; eshards = []; sentries = []; evolc = []; beams = []; btargets = [];
   bossIntro = 0;
   combo = 0; comboT = 0;
   st = { deaths: 0, dmg: 0, maxCombo: 0, pow: 0, powCount: 0, midDone: false };
@@ -1481,7 +1482,7 @@ function startStage(i) {
   p.hp = p.maxHp; p.invuln = 80;
   p.nades = Math.min(p.nades + 2, 9);
   p.fly = 0; p.climbing = false; p.shopLock = false; p.jumps = 0; p.standPl = null;
-  p.deadAnim = false; p.landT = 0; p.hurtT = 0; p.crouch = false; p.vehCd = 0;
+  p.deadAnim = false; p.landT = 0; p.hurtT = 0; p.crouch = false; p.vehCd = 0; p.stunT = 0;
   p.anim = { n: 'idle', f: 0 };
   corpses = [];
   // 보유 무기 전부 완충
@@ -1510,7 +1511,7 @@ function startBonus() {
   const p = player;
   if (p.mode !== 'foot') exitMode(false);
   bullets = []; ebullets = []; enemies = []; particles = []; nades = [];
-  floaters = []; strikes = []; slashes = []; eshards = []; sentries = []; evolc = []; beams = [];
+  floaters = []; strikes = []; slashes = []; eshards = []; sentries = []; evolc = []; beams = []; btargets = [];
   corpses = []; boss = null; arena = null; shake = 0; combo = 0; comboT = 0;
   bonus = {
     kind, t: 0, dur: kind === 'race' ? 1560 : 1440, endT: 0, earned: 0,
@@ -1784,6 +1785,7 @@ function drawBonus() {
   }
 
   // ── HUD: 타이틀 배너 / 타이머 바 / 소지금 ──
+  drawVignette();
   ctx.textAlign = 'center';
   if (b.banner > 0) {
     ctx.globalAlpha = clamp(b.banner / 40, 0, 1);
@@ -2799,6 +2801,26 @@ function hurtPlayer(dmg) {
   }
 }
 
+// ── 기절: 램(들이받기) 계열 공격에 맞으면 잠시 행동 불능 ─────────
+// 군견 돌진·닌자 대시·보스 돌진/기습 부상 등에 적용. 탑승 중에는 탈것이
+// 대신 받으므로 면역. RICHITA(초중량)는 기절 시간 절반 이하로 저항.
+// 기절이 끝나면 짧은 무적을 부여해 연속 기절(스턴락)을 방지한다.
+function stunPlayer(t) {
+  const p = player;
+  if (p.dead || p.invuln > 0 || p.stunT > 0) return;
+  if (p.mode !== 'foot') return;
+  if (CHARS[p.char].bulk) {
+    t = Math.round(t * 0.45);
+    addFloat(p.x + p.w / 2, p.y - 28, '기절 저항!', '#ffcf3f');
+  }
+  p.stunT = t;
+  p.climbing = false;
+  p.vehDash = 0;
+  addFloat(p.x + p.w / 2, p.y - 18, '기절!', '#ffd23f');
+  S.warn();
+  for (let i = 0; i < 6; i++) particles.push(spark(p.x + p.w / 2, p.y + 4, '#ffd23f'));
+}
+
 function addScore(n) {
   score += n;
   if (score > hiScore) { hiScore = score; save.hi = hiScore; commitSave(); }
@@ -2925,7 +2947,11 @@ function updateEnemy(e, T) {
         e.lunge -= T;
         e.x += e.face * 3.2 * T;                 // 짧고 빠른 돌진
         e.walkFrame += 0.6 * T;
-        if (egap < 10) { e.lunge = 0; e.recoil = 54; }   // 닿는 즉시 물러남
+        if (egap < 10) {                         // 물기 성공 → 잠시 기절시키고 물러남
+          e.lunge = 0; e.recoil = 54;
+          stunPlayer(44);
+          hurtPlayer(TOUCH_DMG.dog);
+        }
       } else if (egap > 44) {
         e.x += e.face * 2.1 * T;                 // 접근
         e.walkFrame += 0.45 * T;
@@ -2998,7 +3024,11 @@ function updateEnemy(e, T) {
         e.dashT -= T;
         e.x += e.face * 5 * T;
         if (tick % 2 === 0) particles.push({ x: e.x + e.w / 2, y: e.y + e.h / 2, vx: 0, vy: 0, life: 8, c: '#b18cff', r: 3, g: 0 });
-        if (egap < 8) { e.dashT = 0; e.recoil = 46; }      // 닿으면 즉시 이탈
+        if (egap < 8) {                          // 참격 명중 → 기절시키고 즉시 이탈
+          e.dashT = 0; e.recoil = 46;
+          stunPlayer(52);
+          hurtPlayer(TOUCH_DMG.ninja);
+        }
       } else {
         if (egap > 34) { e.x += e.face * 2.4 * T; e.walkFrame += 0.4 * T; }
         else e.recoil = 30;                                 // 사거리 안이면 거리 재조정
@@ -3063,9 +3093,12 @@ function updateEnemy(e, T) {
     if (e.y + e.h >= GROUND_Y) { e.y = GROUND_Y - e.h; e.vy = 0; e.onGroundE = true; }
   }
 
-  // 플레이어 접촉 피해
-  if (hitBox(e.x, e.y, e.w, e.h, p.x, p.y, p.w, p.h))
+  // 플레이어 접촉 피해 — 돌진(램) 계열에 들이받히면 잠시 기절한다
+  if (hitBox(e.x, e.y, e.w, e.h, p.x, p.y, p.w, p.h)) {
+    const ram = (e.type === 'dog' && e.lunge > 0) || (e.type === 'ninja' && e.dashT > 0);
+    if (ram) stunPlayer(e.type === 'ninja' ? 52 : 44);
     hurtPlayer(TOUCH_DMG[e.type] !== undefined ? TOUCH_DMG[e.type] : 0.4);
+  }
   // 헐크 슈트의 몸통 박치기
   if (p.mode === 'hulk' && hitBox(e.x, e.y, e.w, e.h, p.x - 3, p.y, p.w + 6, p.h))
     hurtEnemy(e, 1.6);
@@ -3155,13 +3188,17 @@ function _updateBossFight() {
   if (b.state === 'chargePrep') {
     b.spT -= T;
     if (tick % 4 === 0) particles.push(spark(b.x + rnd(0, b.w), b.y + rnd(0, b.h), '#ff5a3c'));
-    if (b.spT <= 0) { b.state = 'charging'; S.alert(); }
+    // 텔레그래프: 지면을 스치는 낮은 돌진 — 점프로 피할 수 있음을 예고
+    if (tick % 20 === 0) addFloat(b.x + b.w / 2, b.y - 14, '⚠ 돌진 — 점프로 회피!', '#ff5a3c');
+    if (b.spT <= 0) { b.state = 'charging'; S.alert(); addShake(4); }
     return;
   }
   if (b.state === 'charging') {
     b.x -= 6 * T;
     addShake(1);
-    if (hitBox(b.x, b.y, b.w, b.h, p.x, p.y, p.w, p.h)) hurtPlayer(1.4);
+    if (tick % 2 === 0) fx.dust(b.x + b.w * rnd(0.2, 0.9), GROUND_Y, rnd(0.5, 1.6), -rnd(0.2, 0.8));
+    // 낮은 궤도 판정: 점프 중이면 스치듯 넘어간다. 들이받히면 기절.
+    if (hitBox(b.x, GROUND_Y - 46, b.w, 46, p.x, p.y, p.w, p.h)) { stunPlayer(60); hurtPlayer(1.4); }
     if (b.x < cam + 30) b.state = 'returning';
     return;
   }
@@ -3174,13 +3211,30 @@ function _updateBossFight() {
     b.spT -= T;
     b.hidden = true;
     if (tick % 3 === 0) particles.push({ x: b.x + rnd(0, b.w), y: GROUND_Y, vx: rnd(-1, 1), vy: rnd(-2, -0.5), life: 14, c: '#d6ab5e', r: 2, g: 0.1 });
+    // 부상 30틱 전에 위치를 확정하고 그 자리의 지면이 들썩인다 → 보고 피할 수 있다
+    if (b.spT <= 30 && b.emergeX === undefined) {
+      b.emergeX = clamp(p.x - b.w / 2, cam + 40, cam + W - b.w - 20);
+      S.warn();
+    }
+    if (b.emergeX !== undefined) {
+      const exc = b.emergeX + b.w / 2;
+      if (tick % 2 === 0) {
+        particles.push({ x: exc + rnd(-b.w * 0.35, b.w * 0.35), y: GROUND_Y, vx: rnd(-0.7, 0.7), vy: rnd(-2.2, -0.8), life: 13, c: '#d6ab5e', r: 2.2, g: 0.16 });
+        addShake(0.7);
+      }
+    }
     if (b.spT <= 0) {
-      // 플레이어 발밑에서 기습 부상
-      b.x = clamp(p.x - b.w / 2, cam + 40, cam + W - b.w - 20);
+      // 예고된 위치에서 기습 부상 — 그 자리에 서 있었다면 피해 + 기절
+      b.x = b.emergeX !== undefined ? b.emergeX : clamp(p.x - b.w / 2, cam + 40, cam + W - b.w - 20);
+      b.emergeX = undefined;
       b.hidden = false;
       b.state = 'fight';
       b.spCd = rnd(340, 460);
-      explode(b.x + b.w / 2, GROUND_Y, 36, 0, false);
+      if (p.onGround && Math.abs((p.x + p.w / 2) - (b.x + b.w / 2)) < b.w * 0.55) {
+        stunPlayer(55);
+        hurtPlayer(12);
+      }
+      explode(b.x + b.w / 2, GROUND_Y, 36, 0, false, 0);   // 연출 전용 (피해는 위에서 판정)
       addShake(8);
     }
     return;
@@ -3300,9 +3354,12 @@ function _updateBossFight() {
   if (tick % 6 === 0) fx.smoke(b.x + rnd(0, b.w), b.y + rnd(0, b.h * 0.5), rnd(-0.15, 0.15), -rnd(0.15, 0.4), rnd(3, 6), 0.16);
 
   // ── 2차 시그니처 공격 (스테이지 대장별 강력하고 다양한 공격) ───
+  // 페이즈 2부터는 시그니처와 조준 포격을 번갈아 사용해 패턴이 다양해진다
   b.spCd2 -= T;
   if (b.spCd2 <= 0 && b.state === 'fight') {
-    fireBossSignature(b, enraged);
+    b.sigAlt = !b.sigAlt;
+    if (b.sigAlt && b.phase >= 1) fireBossArtillery(b, enraged);
+    else fireBossSignature(b, enraged);
     b.spCd2 = (enraged ? rnd(150, 220) : rnd(220, 320)) * (b.rate || 1);
   }
 
@@ -3370,6 +3427,22 @@ function fireBossSignature(b, enraged) {
   }
 }
 function enragedOr(b, ratio) { return b.hp < b.maxhp * ratio; }
+
+// 전 보스 공용 — 조준 포격: 바닥의 조준 마커가 깜빡인 뒤 그 자리가 폭발한다.
+// 마커를 보고 이동하면 완전히 피할 수 있는 회피형 패턴.
+function fireBossArtillery(b, enraged) {
+  S.warn();
+  addFloat(b.x + b.w / 2, b.y - 10, '조준 포격!', b.cfg.eye);
+  const n = enraged ? 4 : 3;
+  for (let i = 0; i < n; i++) {
+    const tx = clamp(player.x + player.w / 2 + (i - (n - 1) / 2) * 46 + rnd(-14, 14), cam + 16, cam + W - 16);
+    btargets.push({ x: tx, t: 52 + i * 8, tMax: 52 + i * 8, r: 26, dmg: 12, col: b.cfg.eye });
+  }
+  // 격노 상태의 지상형 보스는 지면을 타고 오는 충격파를 함께 보낸다 (점프로 회피)
+  if (!b.cfg.air && enraged) {
+    ebullets.push({ x: b.x, y: GROUND_Y - 7, vx: -3.2 * diff.eBulletSpd, vy: 0, life: 160, dmgP: 10, col: b.cfg.eye, r: 5 });
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // 플레이어 탄환 처리
@@ -3565,6 +3638,7 @@ function update() {
   let mv = 0;
   if (keys.left) mv--;
   if (keys.right) mv++;
+  if (p.stunT > 0) mv = 0;                            // 기절 중에는 이동 불가
   let topSpd = d.spd * (p.mode === 'foot' ? c.spd * (1 + (p.spdBonus || 0)) : (p.vskin ? p.vskin.spdMul : 1));
   if (p.crouch) topSpd *= 0.38;                       // 웅크린 채로는 느리게 기어간다
   if (mv !== 0 && !p.dead) {
@@ -3606,7 +3680,7 @@ function update() {
           p.y + p.h <= L.bottom + 5 && p.y + p.h >= L.top - 6) { lad = L; break; }
     }
   }
-  if (lad && (keys.up || keys.down) && !p.dead) p.climbing = true;
+  if (lad && (keys.up || keys.down) && !p.dead && p.stunT <= 0) p.climbing = true;
   if (p.climbing && !lad) p.climbing = false;
 
   if (p.climbing) {
@@ -3645,7 +3719,7 @@ function update() {
       // 점프 선입력: 착지 직전에 누른 점프를 기억했다가 착지 순간 발동
       if (keys.jump && !p.jumpHeld) p.jumpBuf = 7; else if (p.jumpBuf > 0) p.jumpBuf--;
       const wantJump = (keys.jump && !p.jumpHeld) || (p.jumpBuf > 0 && p.onGround);
-      if (wantJump && !p.dead) {
+      if (wantJump && !p.dead && p.stunT <= 0) {
         const jm = (p.mode !== 'foot' && p.vskin) ? p.vskin.jumpMul : 1;
         if (p.onGround || p.coyote > 0) {
           p.vy = d.jump * jm; p.onGround = false; p.jumps = 1; p.coyote = 0; p.jumpBuf = 0; S.jump();
@@ -3742,6 +3816,11 @@ function update() {
   camMax = Math.max(camMax, cam);
 
   // ── 타이머 갱신 ─────────────────────────────────────────────
+  if (p.stunT > 0) {
+    p.stunT--;
+    if (tick % 5 === 0) particles.push(spark(p.x + rnd(0, p.w), p.y - 2, '#ffd23f'));
+    if (p.stunT <= 0) p.invuln = Math.max(p.invuln, 40);   // 기절 직후 짧은 무적 (스턴락 방지)
+  }
   if (p.invuln > 0) p.invuln--;
   if (p.blockHint > 0) p.blockHint--;
   if (p.vehCd > 0) p.vehCd--;
@@ -3782,15 +3861,15 @@ function update() {
 
   // ── 입력 액션 ───────────────────────────────────────────────
   if (bossIntro > 0) { p.vx *= 0.7; }
-  if (keys.special && !lastSpecial && !p.dead) {
+  if (keys.special && !lastSpecial && !p.dead && p.stunT <= 0) {
     if (p.mode !== 'foot') vehicleSpecial();
     else triggerUlt();
   }
   lastSpecial = keys.special;
   if (keys.swap && !lastSwap && !p.dead && p.mode === 'foot') cycleWeapon();
   lastSwap = keys.swap;
-  if (keys.fire && p.fireCd <= 0 && !p.dead && !p.climbing) playerFire();
-  if (keys.nade && p.nadeCd <= 0 && !p.dead && (p.mode === 'foot' || p.mode === 'hulk')) throwNade();
+  if (keys.fire && p.fireCd <= 0 && !p.dead && !p.climbing && p.stunT <= 0) playerFire();
+  if (keys.nade && p.nadeCd <= 0 && !p.dead && p.stunT <= 0 && (p.mode === 'foot' || p.mode === 'hulk')) throwNade();
 
   // ── 상점 진입 트리거 ────────────────────────────────────────
 
@@ -3873,6 +3952,16 @@ function update() {
     }
   });
   evolc = evolc.filter(v => !v.done);
+
+  // ── 보스 조준 포격 마커 → 착탄 ──────────────────────────────
+  btargets.forEach(bt => {
+    bt.t -= T;
+    if (bt.t <= 0 && !bt.done) {
+      bt.done = true;
+      explode(bt.x, GROUND_Y - 6, bt.r, 0, false, bt.dmg);
+    }
+  });
+  btargets = btargets.filter(bt => !bt.done);
 
   // ── 최종보스 궤도 폭격 레이저 ────────────────────────────────
   beams.forEach(bm => {
@@ -4050,12 +4139,45 @@ function draw() {
   strikes.forEach(s => { px(s.x - 2, s.y - 5, 4, 9, '#2a2a2a'); px(s.x - 1, s.y - 5, 2, 3, '#ff5a3c'); px(s.x - 3, s.y + 3, 6, 2, '#aaa'); });
   eshards.forEach(s => { px(s.x - 2, s.y - 6, 4, 10, '#cfe0ea'); px(s.x - 1, s.y - 6, 2, 4, '#fff'); });
 
+  // 고드름 낙하 지점 예고 마커 (보고 피할 수 있게)
+  eshards.forEach(s => {
+    ctx.globalAlpha = 0.35 + 0.35 * Math.abs(Math.sin(tick * 0.45));
+    px(s.x - 6, GROUND_Y - 2, 12, 2, '#9fe8ff');
+    ctx.globalAlpha = 1;
+  });
+
   // 화산 분출 예고선
   evolc.forEach(v => {
     ctx.globalAlpha = 0.4 + 0.3 * Math.sin(tick * 0.5);
     px(v.x - 8, GROUND_Y - 2, 16, 3, '#ff5a3c');
     ctx.globalAlpha = 1;
   });
+
+  // 보스 조준 포격 마커: 수축하는 크로스헤어 + 경고 링
+  btargets.forEach(bt => {
+    const k = clamp(bt.t / bt.tMax, 0, 1);
+    const rr = bt.r * (0.5 + k * 0.8);
+    ctx.save();
+    ctx.globalAlpha = 0.4 + 0.4 * Math.abs(Math.sin(tick * 0.5));
+    ctx.strokeStyle = bt.col || '#ff5a3c';
+    ctx.lineWidth = k < 0.3 ? 2 : 1;
+    ctx.beginPath(); ctx.arc(bt.x, GROUND_Y - 6, Math.max(3, rr), 0, 7); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(bt.x - rr - 4, GROUND_Y - 6); ctx.lineTo(bt.x - rr + 2, GROUND_Y - 6);
+    ctx.moveTo(bt.x + rr - 2, GROUND_Y - 6); ctx.lineTo(bt.x + rr + 4, GROUND_Y - 6);
+    ctx.stroke();
+    px(bt.x - 1, GROUND_Y - 8, 2, 4, bt.col || '#ff5a3c');
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  });
+
+  // 보스 돌진 예고: 지면을 스치는 돌진 궤도(낮은 띠)를 붉게 표시
+  if (boss && !boss.dead && boss.state === 'chargePrep') {
+    ctx.globalAlpha = 0.14 + 0.12 * Math.abs(Math.sin(tick * 0.45));
+    ctx.fillStyle = '#ff3a2a';
+    ctx.fillRect(cam, GROUND_Y - 46, boss.x - cam, 46);
+    ctx.globalAlpha = 1;
+  }
 
   // 최종보스 궤도 폭격 레이저
   beams.forEach(bm => {
@@ -4162,7 +4284,26 @@ function draw() {
     ctx.fillStyle = 'rgba(255,255,255,' + (flashScreen / 12) + ')';
     ctx.fillRect(0, 0, W, H);
   }
+  drawVignette();
   drawHUD();
+}
+
+// 화면 가장자리 비네트 + 저체력 경고 펄스 — 화면 톤을 눌러 몰입감을 높인다
+function drawVignette() {
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.55, W / 2, H / 2, H * 0.98);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,.30)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+  const p = player;
+  if (p && !p.dead && !hasVehHp(p.mode) && p.hp / p.maxHp <= 0.28 && (state === 'play' || state === 'pause')) {
+    const a = 0.10 + 0.09 * Math.abs(Math.sin(tick * 0.12));
+    const rg = ctx.createRadialGradient(W / 2, H / 2, H * 0.40, W / 2, H / 2, H * 0.9);
+    rg.addColorStop(0, 'rgba(200,20,20,0)');
+    rg.addColorStop(1, 'rgba(200,20,20,' + a + ')');
+    ctx.fillStyle = rg;
+    ctx.fillRect(0, 0, W, H);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -5971,6 +6112,7 @@ const ANIM_LOOP = { land: false, die: false, hurt: false };
 
 function pickAnim(p) {
   if (p.deadAnim) return 'die';
+  if (p.stunT > 0) return 'hurt';                 // 기절: 비틀거리는 피격 자세 유지
   if (p.hurtT > 0) return 'hurt';
   if (p.climbing) return 'climb';
   if (p.fly > 0) return 'fly';
@@ -6067,6 +6209,18 @@ function drawPlayer() {
     const mx = bx + (fr.mx - SPR_OX) * p.face;
     const my = by + (fr.my - SPR_OY);
     fx.muzzle(mx, my, a.n === 'aimUp' ? -Math.PI / 2 : (p.face > 0 ? 0 : Math.PI), 1);
+  }
+
+  // 기절: 머리 위를 도는 별
+  if (p.stunT > 0) {
+    for (let i = 0; i < 3; i++) {
+      const a2 = tick * 0.22 + i * 2.09;
+      const sxx = p.x + p.w / 2 + Math.cos(a2) * 9;
+      const syy = p.y - 7 + Math.sin(a2) * 2.5;
+      px(sxx - 1, syy, 3, 1, '#ffd23f');
+      px(sxx, syy - 1, 1, 3, '#ffd23f');
+      px(sxx, syy, 1, 1, '#fff0a0');
+    }
   }
 }
 
@@ -6359,7 +6513,9 @@ function drawHUD() {
   px(8, 8, 104, 10, '#000');
   px(9, 9, 102, 8, '#2a1a10');
   const hr = clamp(hpNow / hpMax, 0, 1);
-  const hpCol = inVeh ? '#9fe8ff' : (hr > 0.55 ? '#5ad15a' : hr > 0.25 ? '#ffcf3f' : '#e8412c');
+  // 저체력이면 체력바가 깜빡이며 경고
+  const hpCol = inVeh ? '#9fe8ff'
+    : (hr > 0.55 ? '#5ad15a' : hr > 0.25 ? '#ffcf3f' : (tick % 20 < 10 ? '#e8412c' : '#ff7a6a'));
   px(9, 9, Math.round(102 * hr), 8, hpCol);
   if (hr > 0) px(9, 9, Math.round(102 * hr), 2, 'rgba(255,255,255,.28)');
   ctx.fillStyle = '#f3ead2';
