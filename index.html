@@ -790,9 +790,9 @@ const S = {
 // 난이도 설정
 // ═══════════════════════════════════════════════════════════════
 const DIFF = {
-  easy:   { label: 'EASY',   lives: 5, eHp: 0.85, eFire: 1.5,  eBulletSpd: 0.8,  dmgTaken: 0.55, spawnRate: 1.6,  ultBonus: 1 },
-  normal: { label: 'NORMAL', lives: 3, eHp: 1.0,  eFire: 1.0,  eBulletSpd: 1.0,  dmgTaken: 0.9,  spawnRate: 1.0,  ultBonus: 0 },
-  hard:   { label: 'HARD',   lives: 2, eHp: 1.3,  eFire: 0.75, eBulletSpd: 1.25, dmgTaken: 1.35, spawnRate: 0.78, ultBonus: -1 },
+  easy:   { label: 'EASY',   lives: 4, eHp: 0.85, eFire: 1.35, eBulletSpd: 0.85, dmgTaken: 0.75, spawnRate: 1.5,  ultBonus: 1 },
+  normal: { label: 'NORMAL', lives: 3, eHp: 1.0,  eFire: 1.0,  eBulletSpd: 1.05, dmgTaken: 1.1,  spawnRate: 1.05, ultBonus: 0 },
+  hard:   { label: 'HARD',   lives: 2, eHp: 1.3,  eFire: 0.72, eBulletSpd: 1.3,  dmgTaken: 1.6,  spawnRate: 0.85, ultBonus: -1 },
 };
 let diff = DIFF.normal;
 let diffKey = 'normal';
@@ -1951,7 +1951,7 @@ function runSpawner() {
   spawnTimer -= ts();
   if (spawnTimer > 0) return;
   const I = currentIntensity();
-  spawnTimer = clamp(150 / I * diff.spawnRate, 46, 240);
+  spawnTimer = clamp(175 / I * diff.spawnRate, 62, 240);
   const cluster = clamp(1 + Math.floor(I * 0.35), 1, 2);
   for (let n = 0; n < cluster; n++) {
     const type = stage.roster[Math.floor(Math.random() * stage.roster.length)];
@@ -2011,7 +2011,7 @@ function applyPickup(pk) {
     S.rescue();
     return;
   }
-  if (t === 'hp') { p.hp = Math.min(p.maxHp, p.hp + 40); addFloat(pk.x, pk.y - 10, '+40 HP', '#5ad15a'); }
+  if (t === 'hp') { p.hp = Math.min(p.maxHp, p.hp + 30); addFloat(pk.x, pk.y - 10, '+30 HP', '#5ad15a'); }
   else if (t === 'nade') { p.nades = Math.min(9, p.nades + 3); addFloat(pk.x, pk.y - 10, '+3 NADE', '#ffcf3f'); }
   else if (t === 'fly') { p.fly = 540; addFloat(pk.x, pk.y - 10, 'JETPACK!', '#9fe8ff'); }
   else if (t.indexOf('w_') === 0) { pickupWeapon(t.slice(2)); }
@@ -2033,9 +2033,10 @@ function damageCrate(c, dmg) {
       if (Math.hypot(player.x + player.w / 2 - c.x - 7, player.y + player.h / 2 - c.y - 7) < 30) hurtPlayer(12);
     } else {
       const roll = Math.random();
-      if (roll < 0.5) pickups.push({ x: c.x, y: GROUND_Y - 12, type: 'coin', val: 15 });
-      else if (roll < 0.75) pickups.push({ x: c.x, y: GROUND_Y - 14, type: 'hp' });
-      else pickups.push({ x: c.x, y: GROUND_Y - 14, type: 'nade' });
+      if (roll < 0.6) pickups.push({ x: c.x, y: GROUND_Y - 12, type: 'coin', val: 15 });
+      else if (roll < 0.72) pickups.push({ x: c.x, y: GROUND_Y - 14, type: 'hp' });
+      else if (roll < 0.88) pickups.push({ x: c.x, y: GROUND_Y - 14, type: 'nade' });
+      else pickups.push({ x: c.x, y: GROUND_Y - 12, type: 'coin', val: 40 });
     }
   }
 }
@@ -2778,7 +2779,8 @@ function hurtPlayer(dmg) {
   p.hurtT = 14;
   p.hp -= dmg;
   st.dmg += dmg;
-  p.invuln = 70;
+  // 무적 시간은 받은 피해에 비례 — 약한 접촉으로 긴 무적을 얻는 악용 방지
+  p.invuln = dmg >= 10 ? 55 : 32;
   addShake(5);
   S.hurt();
   combo = 0; comboT = 0;   // 피격 시 콤보 리셋
@@ -2872,14 +2874,14 @@ function flameBreath(e) {
   ebullets.push({
     x: e.x + (e.face > 0 ? e.w : 0), y: e.y + 10,
     vx: e.face * 2.6 + rnd(-0.3, 0.3), vy: rnd(-0.5, 0.3),
-    life: 16, flame: true, r: 3, dmgP: 3,
+    life: 16, flame: true, r: 3, dmgP: 7,
   });
 }
 
 // ═══════════════════════════════════════════════════════════════
 // 적 접촉 피해 계수
 // ═══════════════════════════════════════════════════════════════
-const TOUCH_DMG = { dog: 1.0, heavy: 0.7, ninja: 1.2, flamer: 0.5, shield: 0.5, apc: 0.8 };
+const TOUCH_DMG = { dog: 10, heavy: 12, ninja: 14, flamer: 9, shield: 9, apc: 16 };
 
 // 실드병 정면 방어 판정 (레일건·폭발·블레이드는 관통/우회)
 function shieldBlocks(e, b) {
@@ -2926,6 +2928,9 @@ function updateEnemy(e, T) {
     }
     case 'grunt':
       if (egap > 40) { e.x += e.face * 0.9 * T; e.walkFrame += 0.2 * T; }
+      // 기본병도 소총 사격 — 서 있기만 하는 허수아비가 되지 않게
+      e.fireCd -= T;
+      if (e.fireCd <= 0 && dist < 230 && e.x > cam - 10 && e.x < cam + W) { straightShoot(e); e.fireCd = rnd(85, 140) * diff.eFire; }
       break;
     case 'gunner':
       if (dist > 150) { e.x += e.face * 0.75 * T; e.walkFrame += 0.2 * T; }
@@ -3097,7 +3102,7 @@ function updateEnemy(e, T) {
   if (hitBox(e.x, e.y, e.w, e.h, p.x, p.y, p.w, p.h)) {
     const ram = (e.type === 'dog' && e.lunge > 0) || (e.type === 'ninja' && e.dashT > 0);
     if (ram) stunPlayer(e.type === 'ninja' ? 52 : 44);
-    hurtPlayer(TOUCH_DMG[e.type] !== undefined ? TOUCH_DMG[e.type] : 0.4);
+    hurtPlayer(TOUCH_DMG[e.type] !== undefined ? TOUCH_DMG[e.type] : 6);
   }
   // 헐크 슈트의 몸통 박치기
   if (p.mode === 'hulk' && hitBox(e.x, e.y, e.w, e.h, p.x - 3, p.y, p.w + 6, p.h))
@@ -3198,7 +3203,7 @@ function _updateBossFight() {
     addShake(1);
     if (tick % 2 === 0) fx.dust(b.x + b.w * rnd(0.2, 0.9), GROUND_Y, rnd(0.5, 1.6), -rnd(0.2, 0.8));
     // 낮은 궤도 판정: 점프 중이면 스치듯 넘어간다. 들이받히면 기절.
-    if (hitBox(b.x, GROUND_Y - 46, b.w, 46, p.x, p.y, p.w, p.h)) { stunPlayer(60); hurtPlayer(1.4); }
+    if (hitBox(b.x, GROUND_Y - 46, b.w, 46, p.x, p.y, p.w, p.h)) { stunPlayer(60); hurtPlayer(14); }
     if (b.x < cam + 30) b.state = 'returning';
     return;
   }
@@ -3364,7 +3369,7 @@ function _updateBossFight() {
   }
 
   // 보스 접촉 피해
-  if (!b.hidden && hitBox(b.x, b.y, b.w, b.h, p.x, p.y, p.w, p.h)) hurtPlayer(0.6);
+  if (!b.hidden && hitBox(b.x, b.y, b.w, b.h, p.x, p.y, p.w, p.h)) hurtPlayer(10);
 }
 
 // 스테이지 대장 시그니처 공격 6종 — 기본 확산탄과는 별개로 주기적으로 발동되는 강력한 필살 패턴
@@ -3917,7 +3922,7 @@ function update() {
     }
     if (hitBox(b.x, b.y, 3, 3, p.x, p.y, p.w, p.h)) {
       if (b.lob || b.rocket) explode(b.x, b.y, b.blastR || 24, 0, false, b.pDmg);
-      else hurtPlayer(b.dmgP !== undefined ? b.dmgP : 8);
+      else hurtPlayer(b.dmgP !== undefined ? b.dmgP : 12);
       b.life = 0;
     }
   });
@@ -3970,7 +3975,7 @@ function update() {
     } else {
       if (bm.dur === bm.durMax) { addShake(6); S.boom(true); }
       bm.dur -= T;
-      if (hitBox(bm.x - bm.w / 2, 0, bm.w, GROUND_Y, p.x, p.y, p.w, p.h)) hurtPlayer(1.3);
+      if (hitBox(bm.x - bm.w / 2, 0, bm.w, GROUND_Y, p.x, p.y, p.w, p.h)) hurtPlayer(16);
       if (tick % 3 === 0) { addShake(1); fx.spark(bm.x + rnd(-bm.w / 2, bm.w / 2), rnd(20, GROUND_Y - 20), '#eafcff', 2.5); }
     }
   });
