@@ -85,10 +85,15 @@
   /* ── 오버레이 화면 공통 ─────────────────────────────────── */
   .screen{
     position:absolute;inset:0;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    display:flex;flex-direction:column;align-items:center;
+    /* justify-content:center 대신 자식 margin:auto 센터링 —
+       내용이 넘칠 때 위쪽이 잘려 스크롤 불가가 되는 플렉스 버그 방지 */
+    justify-content:flex-start;
     text-align:center;background:rgba(6,7,10,.9);
     pointer-events:auto;gap:10px;padding:3.5%;overflow:auto;z-index:5;
   }
+  .screen > :first-child{margin-top:auto;}
+  .screen > :last-child{margin-bottom:auto;}
   .screen.hidden{display:none;}
   .title{
     font-size:clamp(14px,3.2vw,28px);color:#ffcf3f;
@@ -96,6 +101,25 @@
     letter-spacing:1px;line-height:1.4;
   }
   .sub{font-size:clamp(8px,1.5vw,12px);color:#cdbf95;line-height:1.9;}
+  .title.small{font-size:clamp(11px,2.4vw,20px);}
+  .step{font-size:clamp(7px,1.3vw,10px);color:#9fe8ff;letter-spacing:1px;line-height:1.9;}
+
+  /* ── 모드 선택 카드 (메뉴 1단계) ─────────────────────────── */
+  .modes{display:flex;gap:clamp(10px,2.4vw,22px);flex-wrap:wrap;justify-content:center;}
+  .modecard{
+    font-family:'Press Start 2P';cursor:pointer;
+    width:clamp(150px,25vw,225px);padding:clamp(12px,2.2vw,20px) 12px;
+    background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#f3ead2;
+    display:flex;flex-direction:column;align-items:center;gap:9px;
+    transition:.08s;
+  }
+  .modecard:hover{border-color:#ffcf3f;background:rgba(255,207,63,.10);transform:translateY(-3px);}
+  .modecard:active{transform:translateY(0);}
+  .modecard.surv:hover{border-color:#9fe8ff;background:rgba(159,232,255,.10);}
+  .mc-icon{font-size:clamp(18px,3.4vw,28px);line-height:1.2;}
+  .mc-name{font-size:clamp(10px,1.9vw,14px);color:#ffcf3f;letter-spacing:1px;}
+  .modecard.surv .mc-name{color:#9fe8ff;}
+  .mc-desc{font-size:clamp(6px,1vw,8px);color:#8a8158;line-height:2;}
   .hi{font-size:clamp(8px,1.4vw,11px);color:#9bb24a;line-height:1.8;}
   .hint{font-size:clamp(6px,1.05vw,9px);color:#8a8158;line-height:2;}
   .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
@@ -198,25 +222,55 @@
   <button class="muteb" id="muteBtn">SOUND: ON</button>
   <button class="muteb" id="pauseBtn">II</button>
 
-  <!-- ═══ 메인 메뉴 ═══ -->
+  <!-- ═══ 메인 메뉴 1/3 — 타이틀 · 모드 선택 ═══ -->
   <div id="startScreen" class="screen">
     <div class="title">JUNGLE STRIKE DX</div>
-    <div class="sub" style="color:#ffcf3f;">대원을 선택하라</div>
+    <div class="step">STEP 1/3 · 모드를 선택하라</div>
+    <div class="modes">
+      <button class="modecard" id="modeCampaign">
+        <span class="mc-icon">🎖</span>
+        <span class="mc-name">캠페인</span>
+        <span class="mc-desc">스테이지 7개 공략<br>보스 격파 · 클리어 후 보급<br>3스테이지마다 보너스 게임</span>
+      </button>
+      <button class="modecard surv" id="modeSurvival">
+        <span class="mc-icon">🌊</span>
+        <span class="mc-name">서바이벌</span>
+        <span class="mc-desc">무한 웨이브 생존<br>25킬마다 강화 선택<br>최장 기록에 도전</span>
+      </button>
+    </div>
+    <div class="row">
+      <button class="startbtn ghost" id="metaBtn">🎖 영구 강화</button>
+    </div>
+    <div id="menuInfo"></div>
+  </div>
+
+  <!-- ═══ 메인 메뉴 2/3 — 대원 선택 ═══ -->
+  <div id="charScreen" class="screen hidden">
+    <div class="title small">대원 선택</div>
+    <div class="step">STEP 2/3 · 함께 출격할 대원을 골라라</div>
     <div class="chars" id="charRow"></div>
+    <div class="row">
+      <button class="startbtn ghost" id="charBack">◀ 뒤로</button>
+      <button class="startbtn" id="charNext">다음 ▶</button>
+    </div>
+  </div>
+
+  <!-- ═══ 메인 메뉴 3/3 — 스테이지·난이도 · 출격 ═══ -->
+  <div id="deployScreen" class="screen hidden">
+    <div class="title small">출격 준비</div>
+    <div class="step" id="deploySummary"></div>
     <div class="sub" style="color:#9fe8ff;">출격 스테이지</div>
     <div id="stageRow"></div>
-    <div class="sub" style="color:#ffcf3f;">난이도 선택 → 출격</div>
+    <div class="sub" style="color:#ffcf3f;">난이도를 고르면 즉시 출격</div>
     <div class="row">
+      <button class="startbtn ghost" id="deployBack">◀ 뒤로</button>
       <button class="startbtn easy" data-d="easy">EASY</button>
       <button class="startbtn normal" data-d="normal">NORMAL</button>
       <button class="startbtn hard" data-d="hard">HARD</button>
     </div>
-    <div id="menuInfo"></div>
     <div class="hint">←→ 이동 · ↑ 사다리/위 조준 · <b style="color:#ffcf3f;">↓ 엎드리기(낮은 적 조준)</b> · SPACE 점프 · J/Z 사격 · K/X 수류탄<br>
       L/C 필살기 <b style="color:#9fe8ff;">(탈것 탑승 중엔 탈것 특수기 · ↓+점프로 하차)</b> · Q/E 무기교체 · P/ESC 일시정지 · N 음소거<br>
-      군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · <b style="color:#ff8a5c;">돌진하는 적에게 들이받히면 잠시 기절</b> — 바닥의 경고 마커와 예고 동작을 보고 피해라<br>
-      상자를 부수고 · POW를 구출하고 · <b style="color:#ffcf3f;">스테이지 클리어 후 보급</b>에서 강해져라<br>
-      <b style="color:#ffd23f;">★ 3스테이지 클리어마다 보너스 게임</b> — 사막 질주(DUNE DASH)와 운석 피하기(METEOR STORM)로 군자금을 벌어라</div>
+      군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · <b style="color:#ff8a5c;">돌진하는 적에게 들이받히면 잠시 기절</b> — 예고 마커를 보고 피해라</div>
   </div>
 
   <!-- ═══ 상점 ═══ -->
@@ -251,6 +305,16 @@
     <div class="hi" id="endHi">HI-SCORE 000000</div>
     <div id="endStats"></div>
     <button class="startbtn" id="retryBtn">↺ 메인으로</button>
+  </div>
+
+  <!-- ═══ 영구 강화 (메타 진행) ═══ -->
+  <div id="metaScreen" class="screen hidden">
+    <div class="title" style="font-size:clamp(13px,2.6vw,22px);">영구 강화</div>
+    <div class="hi" id="metaMedals">🎖 0</div>
+    <div class="hint">런이 끝나면(승패 무관) 소지금의 25% + 도달 보너스가 <b style="color:#ffd23f;">🎖 훈장</b>으로 전환된다<br>
+      죽어도 사라지지 않는다 — 여기서 쓴 훈장은 모든 런에 영구 적용</div>
+    <div id="metaItems"></div>
+    <button class="startbtn" id="metaClose">◀ 메인으로</button>
   </div>
 
   <!-- ═══ 가상 패드 ═══ -->
@@ -301,7 +365,7 @@ const GRAVITY = 0.46;          // 중력 가속도
 // ach: 획득 업적 id 배열 / pow: 누적 POW 구출 수 / opt: 옵션
 // ═══════════════════════════════════════════════════════════════
 const SAVE_KEY = 'jsdx_save';
-let save = { hi: 0, best: 0, ach: [], pow: 0, opt: { mute: false, shake: true } };
+let save = { hi: 0, best: 0, ach: [], pow: 0, medals: 0, meta: {}, survBest: 0, opt: { mute: false, shake: true } };
 
 function loadSave() {
   try {
@@ -312,6 +376,9 @@ function loadSave() {
       save.best = s.best | 0;
       save.ach = Array.isArray(s.ach) ? s.ach : [];
       save.pow = s.pow | 0;
+      save.medals = s.medals | 0;
+      save.meta = (s.meta && typeof s.meta === 'object') ? s.meta : {};
+      save.survBest = s.survBest | 0;
       if (s.opt) {
         save.opt.mute = !!s.opt.mute;
         save.opt.shake = s.opt.shake !== false;
@@ -327,6 +394,45 @@ function commitSave() {
 }
 loadSave();
 let hiScore = save.hi;
+
+// ═══════════════════════════════════════════════════════════════
+// 메타 진행 — 영구 강화 (런이 끝나도 남는 성장)
+// 런 종료 시(승패 무관) 소지금 일부 + 도달 스테이지 보너스가
+// 영구 통화 "훈장"으로 전환되고, 메인 화면의 영구 강화에서 소비한다.
+// 죽음이 손실이 아니라 다음 도전의 자본이 되게 하는 장치.
+// ═══════════════════════════════════════════════════════════════
+const META_UPGRADES = [
+  { k: 'vit',    icon: '❤️', name: '기초 체력',   desc: '시작 최대 체력 +10',        max: 3, cost: l => 30 + l * 30 },
+  { k: 'fund',   icon: '💵', name: '군자금',      desc: '시작 소지금 +$60',          max: 3, cost: l => 25 + l * 25 },
+  { k: 'nades',  icon: '💣', name: '탄약 벨트',   desc: '시작 수류탄 +1',            max: 2, cost: l => 30 + l * 30 },
+  { k: 'greed',  icon: '💰', name: '전리품 감각', desc: '코인 획득 +10%',            max: 3, cost: l => 40 + l * 40 },
+  { k: 'mg',     icon: '🔫', name: 'MG 지급',     desc: 'MG 기관총을 들고 시작',     max: 1, cost: () => 80 },
+  { k: 'spgage', icon: '⭐', name: '예열된 SP',   desc: '매 스테이지 SP 게이지 50%', max: 1, cost: () => 70 },
+  { k: 'life',   icon: '💗', name: '예비 잔기',   desc: '시작 잔기 +1',              max: 2, cost: l => 90 + l * 90 },
+];
+function metaLv(k) { return (save.meta && save.meta[k]) | 0; }
+function buyMeta(k) {
+  const u = META_UPGRADES.find(m => m.k === k);
+  if (!u) return false;
+  const lv = metaLv(k);
+  if (lv >= u.max) return false;
+  const cost = u.cost(lv);
+  if (save.medals < cost) return false;
+  save.medals -= cost;
+  save.meta[k] = lv + 1;
+  commitSave();
+  return true;
+}
+// 런 시작 시 영구 강화 적용 (startGame에서 makePlayer 직후 호출)
+function applyMetaStart() {
+  const p = player;
+  p.maxHp += 10 * metaLv('vit');
+  p.hp = p.maxHp;
+  p.money += 60 * metaLv('fund');
+  p.nades = Math.min(9, p.nades + metaLv('nades'));
+  p.lives += metaLv('life');
+  if (metaLv('mg') > 0) { p.inv.push('mg'); setAmmo('mg', wMax('mg')); }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // 오디오 엔진
@@ -813,8 +919,25 @@ const WEAPONS = {
   spread:  { name: 'SPREAD', max: 90,  regen: 0.50, cost: 6,  cd: 11 },
   homing:  { name: 'HOMING', max: 60,  regen: 0.30, cost: 10, cd: 22 },
   rail:    { name: 'RAIL',   max: 50,  regen: 0.25, cost: 16, cd: 30 },
+  // ── 진화 무기 (상점 판매·드랍 없음 — 기본 무기 + 아레나 퍼크 조합으로만 획득) ──
+  dragon:  { name: 'DRAGON', max: 90,  regen: 0.45, cost: 5,  cd: 12, evolved: true },
+  hellst:  { name: 'HELLSTM', max: 48, regen: 0.20, cost: 14, cd: 32, evolved: true },
+  prism:   { name: 'PRISM',  max: 90,  regen: 0.50, cost: 7,  cd: 8,  evolved: true },
+  swarm:   { name: 'SWARM',  max: 72,  regen: 0.35, cost: 9,  cd: 18, evolved: true },
 };
 const WEAPON_POOL = ['mg', 'shotgun', 'laser', 'blade', 'flame', 'rocket', 'spread', 'homing', 'rail'];
+
+// ═══════════════════════════════════════════════════════════════
+// 무기 진화 — 기본 무기 + 특정 아레나 퍼크(구역 클리어 3택)를 함께
+// 보유하면 자동으로 상위 무기로 합성된다. 조건이 갖춰지는 즉시
+// (퍼크 선택 직후 또는 무기 획득 직후) checkEvolutions()가 발동.
+// ═══════════════════════════════════════════════════════════════
+const EVOLUTIONS = [
+  { base: 'shotgun', perk: 'dmg',   to: 'dragon', icon: '🐉', kr: '화염 산탄 5발 + 화상' },
+  { base: 'rocket',  perk: 'boom',  to: 'hellst', icon: '☄️', kr: '착탄 시 새끼폭탄 3발 분열' },
+  { base: 'laser',   perk: 'rate',  to: 'prism',  icon: '🔱', kr: '명중 시 2갈래 분광' },
+  { base: 'homing',  perk: 'ultch', to: 'swarm',  icon: '🐝', kr: '유도 미사일 2연장' },
+];
 
 // ═══════════════════════════════════════════════════════════════
 // 캐릭터 6명
@@ -1088,6 +1211,13 @@ const kmap = {
 addEventListener('keydown', e => {
   if (e.code === 'KeyN') { toggleMute(); e.preventDefault(); return; }
   if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
+  // 3택 업그레이드 카드: 숫자키로 즉시 선택
+  if (perkChoices && state === 'play' && /^Digit[123]$/.test(e.code)) {
+    const i = +e.code.slice(5) - 1;
+    if (i < perkChoices.length && perkAnimT > 6) { perkSel = i; pickPerk(i); }
+    e.preventDefault();
+    return;
+  }
   if (kmap[e.code]) { keys[kmap[e.code]] = true; e.preventDefault(); }
 });
 addEventListener('keyup', e => {
@@ -1116,6 +1246,17 @@ let cam = 0, camMax = 0, shake = 0, tick = 0, flashScreen = 0;
 // 스테이지를 여러 화면으로 쪼갠다. 구역에 들어서면 카메라가 잠기고
 // 전방이 봉쇄되며, 그 화면의 적을 전멸시켜야 다음으로 넘어갈 수 있다.
 let arenas = [], arena = null, arenaClearT = 0, arenaBanner = 0;
+// ── 구역 클리어 3택 업그레이드 (런 한정, 스테이지 넘어도 유지) ──
+let perkChoices = null;      // 선택 중인 카드 3장 (null이면 비표시)
+let perkSel = 0, perkAnimT = 0, perkPendingT = 0;
+let perkPrev = { left: false, right: false, fire: false, jump: false };
+// ── 서바이벌(호드) 모드 ────────────────────────────────────────
+// 선택한 스테이지 지형에서 무한 웨이브 생존. 아레나·APC·보스 없음.
+// 25킬마다 3택 퍼크, 45초마다 웨이브 승급(스폰 가속 + 상위 병종 추가).
+let survival = false;
+let survT = 0, survKills = 0, survNext = 25, survWave = 1, survBanner = 0;
+let odShown = 0;             // 이번 런에서 연출까지 끝낸 오버드라이브 단계
+let selMode = 'campaign';    // 메인 화면 모드 토글 (campaign | survival)
 let bullets = [], ebullets = [], enemies = [], particles = [], pickups = [];
 let nades = [], floaters = [], platforms = [], strikes = [], eshards = [], barriers = [];
 let slashes = [], ladders = [], crates = [], hazards = [], sentries = [];
@@ -1154,7 +1295,7 @@ function makePlayer(ci) {
     ult: 0, ultT: 0, ultMode: null, beamX: 0, rage: 0, ultReady: false, ultUses: 0,
     fly: 0, climbing: false, jumps: 0, standPl: null,
     money: 0, shopLock: false, capMul: 1, hpRegen: 0,
-    perks: {}, spdBonus: 0, ultGainMul: 1, critBonus: 0, regenMul: 1,
+    perks: {}, rperks: {}, spdBonus: 0, ultGainMul: 1, critBonus: 0, regenMul: 1,
     anim: { n: 'idle', f: 0 }, landT: 0, deadAnim: false, crouch: false, vehCd: 0, vskin: null,
     coyote: 0, jumpBuf: 0, camLead: 0, blockHint: 0, ultMsgCd: 0,
   };
@@ -1182,6 +1323,35 @@ function pickupWeapon(wk) {
   setAmmo(wk, wMax(wk));
   p.weapon = wk;
   addFloat(p.x, p.y - 12, WEAPONS[wk].name + '!', '#ffcf3f');
+  checkEvolutions();
+}
+
+// 진화 조건 충족 여부를 검사하고 즉시 합성한다.
+// 이미 진화 무기를 보유한 상태에서 기본 무기를 또 주우면 합쳐서 완충만 한다.
+function checkEvolutions() {
+  const p = player;
+  if (!p) return;
+  EVOLUTIONS.forEach(ev => {
+    const i = p.inv.indexOf(ev.base);
+    if (i < 0 || rperk(ev.perk) <= 0) return;
+    if (p.inv.indexOf(ev.to) >= 0) {
+      p.inv.splice(i, 1);                          // 중복 방지: 기본 무기를 흡수
+      if (p.weapon === ev.base) p.weapon = ev.to;
+      setAmmo(ev.to, wMax(ev.to));
+      delete p.ammoMap[ev.base];
+      return;
+    }
+    p.inv[i] = ev.to;
+    if (p.weapon === ev.base) p.weapon = ev.to;
+    setAmmo(ev.to, wMax(ev.to));
+    delete p.ammoMap[ev.base];
+    addFloat(p.x + p.w / 2, p.y - 44, ev.icon + ' 무기 진화!', '#ff8a5c');
+    addFloat(p.x + p.w / 2, p.y - 30, WEAPONS[ev.base].name + ' ▶ ' + WEAPONS[ev.to].name, '#ffd23f');
+    flashScreen = Math.max(flashScreen, 5);
+    for (let k = 0; k < 18; k++) particles.push(spark(p.x + p.w / 2, p.y + p.h / 2, '#ff8a5c'));
+    addShake(5);
+    S.power();
+  });
 }
 function cycleWeapon() {
   const p = player;
@@ -1468,13 +1638,15 @@ function startStage(i) {
   stageIndex = i; stage = STAGES[i];
   cam = 0; camMax = 0; stageTime = 0; spawnTimer = 70;
   arena = null; arenaClearT = 0; arenaBanner = 0;
+  perkChoices = null; perkPendingT = 0;
   buildArenas();
+  if (survival) arenas = [];               // 서바이벌: 구역 봉쇄 없음 (퍼크는 킬 수로 지급)
   boss = null; stageBanner = 130; intermission = 0; bossAnnounced = false; shopNext = -1;
   bullets = []; ebullets = []; enemies = []; particles = []; nades = [];
   floaters = []; strikes = []; slashes = []; eshards = []; sentries = []; evolc = []; beams = []; btargets = [];
   bossIntro = 0;
   combo = 0; comboT = 0;
-  st = { deaths: 0, dmg: 0, maxCombo: 0, pow: 0, powCount: 0, midDone: false };
+  st = { deaths: 0, dmg: 0, maxCombo: 0, pow: 0, powCount: 0, midDone: survival };   // 서바이벌: APC 미등장
   buildLevel();
   initWeather();
   const p = player;
@@ -1488,7 +1660,8 @@ function startStage(i) {
   // 보유 무기 전부 완충
   p.inv.forEach(w => { if (!WEAPONS[w].inf) setAmmo(w, wMax(w)); });
   p.ultUses = clamp(stage.ultUses + diff.ultBonus + CHARS[p.char].ultUseMod, 1, 9);
-  p.ult = 0; p.ultReady = false; p.ultT = 0; p.ultMode = null; p.rage = 0;
+  p.ult = metaLv('spgage') > 0 ? 50 : 0;   // 영구 강화: 예열된 SP
+  p.ultReady = false; p.ultT = 0; p.ultMode = null; p.rage = 0;
   if (p.mode !== 'foot') exitMode(false);
   p.y = GROUND_Y - p.h;
   state = 'play';
@@ -1768,11 +1941,11 @@ function drawBonus() {
   drawPlayer();
   drawParticles();
 
-  // 플로팅 텍스트
-  ctx.font = '6px "Press Start 2P"';
+  // 플로팅 텍스트 (피해 숫자는 sz로 피해량 비례 크기)
   ctx.textAlign = 'center';
   floaters.forEach(f => {
     ctx.globalAlpha = clamp(f.life / 30, 0, 1);
+    ctx.font = (f.sz || 6) + 'px "Press Start 2P"';
     ctx.fillStyle = f.c;
     ctx.fillText(f.txt, f.x, f.y);
   });
@@ -1941,7 +2114,233 @@ function updateArena() {
       if (a.idx >= 2) pickups.push({ x: cx2 + 24, y: GROUND_Y - 18, type: 'nade' });
       for (let c4 = 0; c4 < 6; c4++)
         pickups.push({ x: cx2 - 60 + c4 * 24, y: GROUND_Y - 44, type: 'coin', val: 25 });
+      // "구역 제압!" 연출이 지나간 뒤 3택 업그레이드 카드를 연다
+      perkPendingT = 55;
     }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 구역 클리어 3택 업그레이드 (뱀서식 런 내 성장)
+// 구역을 제압할 때마다 무작위 카드 3장 중 1장을 골라 이번 런 동안 유지.
+// 같은 퍼크를 다시 고르면 중첩(레벨업)되며, 만렙 퍼크는 후보에서 빠진다.
+// ═══════════════════════════════════════════════════════════════
+const ARENA_PERKS = [
+  { k: 'dmg',   icon: '🔥', name: '화력 강화',  desc: '모든 공격 피해 +10%',     max: 3 },
+  { k: 'rate',  icon: '⚡', name: '연사 가속',  desc: '발사 간격 -10%',          max: 3 },
+  { k: 'armor', icon: '🛡️', name: '전술 장갑',  desc: '받는 피해 -10%',          max: 3 },
+  { k: 'maxhp', icon: '❤️', name: '강화 체력',  desc: '최대 체력 +20 즉시 회복', max: 3 },
+  { k: 'boom',  icon: '💥', name: '유폭탄',     desc: '처치 시 15% 확률 폭발',   max: 3 },
+  { k: 'greed', icon: '💰', name: '전리품 사냥', desc: '코인 획득 +25%',         max: 2 },
+  { k: 'ultch', icon: '⭐', name: '오버차지',   desc: '필살기 충전 +25%',        max: 2 },
+  { k: 'speed', icon: '👟', name: '전투 부츠',  desc: '이동 속도 +8%',           max: 2 },
+];
+function rperk(k) { return (player && player.rperks && player.rperks[k]) || 0; }
+
+// ═══════════════════════════════════════════════════════════════
+// ⑤ 화력 인플레 — 후반 파워 판타지
+// 오버드라이브: 이번 런에서 모은 퍼크 총 레벨이 6/10/14를 넘을 때마다
+//   화력이 질적으로 도약한다 (탄 크기·피해 → 후방 보조탄 → 상향 에코탄).
+// 램페이지: 콤보 15 이상 유지 중 연사 +15% + 화면 가장자리 달아오름.
+//   피격 시 콤보와 함께 꺼진다 — 위험할수록 강해지는 보상 루프.
+// ═══════════════════════════════════════════════════════════════
+function odLevel() {
+  if (!player || !player.rperks) return 0;
+  let s = 0;
+  for (const k in player.rperks) s += player.rperks[k];
+  return s >= 14 ? 3 : s >= 10 ? 2 : s >= 6 ? 1 : 0;
+}
+function rampageOn() { return combo >= 15 && comboT > 0; }
+// 피해 숫자 팝업 — 10틱 단위 합산치를 받아 크기·색을 피해량에 비례시킨다
+function addDmgFloat(x, y, d) {
+  const v = Math.round(d);
+  if (v <= 0 || floaters.length > 70) return;          // 폭주 상한
+  const sz = v >= 40 ? 9 : v >= 18 ? 7 : 5;
+  const c = v >= 40 ? '#ff8a3c' : v >= 18 ? '#ffd23f' : '#efe6cc';
+  floaters.push({ x: x + rnd(-7, 7), y: y + rnd(-3, 3), txt: String(v), c, life: v >= 40 ? 38 : 26, sz });
+}
+
+function openPerkChoice() {
+  if (!player) return;
+  if (player.dead) { perkPendingT = 30; return; }   // 사망 연출 중이면 잠시 뒤 재시도
+  const pool = ARENA_PERKS.filter(pk => rperk(pk.k) < pk.max);
+  if (pool.length === 0) return;                       // 전부 만렙 — 조용히 생략
+  for (let i = pool.length - 1; i > 0; i--) {          // 셔플
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+  }
+  perkChoices = pool.slice(0, 3);
+  perkSel = perkChoices.length > 1 ? 1 : 0;            // 가운데 카드가 기본 커서
+  perkAnimT = 0;
+  // 열리는 순간 눌려 있던 키가 곧바로 이동/확인으로 새지 않게 래치
+  perkPrev = { left: true, right: true, fire: true, jump: true };
+  S.alert();
+}
+
+function applyPerk(k) {
+  const p = player;
+  p.rperks[k] = rperk(k) + 1;
+  // dmg/rate/armor/boom/greed는 rperk() 카운트를 각 훅에서 읽는 패시브.
+  // 아래 셋은 기존 스탯 필드에 그대로 얹는다 (상점 프리미엄 퍼크와 중첩).
+  if (k === 'maxhp') { p.maxHp += 20; p.hp = Math.min(p.maxHp, p.hp + 20); }
+  else if (k === 'ultch') p.ultGainMul = (p.ultGainMul || 1) + 0.25;
+  else if (k === 'speed') p.spdBonus = (p.spdBonus || 0) + 0.08;
+}
+
+function pickPerk(i) {
+  const pk = perkChoices && perkChoices[i];
+  if (!pk) return;
+  applyPerk(pk.k);
+  addFloat(player.x + player.w / 2, player.y - 34, pk.name + ' LV' + rperk(pk.k), '#ffd23f');
+  flashScreen = Math.max(flashScreen, 3);
+  S.fanfare();
+  perkChoices = null;
+  checkEvolutions();                                   // 퍼크가 진화 재료였다면 즉시 합성
+  // ⑤ 오버드라이브 승급 연출 — 퍼크 총 레벨 임계 돌파 순간
+  const od = odLevel();
+  if (od > odShown) {
+    odShown = od;
+    addFloat(player.x + player.w / 2, player.y - 56, '⚡ OVERDRIVE ' + ['', 'I', 'II', 'III'][od] + ' ⚡', '#ff8a5c');
+    addFloat(player.x + player.w / 2, player.y - 44,
+      ['', '탄환 강화!', '후방 보조탄 가동!', '상향 에코탄 가동!'][od], '#ffd23f');
+    flashScreen = Math.max(flashScreen, 6);
+    addShake(6);
+    for (let i = 0; i < 22; i++) particles.push(spark(player.x + player.w / 2, player.y + player.h / 2, i % 2 ? '#ff8a5c' : '#ffd23f'));
+    S.power();
+  }
+  player.jumpHeld = true;                              // 확인 입력이 점프로 새지 않게
+  player.fireCd = Math.max(player.fireCd, 8);
+}
+
+function updatePerkChoice() {
+  perkAnimT++;
+  // 뒷배경이 죽은 화면이 되지 않게 이펙트만 계속 굴린다
+  updateParticles(); updateFx();
+  floaters.forEach(f => { f.y -= 0.5; f.life--; });
+  floaters = floaters.filter(f => f.life > 0);
+  if (shake > 0) { shake *= 0.85; if (shake < 0.3) shake = 0; }
+  const n = perkChoices.length;
+  if (keys.left && !perkPrev.left) { perkSel = (perkSel + n - 1) % n; S.pickup(); }
+  if (keys.right && !perkPrev.right) { perkSel = (perkSel + 1) % n; S.pickup(); }
+  const confirm = (keys.fire && !perkPrev.fire) || (keys.jump && !perkPrev.jump);
+  perkPrev = { left: keys.left, right: keys.right, fire: keys.fire, jump: keys.jump };
+  if (confirm && perkAnimT > 12) pickPerk(perkSel);
+}
+
+function drawPerkChoice() {
+  const t = clamp(perkAnimT / 14, 0, 1);
+  ctx.fillStyle = 'rgba(6,5,3,' + (0.62 * t).toFixed(3) + ')';
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.globalAlpha = t;
+  ctx.font = '12px "Press Start 2P", monospace';
+  ctx.fillStyle = '#07060a'; ctx.fillText('전술 업그레이드', W / 2 + 2, 52);
+  ctx.fillStyle = '#ffd23f'; ctx.fillText('전술 업그레이드', W / 2, 50);
+  ctx.font = '6px "Press Start 2P", monospace';
+  ctx.fillStyle = '#cdbf95';
+  ctx.fillText('구역 제압 보상 — 하나를 선택하라 (이번 런 동안 유지)', W / 2, 66);
+
+  const n = perkChoices.length, cw = 118, ch = 126, gap = 12;
+  const x0 = W / 2 - (n * cw + (n - 1) * gap) / 2;
+  for (let i = 0; i < n; i++) {
+    const pk = perkChoices[i], sel = i === perkSel, lv = rperk(pk.k);
+    // 카드별 시차 등장 (아래에서 슬라이드 인)
+    const kt = clamp((perkAnimT - i * 3) / 12, 0, 1);
+    const cx3 = x0 + i * (cw + gap);
+    const cy3 = 80 + (1 - kt) * 26 - (sel ? 4 : 0);
+    ctx.globalAlpha = t * kt;
+    ctx.fillStyle = sel ? '#241d0c' : '#141210';
+    ctx.fillRect(cx3, cy3, cw, ch);
+    ctx.lineWidth = sel ? 2 : 1;
+    ctx.strokeStyle = sel ? '#ffd23f' : '#5a5340';
+    ctx.strokeRect(cx3 + 0.5, cy3 + 0.5, cw - 1, ch - 1);
+    if (sel) {                                         // 선택 카드 깜빡이는 모서리 화살표
+      ctx.fillStyle = '#ffd23f';
+      if (tick % 24 < 16) {
+        ctx.beginPath();
+        ctx.moveTo(cx3 + cw / 2, cy3 - 10); ctx.lineTo(cx3 + cw / 2 - 6, cy3 - 17); ctx.lineTo(cx3 + cw / 2 + 6, cy3 - 17);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+    ctx.font = '17px "Press Start 2P", monospace';
+    ctx.fillText(pk.icon, cx3 + cw / 2, cy3 + 34);
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.fillStyle = sel ? '#ffd23f' : '#e8e0c8';
+    ctx.fillText(pk.name, cx3 + cw / 2, cy3 + 56);
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = '#cdbf95';
+    ctx.fillText(pk.desc, cx3 + cw / 2, cy3 + 74);
+    // 이 퍼크가 무기 진화 재료라면 레시피 힌트 표시
+    const ev2 = EVOLUTIONS.find(v => v.perk === pk.k);
+    if (ev2) {
+      ctx.fillStyle = player.inv.indexOf(ev2.to) >= 0 ? '#5ad15a'
+        : (player.inv.indexOf(ev2.base) >= 0 ? '#ff8a5c' : '#6a6350');
+      ctx.fillText(ev2.icon + ' ' + WEAPONS[ev2.base].name + '▶' + WEAPONS[ev2.to].name, cx3 + cw / 2, cy3 + 86);
+    }
+    // 중첩 레벨 핍: 채워진 칸 = 보유, 빛나는 칸 = 지금 얻을 레벨
+    const pw = 10, ph2 = 5, px0 = cx3 + cw / 2 - (pk.max * pw + (pk.max - 1) * 4) / 2;
+    for (let j = 0; j < pk.max; j++) {
+      const fx2 = px0 + j * (pw + 4);
+      if (j < lv) ctx.fillStyle = '#ffd23f';
+      else if (j === lv) ctx.fillStyle = (tick % 20 < 12) ? '#ffefad' : '#8a7a3a';
+      else ctx.fillStyle = '#3a352a';
+      ctx.fillRect(fx2, cy3 + 97, pw, ph2);
+    }
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = lv > 0 ? '#9fe8ff' : '#6a6350';
+    ctx.fillText(lv > 0 ? 'LV' + lv + ' → LV' + (lv + 1) : 'NEW', cx3 + cw / 2, cy3 + 112);
+  }
+  ctx.globalAlpha = t;
+  if (tick % 40 < 26) {
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = '#8a8158';
+    ctx.fillText('◀▶ 선택  ·  점프/발사 확인  ·  1~3 바로 선택', W / 2, 228);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'left';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 서바이벌 스포너 — 시간 비례로 간격 단축·물량 증가·엘리트 확률 상승.
+// 스폰 방향은 2/3 전방 + 1/3 후방(포위감), 고정형(포탑·박격포)은 화면 안 배치.
+// ═══════════════════════════════════════════════════════════════
+function survRoster() {
+  const r = stage.roster.slice();
+  if (survWave >= 3) r.push('heavy');
+  if (survWave >= 4) r.push('rocket', 'dog');
+  if (survWave >= 5) r.push('ninja');
+  if (survWave >= 6) r.push('drone', 'sniper');
+  if (survWave >= 8) r.push('shield');
+  return r;
+}
+function survivalSpawner() {
+  survT++;
+  // 웨이브 승급: 45초(2700틱)마다 — 배너 + 회복 보급 낙하
+  const wv = 1 + Math.floor(survT / 2700);
+  if (wv > survWave) {
+    survWave = wv;
+    survBanner = 100;
+    S.alert();
+    addShake(3);
+    pickups.push({ x: clamp(player.x + rnd(-70, 70), cam + 20, cam + W - 20), y: GROUND_Y - 16, type: 'hp' });
+  }
+  spawnTimer -= ts();
+  if (spawnTimer > 0) return;
+  const I = 1 + (survT / 3600) + (survWave - 1) * 0.12;
+  spawnTimer = clamp(150 / I * diff.spawnRate, 34, 170);
+  const cluster = clamp(1 + Math.floor(survWave / 2), 1, 4);
+  const roster = survRoster();
+  for (let n = 0; n < cluster; n++) {
+    const type = roster[Math.floor(Math.random() * roster.length)];
+    const c = ECFG[type];
+    const stationary = (type === 'turret' || type === 'mortar');
+    const fromRight = (survT + n) % 3 !== 0;
+    const y = c.fly ? GROUND_Y - (58 + rnd(0, 30)) : GROUND_Y - c.h;
+    const ex = stationary
+      ? cam + 60 + rnd(0, W - 120)
+      : (fromRight ? cam + W + 24 + n * 26 : cam - 30 - n * 22);
+    const elite = type !== 'turret' && Math.random() < clamp(0.05 + survWave * 0.03, 0, 0.4);
+    enemies.push(mkEnemy(ex, y, type, I, elite));
   }
 }
 
@@ -1990,8 +2389,10 @@ function addMoney(n) {
 function applyPickup(pk) {
   const p = player, t = pk.type;
   if (t === 'coin') {
-    addMoney(pk.val || 10);
-    addFloat(pk.x, pk.y - 8, '+$' + (pk.val || 10), '#ffd23f');
+    // 전리품 사냥 퍼크(런) + 전리품 감각(영구 강화): 코인 가치 증폭
+    const v = Math.round((pk.val || 10) * (1 + 0.25 * rperk('greed') + 0.10 * metaLv('greed')));
+    addMoney(v);
+    addFloat(pk.x, pk.y - 8, '+$' + v, '#ffd23f');
     S.coin();
     return;
   }
@@ -2133,6 +2534,39 @@ function buildShopDOM() {
     box.appendChild(grid);
   });
 
+  // ── 무기 진화 레시피 안내 ────────────────────────────────────
+  // 구매 불가 정보 카드: 기본 무기 + 아레나 퍼크 조합을 보여줘
+  // 상점 구매가 "빌드 설계"가 되도록 한다
+  const evHead = document.createElement('div');
+  evHead.className = 'shopcat';
+  evHead.style.borderColor = '#ff8a5c';
+  evHead.innerHTML = '<span class="shopcaticon">🧬</span>'
+    + '<span class="shopcatname" style="color:#ff8a5c">무기 진화</span>'
+    + '<span class="shopcatdesc">기본 무기 + 구역 보상 퍼크를 함께 모으면 자동 합성</span>';
+  box.appendChild(evHead);
+  const evGrid = document.createElement('div');
+  evGrid.className = 'shopgrid';
+  EVOLUTIONS.forEach(ev => {
+    const pkDef = ARENA_PERKS.find(a => a.k === ev.perk);
+    const hasW = player.inv.indexOf(ev.base) >= 0;
+    const hasP = rperk(ev.perk) > 0;
+    const done = player.inv.indexOf(ev.to) >= 0;
+    const d = document.createElement('div');
+    d.className = 'shopit';
+    d.style.cursor = 'default';
+    if (done) d.style.borderColor = '#5ad15a';
+    const stateTxt = done
+      ? '<span style="color:#5ad15a">✔ 진화 완료</span>'
+      : '<span style="color:' + (hasW ? '#5ad15a' : '#8a8158') + '">' + WEAPONS[ev.base].name + (hasW ? '✔' : '') + '</span>'
+        + '+<span style="color:' + (hasP ? '#5ad15a' : '#8a8158') + '">' + pkDef.icon + pkDef.name + (hasP ? '✔' : '') + '</span>';
+    d.innerHTML = '<span class="shopicon">' + ev.icon + '</span>'
+      + '<span class="shoplabel">' + WEAPONS[ev.to].name + '</span>'
+      + '<span class="shopdesc">' + ev.kr + '</span>'
+      + '<span class="pr">' + stateTxt + '</span>';
+    evGrid.appendChild(d);
+  });
+  box.appendChild(evGrid);
+
   // ── 남은 돈 안내 (Q1) ────────────────────────────────────────
   const costs = list.map(shopCost).filter(c => c <= player.money);
   const cheapest = list.reduce((m, it) => Math.min(m, shopCost(it)), Infinity);
@@ -2176,7 +2610,7 @@ function _buyItemBase(k) {
 // pdmg: 캐릭터 공격배율 + RAGE 상태(2배) 반영
 // ═══════════════════════════════════════════════════════════════
 function pdmg(base) {
-  return base * CHARS[player.char].dmgOut * (player.rage > 0 ? 2 : 1);
+  return base * CHARS[player.char].dmgOut * (player.rage > 0 ? 2 : 1) * (1 + 0.10 * rperk('dmg'));
 }
 
 function ejectShell() {
@@ -2360,6 +2794,30 @@ function playerFire() {
     // 레일건: 초고속 관통, 실드도 뚫는다
     bullets.push({ x: mX, y: mY, vx: Math.cos(aim) * 16, vy: Math.sin(aim) * 16, life: 40, dmg: pdmg(30), r: 2, pierce: true, rail: true, hitList: [] });
     p.fireCd = 30; flashScreen = Math.max(flashScreen, 2); S.shoot('rail'); addShake(3); addHitstop(2); ejectShell();
+  } else if (useWp === 'dragon') {
+    // 드래곤 브레스 (샷건 진화): 중거리 화염 산탄 5발 + 화상
+    for (let i = -2; i <= 2; i++) {
+      const a = aim + i * 0.11;
+      bullets.push({
+        x: mX, y: mY + rnd(-2, 2),
+        vx: Math.cos(a) * 5.2 + p.vx * 0.3, vy: Math.sin(a) * 5.2 + rnd(-0.2, 0.2),
+        life: 26, dmg: pdmg(5), r: 3, flame: true, burn: true,
+      });
+    }
+    p.fireCd = 12; addShake(2); S.shoot('shotgun'); ejectShell();
+  } else if (useWp === 'hellst') {
+    // 헬스톰 (로켓 진화): 착탄 시 새끼폭탄 3발로 분열하는 클러스터 로켓
+    bullets.push({ x: mX, y: mY, vx: Math.cos(aim) * 4.5, vy: Math.sin(aim) * 4.5, life: 120, dmg: pdmg(26), r: 4, explosive: true, rocketP: true, cluster: 3 });
+    p.fireCd = 32; addShake(3); S.shoot('rocketP');
+  } else if (useWp === 'prism') {
+    // 프리즘 랜스 (레이저 진화): 관통 광선이 첫 명중 시 2갈래로 분광
+    bullets.push({ x: mX, y: mY, vx: Math.cos(aim) * 12, vy: Math.sin(aim) * 12, life: 50, dmg: pdmg(11), r: 2, pierce: true, hitList: [], fork: true });
+    p.fireCd = 8; S.shoot('laser'); ejectShell();
+  } else if (useWp === 'swarm') {
+    // 스웜 (유도탄 진화): 유도 미사일 2연장 발사
+    for (let i = -1; i <= 1; i += 2)
+      bullets.push({ x: mX, y: mY + i * 3, vx: Math.cos(aim + i * 0.22) * 4, vy: Math.sin(aim + i * 0.22) * 4, spd: 4.8, life: 140, dmg: pdmg(11), r: 3, homing: true });
+    p.fireCd = 18; S.shoot('homing');
   } else {
     bullets.push({ x: mX, y: mY, vx: Math.cos(aim) * 8.5, vy: Math.sin(aim) * 8.5, life: 55, dmg: pdmg(9), r: 2 });
     p.fireCd = Math.round(9 * c.fireMul); S.shoot('gun'); ejectShell();
@@ -2637,6 +3095,21 @@ function onEnemyKilled(e) {
   if (run.kills === 1) unlockAch('FIRST_BLOOD');
   if (run.kills >= 100) unlockAch('EXTERM');
   if (combo >= 10) unlockAch('COMBO_10');
+  // ⑤ 램페이지 발동 (콤보 15 도달 순간)
+  if (combo === 15) {
+    addFloat(player.x + player.w / 2, player.y - 46, '🔥 RAMPAGE! 연사 가속!', '#ff6a3c');
+    flashScreen = Math.max(flashScreen, 4);
+    S.power();
+  }
+  // 서바이벌: 25킬마다 3택 퍼크 지급
+  if (survival) {
+    survKills++;
+    if (survKills >= survNext) {
+      survNext += 25;
+      perkPendingT = Math.max(perkPendingT, 40);
+      addFloat(player.x + player.w / 2, player.y - 40, '⭐ 업그레이드 획득!', '#ffd23f');
+    }
+  }
   const mult = 1 + Math.min(combo, 10) * 0.1;
   const pts = Math.round(e.pts * mult);
   addScore(pts);
@@ -2656,6 +3129,13 @@ function hurtEnemy(e, dmg) {
   }
   e.hp -= d;
   e.hit = 5;
+  // ⑤ 피해 숫자 팝업 — 10틱 단위로 합산해 화염방사 같은 다탄 무기의 폭주 방지
+  e.dmgAcc = (e.dmgAcc || 0) + d;
+  if (!e.dmgT0 || tick - e.dmgT0 >= 10) {
+    addDmgFloat(e.x + e.w / 2, e.y - 10, e.dmgAcc);
+    e.dmgAcc = 0;
+    e.dmgT0 = tick;
+  }
   gainUlt(d * 0.22);
   const dir = (e.x + e.w / 2 > player.x + player.w / 2) ? 1 : -1;
   fx.blood(e.x + e.w / 2, e.y + e.h / 2, dir);
@@ -2671,6 +3151,11 @@ function hurtEnemy(e, dmg) {
     gainUlt(5);
     S.edie();
     addHitstop(3);
+    // ⑤ 오버드라이브: 처치 파티클 증폭 — 화면이 불꽃으로 덮이게
+    const od3 = odLevel();
+    if (od3 > 0)
+      for (let i = 0; i < od3 * 4; i++)
+        particles.push(spark(e.x + e.w / 2, e.y + e.h / 2, i % 2 ? '#ff8a5c' : '#ffd23f'));
     if (e.type !== 'apc' && e.type !== 'bomber' && !e.fly) fx.corpse(e, dir);
     for (let i = 0; i < 5; i++) fx.debris(e.x + e.w / 2, e.y + e.h / 2, rnd(-2.4, 2.4), rnd(-3.4, -0.8), '#5a3a2a');
     if (e.type === 'bomber') {
@@ -2684,6 +3169,11 @@ function hurtEnemy(e, dmg) {
       addFloat(e.x + 20, e.y - 16, 'APC 격파!', '#ffd23f');
     } else {
       explode(e.x + e.w / 2, e.y + e.h / 2, 18, 0, true);
+    }
+    // 유폭탄 퍼크: 처치한 적이 확률적으로 유폭해 주변 적에 연쇄 피해
+    if (rperk('boom') > 0 && e.type !== 'bomber' && Math.random() < 0.15 * rperk('boom')) {
+      explode(e.x + e.w / 2, e.y + e.h / 2, 34, pdmg(14), true);
+      addFloat(e.x + e.w / 2, e.y - 22, '유폭!', '#ff9a3c');
     }
     pickups.push({ x: e.x, y: GROUND_Y - 12, type: 'coin', val: e.coin });
     if (Math.random() < 0.1) pickups.push({ x: e.x + 10, y: GROUND_Y - 14, type: 'hp' });
@@ -2710,6 +3200,13 @@ function hurtBoss(dmg) {
   if (d > cap) d = cap + (d - cap) * 0.25;
   b.hp -= d;
   b.hit = 4;
+  // ⑤ 보스에게도 피해 숫자 팝업 (합산 방식 동일)
+  b.dmgAcc = (b.dmgAcc || 0) + d;
+  if (!b.dmgT0 || tick - b.dmgT0 >= 10) {
+    addDmgFloat(b.x + b.w / 2, b.y - 8, b.dmgAcc);
+    b.dmgAcc = 0;
+    b.dmgT0 = tick;
+  }
   gainUlt(d * 0.14);
   for (let i = 0; i < 2; i++)
     particles.push(spark(b.x + rnd(0, b.w), b.y + rnd(0, b.h), '#ffcf3f'));
@@ -2765,6 +3262,7 @@ function hurtPlayer(dmg) {
   const p = player;
   if (p.invuln > 0 || p.dead) return;
   dmg *= diff.dmgTaken * CHARS[p.char].dmgMul;
+  dmg *= Math.pow(0.9, rperk('armor'));   // 전술 장갑 퍼크 (탑승물 피해에도 적용)
   // 탑승물이 대신 피해를 받는다
   if (hasVehHp(p.mode)) {
     p.vehHp -= dmg;
@@ -3490,7 +3988,7 @@ function stepBullet(b) {
     if (c.dead) continue;
     if (hitBox(b.x, b.y, 3, 3, c.x, c.y, c.w, c.h)) {
       damageCrate(c, b.dmg);
-      if (b.explosive) { explode(b.x, b.y, 34, b.dmg, true); b.life = 0; return; }
+      if (b.explosive) { explode(b.x, b.y, 34, b.dmg, true); spawnCluster(b); b.life = 0; return; }
       if (!b.pierce) { b.life = 0; return; }
     }
   }
@@ -3505,12 +4003,13 @@ function stepBullet(b) {
       b.life = 0;
       return;
     }
-    if (b.explosive) { explode(b.x, b.y, 36, b.dmg, true); b.life = 0; return; }
+    if (b.explosive) { explode(b.x, b.y, 36, b.dmg, true); spawnCluster(b); b.life = 0; return; }
     if (b.pierce) {
       if (b.hitList.indexOf(e) < 0) {
         hurtEnemy(e, b.dmg);
         if (b.burn) e.burn = Math.max(e.burn, 80);
         b.hitList.push(e);
+        if (b.fork && !b.forked) forkBeams(b, e);
       }
       continue;
     }
@@ -3524,10 +4023,33 @@ function stepBullet(b) {
   // 보스 충돌
   if (boss && !boss.dead && !boss.hidden && boss.state !== 'enter' &&
       hitBox(b.x, b.y, 3, 3, boss.x, boss.y, boss.w, boss.h)) {
-    if (b.explosive) { explode(b.x, b.y, 36, b.dmg, true); b.life = 0; }
+    if (b.explosive) { explode(b.x, b.y, 36, b.dmg, true); spawnCluster(b); b.life = 0; }
     else if (b.pierce) { if (!b.bossHit) { hurtBoss(b.dmg); b.bossHit = true; } }
     else { hurtBoss(b.dmg); if (!b.flame) b.life = 0; }
   }
+}
+
+// 헬스톰 클러스터: 폭발 지점에서 새끼폭탄을 흩뿌린다 (미니 수류탄으로 낙하 후 재폭발)
+function spawnCluster(b) {
+  if (!b.cluster) return;
+  for (let i = 0; i < b.cluster; i++)
+    nades.push({
+      x: b.x, y: b.y - 4,
+      vx: (i - (b.cluster - 1) / 2) * 2.2 + rnd(-0.4, 0.4),
+      vy: -rnd(3, 4.5), t: rnd(26, 40), r: 3, mini: true,
+    });
+}
+// 프리즘 분광: 첫 명중 지점에서 좌우로 꺾인 짧은 광선 2발 (한 번만 분열)
+function forkBeams(b, e) {
+  b.forked = true;
+  const base = Math.atan2(b.vy, b.vx);
+  for (const s of [-0.5, 0.5])
+    bullets.push({
+      x: b.x, y: b.y,
+      vx: Math.cos(base + s) * 10, vy: Math.sin(base + s) * 10,
+      life: 26, dmg: b.dmg * 0.6, r: 2, pierce: true, hitList: [e],
+    });
+  for (let i = 0; i < 4; i++) particles.push(spark(b.x, b.y, '#cffcff'));
 }
 
 function hit(b, e) { return hitBox(b.x, b.y, b.r || 2, b.r || 2, e.x, e.y, e.w, e.h); }
@@ -3573,6 +4095,13 @@ function update() {
     return;
   }
   if (state !== 'play') return;
+
+  // ── 3택 업그레이드 선택 중: 월드를 멈추고 카드 입력만 처리 ────
+  if (perkChoices) { updatePerkChoice(); return; }
+  if (perkPendingT > 0) {
+    perkPendingT--;
+    if (perkPendingT === 0) openPerkChoice();
+  }
 
   stageTime++;
   if (stageBanner > 0) stageBanner--;
@@ -3873,24 +4402,49 @@ function update() {
   lastSpecial = keys.special;
   if (keys.swap && !lastSwap && !p.dead && p.mode === 'foot') cycleWeapon();
   lastSwap = keys.swap;
-  if (keys.fire && p.fireCd <= 0 && !p.dead && !p.climbing && p.stunT <= 0) playerFire();
+  if (keys.fire && p.fireCd <= 0 && !p.dead && !p.climbing && p.stunT <= 0) {
+    const b0 = bullets.length;
+    playerFire();
+    // ⑤ 오버드라이브: 방금 발사된 탄환을 굵고 강하게 (+티어당 피해 5%)
+    const od = odLevel();
+    if (od > 0) {
+      for (let bi = b0; bi < bullets.length; bi++) {
+        bullets[bi].r = (bullets[bi].r || 2) + 1;
+        if (bullets[bi].dmg) bullets[bi].dmg *= 1 + 0.05 * od;
+      }
+      // OD II: 후방 보조탄 — 등 뒤를 자동 견제
+      if (od >= 2 && p.mode === 'foot')
+        bullets.push({ x: p.x + (p.face > 0 ? 0 : p.w), y: p.y + Math.round(p.h * 0.4), vx: -p.face * 7, vy: 0, life: 40, dmg: pdmg(7), r: 2 });
+      // OD III: 상향 에코탄 — 공중까지 탄막이 번진다
+      if (od >= 3 && p.mode === 'foot')
+        bullets.push({ x: p.x + (p.face > 0 ? p.w : 0), y: p.y + 6, vx: p.face * 6.5, vy: -1.6, life: 45, dmg: pdmg(8), r: 2 });
+    }
+    // 연사 가속 퍼크: 방금 설정된 발사 쿨다운을 중첩 수만큼 단축
+    if (rperk('rate') > 0) p.fireCd = Math.max(1, Math.round(p.fireCd * (1 - 0.10 * rperk('rate'))));
+    // ⑤ 램페이지(콤보 15+): 연사 +15%
+    if (rampageOn()) p.fireCd = Math.max(1, Math.round(p.fireCd * 0.85));
+  }
   if (keys.nade && p.nadeCd <= 0 && !p.dead && p.stunT <= 0 && (p.mode === 'foot' || p.mode === 'hulk')) throwNade();
 
   // ── 상점 진입 트리거 ────────────────────────────────────────
 
   // ── 스폰 / 중간보스 / 보스 ──────────────────────────────────
-  checkArenaEnter();
-  updateArena();
-  runSpawner();
-  if (!boss && !st.midDone && camMax + W > stage.apcX) {
-    st.midDone = true;
-    enemies.push(mkEnemy(cam + W + 30, GROUND_Y - ECFG.apc.h, 'apc', 1));
-    addFloat(cam + W - 90, 110, '!! ARMORED APC !!', '#ff5a3c');
-    S.alert();
-  }
-  if (!boss && !arena && camMax >= stage.len - W - 5) {
-    spawnBoss();
-    if (!bossAnnounced) { bossAnnounced = true; S.alert(); }
+  if (survival) {
+    survivalSpawner();                     // 무한 웨이브 — 아레나·APC·보스 없음
+  } else {
+    checkArenaEnter();
+    updateArena();
+    runSpawner();
+    if (!boss && !st.midDone && camMax + W > stage.apcX) {
+      st.midDone = true;
+      enemies.push(mkEnemy(cam + W + 30, GROUND_Y - ECFG.apc.h, 'apc', 1));
+      addFloat(cam + W - 90, 110, '!! ARMORED APC !!', '#ff5a3c');
+      S.alert();
+    }
+    if (!boss && !arena && camMax >= stage.len - W - 5) {
+      spawnBoss();
+      if (!bossAnnounced) { bossAnnounced = true; S.alert(); }
+    }
   }
 
   // ── 플레이어 탄환 ───────────────────────────────────────────
@@ -4004,8 +4558,9 @@ function update() {
     n.t--;
     if (n.y + n.r >= GROUND_Y) { n.y = GROUND_Y - n.r; n.vy *= -0.45; n.vx *= 0.6; }
     if (n.t <= 0) {
-      const k = explode(n.x, n.y, 38, pdmg(40), true);
-      if (k >= 3) unlockAch('DEMO');
+      // 미니 폭탄(헬스톰 새끼탄)은 작고 약한 폭발
+      const k = explode(n.x, n.y, n.mini ? 26 : 38, pdmg(n.mini ? 13 : 40), true);
+      if (!n.mini && k >= 3) unlockAch('DEMO');
       n.done = true;
     }
   });
@@ -4140,7 +4695,10 @@ function draw() {
   if (boss) outlined(drawBoss);
 
   // 수류탄 / 항공폭격탄 / 고드름
-  nades.forEach(n => { px(n.x - 2, n.y - 2, 4, 4, '#3a4a22'); px(n.x - 2, n.y - 2, 4, 1, '#9bb24a'); });
+  nades.forEach(n => {
+    if (n.mini) { px(n.x - 2, n.y - 2, 3, 3, '#ff6a5c'); px(n.x - 2, n.y - 2, 3, 1, '#ffcf8a'); }
+    else { px(n.x - 2, n.y - 2, 4, 4, '#3a4a22'); px(n.x - 2, n.y - 2, 4, 1, '#9bb24a'); }
+  });
   strikes.forEach(s => { px(s.x - 2, s.y - 5, 4, 9, '#2a2a2a'); px(s.x - 1, s.y - 5, 2, 3, '#ff5a3c'); px(s.x - 3, s.y + 3, 6, 2, '#aaa'); });
   eshards.forEach(s => { px(s.x - 2, s.y - 6, 4, 10, '#cfe0ea'); px(s.x - 1, s.y - 6, 2, 4, '#fff'); });
 
@@ -4263,11 +4821,11 @@ function draw() {
   // 파티클
   drawParticles();
 
-  // 플로팅 텍스트
-  ctx.font = '6px "Press Start 2P"';
+  // 플로팅 텍스트 (피해 숫자는 sz로 피해량 비례 크기)
   ctx.textAlign = 'center';
   floaters.forEach(f => {
     ctx.globalAlpha = clamp(f.life / 30, 0, 1);
+    ctx.font = (f.sz || 6) + 'px "Press Start 2P"';
     ctx.fillStyle = f.c;
     ctx.fillText(f.txt, f.x, f.y);
   });
@@ -4291,6 +4849,7 @@ function draw() {
   }
   drawVignette();
   drawHUD();
+  if (perkChoices) drawPerkChoice();
 }
 
 // 화면 가장자리 비네트 + 저체력 경고 펄스 — 화면 톤을 눌러 몰입감을 높인다
@@ -4307,6 +4866,15 @@ function drawVignette() {
     rg.addColorStop(0, 'rgba(200,20,20,0)');
     rg.addColorStop(1, 'rgba(200,20,20,' + a + ')');
     ctx.fillStyle = rg;
+    ctx.fillRect(0, 0, W, H);
+  }
+  // ⑤ 램페이지: 화면 가장자리가 주황빛으로 달아오른다
+  if (rampageOn() && (state === 'play' || state === 'pause')) {
+    const a2 = 0.06 + 0.05 * Math.abs(Math.sin(tick * 0.2));
+    const rg2 = ctx.createRadialGradient(W / 2, H / 2, H * 0.5, W / 2, H / 2, H * 0.95);
+    rg2.addColorStop(0, 'rgba(255,120,40,0)');
+    rg2.addColorStop(1, 'rgba(255,120,40,' + a2 + ')');
+    ctx.fillStyle = rg2;
     ctx.fillRect(0, 0, W, H);
   }
 }
@@ -4869,6 +5437,10 @@ const ITEM_INFO = {
   homing:  { col: '#cffcff', name: '유도탄', glyph: 'target' },
   rocket:  { col: '#e8412c', name: '로켓',   glyph: 'rocket' },
   rail:    { col: '#b18cff', name: '레일건', glyph: 'bolt' },
+  dragon:  { col: '#ff9a2b', name: '드래곤', glyph: 'flame' },
+  hellst:  { col: '#ff6a5c', name: '헬스톰', glyph: 'rocket' },
+  prism:   { col: '#cffcff', name: '프리즘', glyph: 'beam' },
+  swarm:   { col: '#ffe27a', name: '스웜',   glyph: 'target' },
 };
 
 function drawItemIcon(pk, x, y, key, isWeapon) {
@@ -6500,6 +7072,7 @@ function explode(x, y, radius, dmg, fromPlayer, pDmg) {
 const WCOL = {
   gun: '#ffcf3f', mg: '#ffa03f', shotgun: '#e8412c', laser: '#9fe8ff', blade: '#c8a0ff',
   flame: '#ff7a2b', rocket: '#ff5a3c', spread: '#5ad15a', homing: '#7ad8ff', rail: '#b18cff',
+  dragon: '#ff9a2b', hellst: '#ff6a5c', prism: '#cffcff', swarm: '#ffe27a',
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -6582,6 +7155,14 @@ function drawHUD() {
   // 잔여 사용횟수 눈금
   for (let i = 0; i < Math.min(p.ultUses, 9); i++) px(gx + 78 + i * 5, gy + 1, 3, 5, '#ffcf3f');
 
+  // ── ⑤ 오버드라이브 배지 ────────────────────────────────────
+  const odh = odLevel();
+  if (odh > 0) {
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = (tick % 30 < 20) ? '#ff8a5c' : '#ffd23f';
+    ctx.fillText('⚡OVERDRIVE ' + ['', 'I', 'II', 'III'][odh], gx, gy + 26);
+  }
+
   // ── 점수 / 하이스코어 / 콤보 ───────────────────────────────
   ctx.textAlign = 'right';
   ctx.font = '7px "Press Start 2P", monospace';
@@ -6603,25 +7184,33 @@ function drawHUD() {
     ctx.restore();
     px(W - 62, 58, 54, 3, '#000');
     px(W - 61, 59, Math.round(52 * clamp(comboT / 110, 0, 1)), 1, '#ffcf3f');
+    // ⑤ 램페이지 표시
+    if (rampageOn()) {
+      ctx.font = '6px "Press Start 2P", monospace';
+      ctx.fillStyle = (tick % 14 < 8) ? '#ff6a3c' : '#ffd23f';
+      ctx.fillText('RAMPAGE', W - 8, 71);
+    }
   }
   ctx.textAlign = 'left';
 
-  // ── 진행바 (하단) ──────────────────────────────────────────
-  const pbx = 60, pbw = W - 120, pby = H - 9;
-  px(pbx, pby, pbw, 5, 'rgba(0,0,0,.6)');
-  px(pbx + 1, pby + 1, pbw - 2, 3, '#2a2418');
-  const prog = clamp((player.x) / stage.len, 0, 1);
-  px(pbx + 1, pby + 1, Math.round((pbw - 2) * prog), 3, '#6b8f2c');
-  // 상점 / 중간보스 / 보스 마커
-  const mk = (ratio, col) => px(pbx + 1 + Math.round((pbw - 2) * ratio), pby - 1, 2, 7, col);
-  mk(stage.apcX / stage.len, '#e8a03f');
-  mk(0.985, '#e8412c');
-  px(pbx + 1 + Math.round((pbw - 2) * prog) - 1, pby - 1, 3, 7, '#f3ead2');
-  ctx.font = '6px "Press Start 2P", monospace';
-  ctx.fillStyle = '#8a8158';
-  ctx.textAlign = 'center';
-  ctx.fillText('STAGE ' + (stageIndex + 1) + '/' + STAGES.length, W / 2, H - 12);
-  ctx.textAlign = 'left';
+  // ── 진행바 (하단) — 서바이벌은 진행 개념이 없어 표시하지 않음 ──
+  if (!survival) {
+    const pbx = 60, pbw = W - 120, pby = H - 9;
+    px(pbx, pby, pbw, 5, 'rgba(0,0,0,.6)');
+    px(pbx + 1, pby + 1, pbw - 2, 3, '#2a2418');
+    const prog = clamp((player.x) / stage.len, 0, 1);
+    px(pbx + 1, pby + 1, Math.round((pbw - 2) * prog), 3, '#6b8f2c');
+    // 상점 / 중간보스 / 보스 마커
+    const mk = (ratio, col) => px(pbx + 1 + Math.round((pbw - 2) * ratio), pby - 1, 2, 7, col);
+    mk(stage.apcX / stage.len, '#e8a03f');
+    mk(0.985, '#e8412c');
+    px(pbx + 1 + Math.round((pbw - 2) * prog) - 1, pby - 1, 3, 7, '#f3ead2');
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = '#8a8158';
+    ctx.textAlign = 'center';
+    ctx.fillText('STAGE ' + (stageIndex + 1) + '/' + STAGES.length, W / 2, H - 12);
+    ctx.textAlign = 'left';
+  }
 
   // ── 보스 체력바 ────────────────────────────────────────────
   if (boss && !boss.dead) {
@@ -6666,7 +7255,9 @@ function drawHUD() {
     ctx.fillText(stage.name, W / 2, H / 2 - 8);
     ctx.font = '7px "Press Start 2P", monospace';
     ctx.fillStyle = '#9fe8ff';
-    ctx.fillText('STAGE ' + (stageIndex + 1) + ' — ' + BOSSCFG[stageIndex].name + ' 격파', W / 2, H / 2 + 12);
+    ctx.fillText(survival
+      ? '🌊 SURVIVAL — 무한 웨이브, 최대한 생존하라'
+      : 'STAGE ' + (stageIndex + 1) + ' — ' + BOSSCFG[stageIndex].name + ' 격파', W / 2, H / 2 + 12);
     ctx.globalAlpha = 1;
     ctx.textAlign = 'left';
   }
@@ -6844,6 +7435,38 @@ function drawArenaHUD() {
     }
   }
 
+  // ── 서바이벌 HUD: 생존 시간 · 웨이브 · 킬 / 다음 퍼크 게이지 ──
+  if (survival) {
+    const mm = Math.floor(survT / 3600), ss = String(Math.floor(survT / 60) % 60).padStart(2, '0');
+    ctx.textAlign = 'center';
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.fillStyle = '#07060a'; ctx.fillText(mm + ':' + ss, W / 2 + 1, 15);
+    ctx.fillStyle = '#9fe8ff'; ctx.fillText(mm + ':' + ss, W / 2, 14);
+    ctx.font = '6px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ffd23f';
+    ctx.fillText('WAVE ' + survWave + ' · ' + survKills + ' KILLS', W / 2, 26);
+    // 다음 퍼크까지 진행 게이지
+    const need = 25, done = need - (survNext - survKills);
+    px(W / 2 - 30, 30, 60, 4, '#000');
+    px(W / 2 - 29, 31, Math.round(58 * clamp(done / need, 0, 1)), 2, '#ffd23f');
+    ctx.textAlign = 'left';
+    // 웨이브 승급 배너
+    if (survBanner > 0) {
+      survBanner--;
+      const a4 = clamp(survBanner / 24, 0, 1);
+      ctx.globalAlpha = a4;
+      ctx.textAlign = 'center';
+      ctx.font = '14px "Press Start 2P", monospace';
+      ctx.fillStyle = '#07060a'; ctx.fillText('WAVE ' + survWave, W / 2 + 2, H / 2 - 24);
+      ctx.fillStyle = '#ff6a3c'; ctx.fillText('WAVE ' + survWave, W / 2, H / 2 - 26);
+      ctx.font = '6px "Press Start 2P", monospace';
+      ctx.fillStyle = '#cdbf95';
+      ctx.fillText('적이 더 거세진다 — 보급 회복 낙하!', W / 2, H / 2 - 10);
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'left';
+    }
+  }
+
   // 구역 진입 배너
   if (arenaBanner > 0) {
     arenaBanner--;
@@ -6951,6 +7574,7 @@ const elCharRow = document.getElementById('charRow');
 const elStageRow = document.getElementById('stageRow');
 const elMenuInfo = document.getElementById('menuInfo');
 const elStart = document.getElementById('startScreen');
+const elMeta = document.getElementById('metaScreen');
 const elShop = document.getElementById('shopScreen');
 const elPause = document.getElementById('pauseScreen');
 const elEnd = document.getElementById('endScreen');
@@ -7002,6 +7626,7 @@ function buildStageRow() {
       selStage = i;
       [].forEach.call(elStageRow.children, (n, k) => n.classList.toggle('sel', k === i));
       S.init(); S.pickup();
+      updateDeploySummary();
     });
     elStageRow.appendChild(b);
   });
@@ -7011,18 +7636,65 @@ function refreshMenuInfo() {
   const owned = save.ach.length;
   const list = ACH.map(a => achOwned(a.id) ? '★' : '☆').join('');
   const recent = save.ach.slice(-3).map(id => (achDef(id) || {}).name).filter(Boolean).join(' · ');
+  const metaCnt = META_UPGRADES.reduce((n, u) => n + metaLv(u.k), 0);
+  const metaMax = META_UPGRADES.reduce((n, u) => n + u.max, 0);
   elMenuInfo.innerHTML =
     'HI-SCORE <span style="color:#9bb24a;">' + String(save.hi).padStart(6, '0') + '</span>' +
     ' &nbsp;|&nbsp; 최고 도달 <span style="color:#9fe8ff;">STAGE ' + (save.best + 1) + '</span>' +
     ' &nbsp;|&nbsp; POW 누적 <span style="color:#ffcf3f;">' + save.pow + '명</span><br>' +
     '업적 <span style="color:#ffd23f;">' + owned + '/' + ACH.length + '</span> ' + list +
+    ' &nbsp;|&nbsp; <span style="color:#ffd23f;">🎖 ' + save.medals + '</span>' +
+    ' · 영구 강화 <span style="color:#ff8a5c;">' + metaCnt + '/' + metaMax + '</span>' +
+    (save.survBest > 0
+      ? ' · 🌊 최장 <span style="color:#9fe8ff;">' + Math.floor(save.survBest / 3600) + ':' + String(Math.floor(save.survBest / 60) % 60).padStart(2, '0') + '</span>'
+      : '') +
     (recent ? '<br><span style="color:#8a8158;">최근: ' + recent + '</span>' : '');
+}
+
+// ── 영구 강화 화면 ─────────────────────────────────────────────
+function openMeta() {
+  buildMetaDOM();
+  elStart.classList.add('hidden');
+  elMeta.classList.remove('hidden');
+}
+function closeMeta() {
+  elMeta.classList.add('hidden');
+  elStart.classList.remove('hidden');
+  refreshMenuInfo();
+}
+function buildMetaDOM() {
+  document.getElementById('metaMedals').textContent = '🎖 ' + save.medals;
+  const box = document.getElementById('metaItems');
+  box.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'shopgrid';
+  META_UPGRADES.forEach(u => {
+    const lv = metaLv(u.k);
+    const maxed = lv >= u.max;
+    const cost = maxed ? 0 : u.cost(lv);
+    const can = !maxed && save.medals >= cost;
+    const b = document.createElement('button');
+    b.className = 'shopit' + (can ? '' : ' no');
+    if (maxed) b.style.borderColor = '#5ad15a';
+    const lvTxt = u.max > 1 ? ' LV' + lv + '/' + u.max : (lv ? ' ✔' : '');
+    b.innerHTML = '<span class="shopicon">' + u.icon + '</span>'
+      + '<span class="shoplabel">' + u.name + lvTxt + '</span>'
+      + '<span class="shopdesc">' + u.desc + '</span>'
+      + '<span class="pr">' + (maxed ? '<span style="color:#5ad15a">완료</span>' : '🎖 ' + cost) + '</span>';
+    b.addEventListener('click', () => {
+      if (!buyMeta(u.k)) return;
+      S.pickup();
+      buildMetaDOM();
+    });
+    grid.appendChild(b);
+  });
+  box.appendChild(grid);
 }
 
 // ═══════════════════════════════════════════════════════════════
 // 게임 흐름
 // ═══════════════════════════════════════════════════════════════
-function startGame(dk) {
+function startGame(dk, surv) {
   diffKey = dk; diff = DIFF[dk];
   S.init(); S.resume();
   score = 0;
@@ -7030,10 +7702,14 @@ function startGame(dk) {
   combo = 0; comboT = 0; shake = 0; flashScreen = 0;
   toasts = [];
   bonus = null; bonusPlayed = 0;
+  survival = !!surv;
+  survT = 0; survKills = 0; survNext = 25; survWave = 1; survBanner = 0;
+  odShown = 0;
   run = { kills: 0, maxCombo: 0, pow: 0, vehicles: {} };
   player = makePlayer(selChar);
   player.lives = diff.lives;
-  elStart.classList.add('hidden');
+  applyMetaStart();
+  hideMenus();
   elShop.classList.add('hidden');
   elPause.classList.add('hidden');
   elEnd.classList.add('hidden');
@@ -7051,14 +7727,28 @@ function endGame(win) {
     }
   } else S.over();
   if (score > save.hi) { save.hi = score; hiScore = score; }
+  // 🎖 메타 진행: 소지금 25% + 도달 스테이지 보너스(+승리 보너스)가 영구 훈장으로 전환
+  // — 죽어도 이번 런의 노력이 다음 런의 자본이 된다
+  const medalEarn = survival
+    ? Math.floor((player ? player.money : 0) * 0.25) + survWave * 5   // 서바이벌: 웨이브 도달 보너스
+    : Math.floor((player ? player.money : 0) * 0.25) + (stageIndex + 1) * 4 + (win ? 30 : 0);
+  save.medals += medalEarn;
+  // 서바이벌 최장 생존 기록
+  const newBest = survival && survT > save.survBest;
+  if (newBest) save.survBest = survT;
   commitSave();
   elEndTitle.innerHTML = win ? 'MISSION<br>COMPLETE' : 'GAME<br>OVER';
   elEndTitle.style.color = win ? '#ffcf3f' : '#e8412c';
   elEndScore.textContent = 'SCORE ' + String(score).padStart(6, '0');
   elEndHi.textContent = 'HI-SCORE ' + String(save.hi).padStart(6, '0');
+  const survLine = survival
+    ? '<span style="color:#9fe8ff;">🌊 서바이벌 ' + Math.floor(survT / 3600) + ':' + String(Math.floor(survT / 60) % 60).padStart(2, '0')
+      + ' 생존 · WAVE ' + survWave + '</span>' + (newBest ? ' <span style="color:#ffd23f;">NEW BEST!</span>' : '')
+    : '도달 ' + STAGES[stageIndex].name + ' · ' + diff.label + (lastRank ? ' · 최종 RANK ' + lastRank : '');
   elEndStats.innerHTML =
     'KILLS ' + run.kills + ' · MAX COMBO x' + run.maxCombo + ' · POW ' + run.pow + ' · $' + (player ? player.money : 0) + '<br>' +
-    '도달 ' + STAGES[stageIndex].name + ' · ' + diff.label + (lastRank ? ' · 최종 RANK ' + lastRank : '');
+    survLine + '<br>' +
+    '<span style="color:#ffd23f;">🎖 훈장 +' + medalEarn + '</span> <span style="color:#8a8158;">(보유 ' + save.medals + ' — 메인 화면 [영구 강화]에서 사용)</span>';
   elEnd.classList.remove('hidden');
   refreshMenuInfo();
   buildStageRow();
@@ -7083,13 +7773,15 @@ function togglePause() {
 function quitToMenu() {
   state = 'menu';
   shopNext = -1;
+  perkChoices = null; perkPendingT = 0;
+  survival = false;
   boss = null;
   bonus = null;
   S.stopMusic();
   elPause.classList.add('hidden');
   elShop.classList.add('hidden');
   elEnd.classList.add('hidden');
-  elStart.classList.remove('hidden');
+  showMenu(elStart);              // 메뉴 플로우 1단계(모드 선택)부터 다시
   if (score > save.hi) { save.hi = score; hiScore = score; commitSave(); }
   refreshMenuInfo();
   buildStageRow();
@@ -7114,8 +7806,32 @@ function syncOptBtns() {
 // DOM 이벤트 바인딩
 // ═══════════════════════════════════════════════════════════════
 [].forEach.call(document.querySelectorAll('.startbtn[data-d]'), b => {
-  b.addEventListener('click', () => startGame(b.getAttribute('data-d')));
+  b.addEventListener('click', () => startGame(b.getAttribute('data-d'), selMode === 'survival'));
 });
+// ── 메뉴 플로우: 1 모드 선택 → 2 대원 선택 → 3 스테이지·난이도 → 출격 ──
+const elCharScr = document.getElementById('charScreen');
+const elDeploy = document.getElementById('deployScreen');
+function hideMenus() { [elStart, elCharScr, elDeploy, elMeta].forEach(el => el.classList.add('hidden')); }
+function showMenu(el) { hideMenus(); el.classList.remove('hidden'); }
+function updateDeploySummary() {
+  const surv = selMode === 'survival';
+  document.getElementById('deploySummary').innerHTML =
+    'STEP 3/3 · ' +
+    (surv ? '<span style="color:#9fe8ff;">🌊 서바이벌</span>' : '<span style="color:#ffd23f;">🎖 캠페인</span>') +
+    ' · <span style="color:#f3ead2;">' + CHARS[selChar].name + '</span>' +
+    ' · ' + STAGES[selStage].name + (surv ? ' (무한 웨이브)' : '');
+}
+document.getElementById('modeCampaign').addEventListener('click', () => {
+  selMode = 'campaign'; S.init(); S.pickup(); showMenu(elCharScr);
+});
+document.getElementById('modeSurvival').addEventListener('click', () => {
+  selMode = 'survival'; S.init(); S.pickup(); showMenu(elCharScr);
+});
+document.getElementById('charBack').addEventListener('click', () => showMenu(elStart));
+document.getElementById('charNext').addEventListener('click', () => {
+  S.init(); S.pickup(); updateDeploySummary(); showMenu(elDeploy);
+});
+document.getElementById('deployBack').addEventListener('click', () => showMenu(elCharScr));
 document.getElementById('shopClose').addEventListener('click', closeShop);
 document.getElementById('retryBtn').addEventListener('click', quitToMenu);
 document.getElementById('resumeBtn').addEventListener('click', togglePause);
@@ -7129,6 +7845,8 @@ elOptShake.addEventListener('click', () => {
 });
 elMute.addEventListener('click', toggleMute);
 elPauseBtn.addEventListener('click', () => { if (state === 'play' || state === 'pause') togglePause(); });
+document.getElementById('metaBtn').addEventListener('click', () => { S.init(); openMeta(); });
+document.getElementById('metaClose').addEventListener('click', closeMeta);
 
 // (가상 패드 바인딩은 입력 섹션에서 이미 완료)
 addEventListener('pointerdown', () => S.resume());
