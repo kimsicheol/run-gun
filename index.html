@@ -410,12 +410,12 @@
       <button class="modecard surv" id="modeSurvival">
         <span class="mc-icon">🌊</span>
         <span class="mc-name">서바이벌</span>
-        <span class="mc-desc">무한 웨이브 생존<br>25킬마다 강화 선택<br>최장 기록에 도전</span>
+        <span class="mc-desc">5분 버티면 탈출 성공<br>25킬마다 강화 선택<br>최고 점수에 도전</span>
       </button>
       <button class="modecard daily" id="modeDaily">
         <span class="mc-icon">📅</span>
         <span class="mc-name">일일 도전</span>
-        <span class="mc-desc" id="dailyDesc">오늘의 시드 서바이벌</span>
+        <span class="mc-desc" id="dailyDesc">오늘의 시드 5분 버티기</span>
       </button>
     </div>
     <div class="row">
@@ -558,7 +558,7 @@ const GRAVITY = 0.46;          // 중력 가속도
 // mods: 소장한 진화 모듈(진화 무기 든 채 보스 격파로 획득) / equip: 대원별 장착 모듈
 // modBoxes: 수령한 스테이지 클리어 보상 상자(3·6스테이지 첫 클리어 — 조기 모듈 획득 경로)
 const SAVE_KEY = 'jsdx_save';
-let save = { hi: 0, best: 0, ach: [], pow: 0, medals: 0, meta: {}, survBest: 0, survBestBy: {}, chars: [0, 1, 3], achPaid: false, dailyDone: '', dailyDate: '', dailyBestT: 0, run: null, mods: [], equip: {}, modBoxes: [], opt: { mute: false, shake: true } };
+let save = { hi: 0, best: 0, ach: [], pow: 0, medals: 0, meta: {}, survBestS: 0, survBestSBy: {}, survWins: 0, chars: [0, 1, 3], achPaid: false, dailyDone: '', dailyDate: '', dailyBestS: 0, run: null, mods: [], equip: {}, modBoxes: [], opt: { mute: false, shake: true } };
 
 function loadSave() {
   try {
@@ -571,15 +571,17 @@ function loadSave() {
       save.pow = s.pow | 0;
       save.medals = s.medals | 0;
       save.meta = (s.meta && typeof s.meta === 'object') ? s.meta : {};
-      save.survBest = s.survBest | 0;
-      save.survBestBy = (s.survBestBy && typeof s.survBestBy === 'object') ? s.survBestBy : {};
+      // 서바이벌 기록 — 5분 버티기 개편으로 시간 기록(survBest)에서 점수 기록으로 전환
+      save.survBestS = s.survBestS | 0;
+      save.survBestSBy = (s.survBestSBy && typeof s.survBestSBy === 'object') ? s.survBestSBy : {};
+      save.survWins = s.survWins | 0;
       // 대원 보유 목록 — 기본 3명(IAN/JADEN/MINA)은 항상 보장
       save.chars = Array.isArray(s.chars) ? s.chars.filter(i => Number.isInteger(i)) : [0, 1, 3];
       [0, 1, 3].forEach(i => { if (save.chars.indexOf(i) < 0) save.chars.push(i); });
       save.achPaid = !!s.achPaid;
       save.dailyDone = typeof s.dailyDone === 'string' ? s.dailyDone : '';
       save.dailyDate = typeof s.dailyDate === 'string' ? s.dailyDate : '';
-      save.dailyBestT = s.dailyBestT | 0;
+      save.dailyBestS = s.dailyBestS | 0;
       // 진행 중이던 캠페인 스냅샷 — 최소 형태 검증 후 복원
       save.run = (s.run && typeof s.run === 'object' && Number.isInteger(s.run.stage)) ? s.run : null;
       save.mods = Array.isArray(s.mods) ? s.mods.filter(k => typeof k === 'string') : [];
@@ -622,9 +624,9 @@ const META_UPGRADES = [
 function metaLv(k) { return (save.meta && save.meta[k]) | 0; }
 
 // ═══════════════════════════════════════════════════════════════
-// 📅 일일 도전 — 날짜 시드 고정 서바이벌
+// 📅 일일 도전 — 날짜 시드 고정 5분 버티기
 // 매일 스테이지가 로테이션되고 스폰이 시드로 고정돼 모두 같은 판을 받는다.
-// 하루 첫 판은 훈장 정산 2배 + 40 보너스, 오늘의 기록은 자정에 리셋.
+// 하루 첫 판은 훈장 정산 2배 + 40 보너스, 오늘의 점수 기록은 자정에 리셋.
 // ═══════════════════════════════════════════════════════════════
 const ORIG_RANDOM = Math.random;
 function mulberry32(a) {
@@ -1149,10 +1151,10 @@ const S = {
 // kids: 아이용 — 잔기 5, 받는 피해 40%, 느린 적탄, 필살기 +2, 시작 수류탄 +2.
 //       훈장 정산은 60%(medalMul)로 잡아 영구 강화 메타가 무너지지 않게 한다.
 const DIFF = {
-  kids:   { label: 'KIDS',   lives: 5, eHp: 0.6,  eFire: 1.9,  eBulletSpd: 0.6,  dmgTaken: 0.4,  spawnRate: 2.0,  ultBonus: 2, medalMul: 0.6, bonusNades: 2 },
-  easy:   { label: 'EASY',   lives: 4, eHp: 0.85, eFire: 1.35, eBulletSpd: 0.85, dmgTaken: 0.75, spawnRate: 1.5,  ultBonus: 1 },
-  normal: { label: 'NORMAL', lives: 3, eHp: 1.0,  eFire: 1.0,  eBulletSpd: 1.05, dmgTaken: 1.1,  spawnRate: 1.05, ultBonus: 0 },
-  hard:   { label: 'HARD',   lives: 2, eHp: 1.3,  eFire: 0.72, eBulletSpd: 1.3,  dmgTaken: 1.6,  spawnRate: 0.85, ultBonus: -1 },
+  kids:   { label: 'KIDS',   lives: 5, eHp: 0.6,  eFire: 1.9,  eBulletSpd: 0.6,  dmgTaken: 0.4,  spawnRate: 2.0,  ultBonus: 2, medalMul: 0.6, bonusNades: 2, survRamp: 0.6 },
+  easy:   { label: 'EASY',   lives: 4, eHp: 0.85, eFire: 1.35, eBulletSpd: 0.85, dmgTaken: 0.75, spawnRate: 1.5,  ultBonus: 1, survRamp: 0.8 },
+  normal: { label: 'NORMAL', lives: 3, eHp: 1.0,  eFire: 1.0,  eBulletSpd: 1.05, dmgTaken: 1.1,  spawnRate: 1.05, ultBonus: 0, survRamp: 1.0 },
+  hard:   { label: 'HARD',   lives: 2, eHp: 1.3,  eFire: 0.72, eBulletSpd: 1.3,  dmgTaken: 1.6,  spawnRate: 0.85, ultBonus: -1, survRamp: 1.3 },
 };
 let diff = DIFF.normal;
 let diffKey = 'normal';
@@ -1447,6 +1449,7 @@ const ACH = [
   { id: 'RANK_S',      name: 'S RANK',       kr: 'S랭크 달성',              mr: 60 },
   { id: 'HERO',        name: 'WORLD HERO',   kr: '최종 스테이지 클리어',    mr: 100 },
   { id: 'HARD_HERO',   name: 'HARD LEGEND',  kr: 'HARD 난이도 클리어',      mr: 150 },
+  { id: 'EXTRACT',     name: 'EXTRACTION',   kr: '서바이벌 5분 버티고 탈출', mr: 60 },
 ];
 function achDef(id) { return ACH.find(a => a.id === id); }
 function achOwned(id) { return save.ach.indexOf(id) >= 0; }
@@ -1526,11 +1529,16 @@ let arenas = [], arena = null, arenaClearT = 0, arenaBanner = 0;
 let perkChoices = null;      // 선택 중인 카드 3장 (null이면 비표시)
 let perkSel = 0, perkAnimT = 0, perkPendingT = 0;
 let perkPrev = { left: false, right: false, fire: false, jump: false };
-// ── 서바이벌(호드) 모드 ────────────────────────────────────────
-// 선택한 스테이지 지형에서 무한 웨이브 생존. 아레나·APC·보스 없음.
-// 25킬마다 3택 퍼크, 45초마다 웨이브 승급(스폰 가속 + 상위 병종 추가).
+// ── 서바이벌(호드) 모드 — 5분 버티기 ──────────────────────────
+// 선택한 스테이지 지형에서 5분(SURV_LIMIT)을 버티면 탈출 성공. 아레나·APC·보스 없음.
+// 25킬마다 3택 퍼크, 60초마다 페이즈 승급(스폰 가속 + 상위 병종 추가),
+// 마지막 45초는 "최후의 러시" — 스폰 폭증 클라이맥스. 기록은 생존 시간이 아닌 점수.
+const SURV_LIMIT = 18000;                 // 5:00 (60fps 틱)
+const SURV_PHASES = 5;                    // 60초 × 5페이즈
+const SURV_RUSH = SURV_LIMIT - 2700;      // 4:15부터 최후의 러시
 let survival = false;
 let survT = 0, survKills = 0, survNext = 25, survWave = 1, survBanner = 0;
+let survWon = false;                      // 탈출 성공 처리 중복 방지
 // 서바이벌 확장: 변조 웨이브(승급마다 랜덤 특수 규칙) / 필살기 충전 배율
 // (사용할수록 재충전이 느려지는 소프트 코스트 — 횟수 제한 대신)
 let survMod = null, survUltMul = 1;
@@ -2724,60 +2732,91 @@ function drawPerkChoice() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 서바이벌 스포너 — 시간 비례로 간격 단축·물량 증가·엘리트 확률 상승.
+// 서바이벌 스포너 — 5분 버티기. 60초마다 페이즈 승급, 페이즈·시간 비례로
+// 간격 단축·물량 증가·엘리트 확률 상승. 난이도(survRamp)는 램프 기울기를 조절.
 // 스폰 방향은 2/3 전방 + 1/3 후방(포위감), 고정형(포탑·박격포)은 화면 안 배치.
 // ═══════════════════════════════════════════════════════════════
 function survRoster() {
   const r = stage.roster.slice();
-  if (survWave >= 3) r.push('heavy');
-  if (survWave >= 4) r.push('rocket', 'dog');
-  if (survWave >= 5) r.push('ninja');
-  if (survWave >= 6) r.push('drone', 'sniper');
-  if (survWave >= 8) r.push('shield');
+  if (survWave >= 2) r.push('heavy');
+  if (survWave >= 3) r.push('rocket', 'dog', 'ninja');
+  if (survWave >= 4) r.push('drone', 'sniper');
+  if (survWave >= 5) r.push('shield');
   return r;
 }
-// ── 변조 웨이브 — 승급마다 랜덤 특수 규칙이 붙어 판마다 다른 대응을 요구 ──
+// ── 변조 페이즈 — 승급마다 랜덤 특수 규칙이 붙어 판마다 다른 대응을 요구 ──
 const SURV_MODS = [
   { k: 'horde',    name: '폭주 러시', desc: '물량 +40% · 코인 2배',    col: '#ff6a3c' },
   { k: 'airborne', name: '공수 강하', desc: '적이 하늘에서 낙하',      col: '#9fe8ff' },
   { k: 'elite',    name: '정예 부대', desc: '엘리트 출현율 대폭 상승', col: '#c8a0ff' },
   { k: 'gold',     name: '황금 사냥', desc: '코인 3배 — 쓸어담아라',   col: '#ffd23f' },
 ];
-// 5웨이브마다 등장하는 미니보스 — 장갑 APC (웨이브에 비례해 강화)
+// 페이즈 3·5 시작에 등장하는 미니보스 — 장갑 APC (페이즈에 비례해 강화)
 function spawnSurvMiniboss() {
   const mb = mkEnemy(cam + W + 40, GROUND_Y - ECFG.apc.h, 'apc', 1);
-  mb.hp = mb.maxhp = Math.round(260 * (1 + survWave * 0.35) * diff.eHp);
+  mb.hp = mb.maxhp = Math.round(260 * (1 + survWave * 0.55) * diff.eHp);
   mb.miniboss = true;
   enemies.push(mb);
   addFloat(cam + W - 110, 110, '!! 미니보스 — 장갑 APC !!', '#ff5a3c');
   S.alert();
   addShake(5);
 }
+// ── 5분 버티기 성공 — 탈출 연출: 남은 적 일제 소탕 후 승리 정산 ──
+function survivalExtract() {
+  survWon = true;
+  // 화면을 가로지르는 3연쇄 폭격 — 잔존 병력 정리(킬·코인은 정상 지급)
+  [0.25, 0.5, 0.75].forEach(r => explode(cam + W * r, GROUND_Y - 40, 220, 9999, true));
+  ebullets = []; eshards = [];
+  flashScreen = 12;
+  addShake(8);
+  addFloat(player.x + player.w / 2, player.y - 52, '🚁 탈출 헬기 도착 — 작전 성공!', '#9fe8ff');
+  setTimeout(() => { if (survWon && state === 'play') endGame(true); }, 1000);
+}
 function survivalSpawner() {
+  if (survWon) return;
   survT++;
-  // 웨이브 승급: 45초(2700틱)마다 — 배너 + 회복 보급 낙하
-  const wv = 1 + Math.floor(survT / 2700);
+  // ⏱ 5분 도달 — 탈출 성공 (사망 연출 중이면 패배가 우선)
+  if (survT >= SURV_LIMIT) {
+    if (!player.dead) survivalExtract();
+    return;
+  }
+  // 잔여 시간 경고 — 60초 전 예고
+  if (survT === SURV_LIMIT - 3600) {
+    addFloat(player.x + player.w / 2, player.y - 46, '⏳ 탈출까지 60초 — 버텨라!', '#ffd23f');
+    S.warn();
+  }
+  const rush = survT >= SURV_RUSH;        // 마지막 45초: 최후의 러시
+  // 페이즈 승급: 60초(3600틱)마다 — 배너 + 회복 보급 낙하
+  const wv = Math.min(SURV_PHASES, 1 + Math.floor(survT / 3600));
   if (wv > survWave) {
     survWave = wv;
     survBanner = 100;
     S.alert();
     addShake(3);
     pickups.push({ x: clamp(player.x + rnd(-70, 70), cam + 20, cam + W - 20), y: GROUND_Y - 16, type: 'hp' });
-    // 변조 규칙 추첨 (2웨이브부터, 25%는 평시) — 일일 도전은 시드 난수라 모두 같은 판
+    // 변조 규칙 추첨 (2페이즈부터, 25%는 평시) — 일일 도전은 시드 난수라 모두 같은 판
     survMod = (survWave >= 2 && Math.random() < 0.75)
       ? SURV_MODS[Math.floor(Math.random() * SURV_MODS.length)] : null;
-    // 5웨이브 주기: 미니보스 투입 + 필살기 성장 알림 (ultScale 임계)
-    if (survWave % 5 === 0) {
+    // 페이즈 3·5: 미니보스 투입 + 필살기 성장 알림 (ultScale 임계)
+    if (survWave === 3 || survWave === 5) {
       spawnSurvMiniboss();
       addFloat(player.x + player.w / 2, player.y - 52, '⚡ 필살기 강화! 지속·위력 +15%', '#b18cff');
     }
   }
+  // 최후의 러시 진입 연출 (페이즈 승급과 별개 시점: 4:15)
+  if (survT === SURV_RUSH) {
+    survBanner = 110;
+    S.alert();
+    addShake(6);
+  }
   spawnTimer -= ts();
   if (spawnTimer > 0) return;
-  const I = 1 + (survT / 3600) + (survWave - 1) * 0.12;
-  spawnTimer = clamp(150 / I * diff.spawnRate, 34, 170);
+  // 램프: 시간 + 페이즈 가중치를 난이도별 기울기(survRamp)로 증폭 — 후반이 확실히 거세진다
+  const I = 1 + (survT / 2700 + (survWave - 1) * 0.3) * (diff.survRamp || 1);
+  spawnTimer = clamp(150 / I * diff.spawnRate, 26, 170);
   if (survMod && survMod.k === 'horde') spawnTimer *= 0.7;   // 폭주: 스폰 간격 -30%
-  const cluster = clamp(1 + Math.floor(survWave / 2), 1, 4);
+  if (rush) spawnTimer = Math.max(16, spawnTimer * 0.55);    // 러시: 스폰 간격 반감
+  const cluster = clamp(1 + Math.floor(survWave / 2), 1, 4) + (rush ? 1 : 0);
   const roster = survRoster();
   for (let n = 0; n < cluster; n++) {
     const type = roster[Math.floor(Math.random() * roster.length)];
@@ -2792,8 +2831,8 @@ function survivalSpawner() {
       ? cam + 60 + rnd(0, W - 120)
       : airdrop ? cam + 40 + rnd(0, W - 80)
       : (fromRight ? cam + W + 24 + n * 26 : cam - 30 - n * 22);
-    const eliteBonus = survMod && survMod.k === 'elite' ? 0.35 : 0;
-    const elite = type !== 'turret' && Math.random() < clamp(0.05 + survWave * 0.03 + eliteBonus, 0, 0.75);
+    const eliteBonus = (survMod && survMod.k === 'elite' ? 0.35 : 0) + (rush ? 0.15 : 0);
+    const elite = type !== 'turret' && Math.random() < clamp(0.05 + survWave * 0.05 + eliteBonus, 0, 0.8);
     const e = mkEnemy(ex, y, type, I, elite);
     if (survMod) {
       if (survMod.k === 'horde') e.coin *= 2;
@@ -3603,9 +3642,9 @@ function vehicleSpecial() {
   }
 }
 
-// 서바이벌 필살기 성장 — 웨이브 5마다 지속시간·위력 +15%.
-// 적만 강해지는 무한 모드에서 플레이어의 "질적" 성장 축 하나를 필살기에 준다.
-function ultScale() { return survival ? 1 + Math.floor(survWave / 5) * 0.15 : 1; }
+// 서바이벌 필살기 성장 — 페이즈 3·5(미니보스 시점)마다 지속시간·위력 +15%.
+// 적이 급격히 강해지는 5분 버티기에서 플레이어의 "질적" 성장 축 하나를 필살기에 준다.
+function ultScale() { return survival ? 1 + Math.floor((survWave - 1) / 2) * 0.15 : 1; }
 
 // 필살기를 쓸 수 없는 이유를 명확히 알려준다.
 // (조용히 무시하면 "이 캐릭터는 필살기가 없나?"라고 오해하게 된다)
@@ -5202,7 +5241,7 @@ function update() {
 
   // ── 스폰 / 중간보스 / 보스 ──────────────────────────────────
   if (survival) {
-    survivalSpawner();                     // 무한 웨이브 — 아레나·APC·보스 없음
+    survivalSpawner();                     // 5분 버티기 — 아레나·APC·보스 없음
   } else {
     checkArenaEnter();
     updateArena();
@@ -8106,9 +8145,9 @@ function drawHUD() {
     ctx.font = '7px "Press Start 2P", monospace';
     ctx.fillStyle = '#9fe8ff';
     ctx.fillText(daily
-      ? '📅 DAILY — 오늘의 시드, 하루 첫 판은 보상 2배'
+      ? '📅 DAILY — 오늘의 시드, 5분을 버티고 탈출하라'
       : survival
-        ? '🌊 SURVIVAL — 무한 웨이브, 최대한 생존하라'
+        ? '🌊 SURVIVAL — 5분을 버티고 탈출하라'
         : 'STAGE ' + (stageIndex + 1) + ' — ' + BOSSCFG[stageIndex].name + ' 격파', W / 2, H / 2 + 12);
     ctx.globalAlpha = 1;
     ctx.textAlign = 'left';
@@ -8287,16 +8326,22 @@ function drawArenaHUD() {
     }
   }
 
-  // ── 서바이벌 HUD: 생존 시간 · 웨이브 · 킬 / 다음 퍼크 게이지 ──
+  // ── 서바이벌 HUD: 탈출까지 카운트다운 · 페이즈 · 킬 / 다음 퍼크 게이지 ──
   if (survival) {
-    const mm = Math.floor(survT / 3600), ss = String(Math.floor(survT / 60) % 60).padStart(2, '0');
+    const remain = Math.max(0, SURV_LIMIT - survT);
+    const rsec = Math.ceil(remain / 60);
+    const tt = Math.floor(rsec / 60) + ':' + String(rsec % 60).padStart(2, '0');
+    // 색상 경고: 평시 하늘색 → 마지막 60초 노랑 → 마지막 10초 빨강 점멸
+    const tc = remain <= 600 ? (tick % 30 < 15 ? '#ff5a3c' : '#ffd7c8')
+      : remain <= 3600 ? '#ffd23f' : '#9fe8ff';
     ctx.textAlign = 'center';
     ctx.font = '8px "Press Start 2P", monospace';
-    ctx.fillStyle = '#07060a'; ctx.fillText(mm + ':' + ss, W / 2 + 1, 15);
-    ctx.fillStyle = '#9fe8ff'; ctx.fillText(mm + ':' + ss, W / 2, 14);
+    ctx.fillStyle = '#07060a'; ctx.fillText(tt, W / 2 + 1, 15);
+    ctx.fillStyle = tc; ctx.fillText(tt, W / 2, 14);
     ctx.font = '6px "Press Start 2P", monospace';
-    ctx.fillStyle = '#ffd23f';
-    ctx.fillText('WAVE ' + survWave + ' · ' + survKills + ' KILLS', W / 2, 26);
+    ctx.fillStyle = survT >= SURV_RUSH ? '#ff5a3c' : '#ffd23f';
+    ctx.fillText((survT >= SURV_RUSH ? '☠ FINAL RUSH' : 'PHASE ' + survWave + '/' + SURV_PHASES)
+      + ' · ' + survKills + ' KILLS', W / 2, 26);
     // 다음 퍼크까지 진행 게이지
     const need = 25, done = need - (survNext - survKills);
     px(W / 2 - 30, 30, 60, 4, '#000');
@@ -8307,24 +8352,29 @@ function drawArenaHUD() {
       ctx.fillText('⚠ ' + survMod.name + ' — ' + survMod.desc, W / 2, 42);
     }
     ctx.textAlign = 'left';
-    // 웨이브 승급 배너
+    // 페이즈 승급 / 최후의 러시 배너
     if (survBanner > 0) {
       survBanner--;
+      const isRush = survT >= SURV_RUSH;
+      const bTitle = isRush ? '☠ FINAL RUSH' : 'PHASE ' + survWave;
       const a4 = clamp(survBanner / 24, 0, 1);
       ctx.globalAlpha = a4;
       ctx.textAlign = 'center';
       ctx.font = '14px "Press Start 2P", monospace';
-      ctx.fillStyle = '#07060a'; ctx.fillText('WAVE ' + survWave, W / 2 + 2, H / 2 - 24);
-      ctx.fillStyle = '#ff6a3c'; ctx.fillText('WAVE ' + survWave, W / 2, H / 2 - 26);
+      ctx.fillStyle = '#07060a'; ctx.fillText(bTitle, W / 2 + 2, H / 2 - 24);
+      ctx.fillStyle = isRush ? '#ff3c3c' : '#ff6a3c'; ctx.fillText(bTitle, W / 2, H / 2 - 26);
       ctx.font = '6px "Press Start 2P", monospace';
-      if (survMod) {
+      if (isRush) {
+        ctx.fillStyle = '#ffd23f';
+        ctx.fillText('마지막 45초 — 전군이 몰려온다, 탈출 지점을 사수하라!', W / 2, H / 2 - 10);
+      } else if (survMod) {
         ctx.fillStyle = survMod.col;
         ctx.fillText('⚠ ' + survMod.name + ' — ' + survMod.desc, W / 2, H / 2 - 10);
       } else {
         ctx.fillStyle = '#cdbf95';
         ctx.fillText('적이 더 거세진다 — 보급 회복 낙하!', W / 2, H / 2 - 10);
       }
-      if (survWave % 5 === 0) {
+      if (!isRush && (survWave === 3 || survWave === 5)) {
         ctx.fillStyle = '#ff5a3c';
         ctx.fillText('!! 미니보스 접근 — 격파 시 무기 + SP 완충 + 🎖 !!', W / 2, H / 2 + 2);
       }
@@ -8576,8 +8626,8 @@ function buildStageRow() {
       const b = document.createElement('button');
       b.className = 'stagebtn' + (f.i === selSurvField ? ' sel' : '');
       const rec = f.i < 0
-        ? (save.survBest > 0 ? '🌊 전체 최장 ' + fmtTime(save.survBest) : f.desc)
-        : ((save.survBestBy[f.i] | 0) > 0 ? '🌊 ' + fmtTime(save.survBestBy[f.i]) : f.desc);
+        ? (save.survBestS > 0 ? '🏆 최고 ' + save.survBestS : f.desc)
+        : ((save.survBestSBy[f.i] | 0) > 0 ? '🏆 ' + save.survBestSBy[f.i] : f.desc);
       b.innerHTML = f.icon + ' ' + f.name + '<br><span style="font-size:5px;opacity:.7;">' + rec + '</span>';
       b.title = f.desc;
       b.addEventListener('click', () => {
@@ -8636,7 +8686,7 @@ function profileXP() {
   const metaCnt = META_UPGRADES.reduce((n, u) => n + metaLv(u.k), 0);
   const extraChars = save.chars.filter(i => CHARS[i] && CHARS[i].unlock).length;
   return metaCnt * 15 + save.ach.length * 25 + save.best * 30 + save.pow * 4
-    + extraChars * 40 + Math.floor(save.survBest / 3600) * 8;
+    + extraChars * 40 + Math.floor((save.survBestS | 0) / 4000) * 6 + (save.survWins | 0) * 15;
 }
 function rankInfo() {
   let xp = profileXP(), idx = 0;
@@ -8672,7 +8722,7 @@ function refreshProfileCard() {
   document.getElementById('pcRecords').innerHTML =
     '최고 <b>STAGE ' + (save.best + 1) + '</b> · HI <b>' + String(save.hi).padStart(6, '0') + '</b>'
     + ' · POW <b>' + save.pow + '</b>'
-    + (save.survBest > 0 ? ' · 🌊 <b>' + fmtTime(save.survBest) + '</b>' : '')
+    + (save.survBestS > 0 ? ' · 🌊 <b>' + save.survBestS + '</b>' + ((save.survWins | 0) > 0 ? ' 🚁×' + save.survWins : '') : '')
     + (save.mods.length > 0
       ? ' · 🧩 <b>' + save.mods.length + '/4</b> ' + save.mods.map(k => (EVOLUTIONS.find(v => v.to === k) || {}).icon || '').join('')
       : '')
@@ -8708,10 +8758,10 @@ function refreshMenuInfo() {
 function refreshDailyCard() {
   const el = document.getElementById('dailyDesc');
   const done = save.dailyDone === todayKey();
-  const bestToday = (save.dailyDate === todayKey()) ? save.dailyBestT : 0;
+  const bestToday = (save.dailyDate === todayKey()) ? save.dailyBestS : 0;
   el.innerHTML = '오늘의 전장: <span style="color:#f3ead2;">' + STAGES[dailyStage()].name + '</span><br>'
     + (done
-      ? (bestToday > 0 ? '오늘 기록 <span style="color:#c8a0ff;">' + fmtTime(bestToday) + '</span> · 완료 ✔' : '완료 ✔')
+      ? (bestToday > 0 ? '오늘 최고 점수 <span style="color:#c8a0ff;">' + bestToday + '</span> · 완료 ✔' : '완료 ✔')
       : '<span style="color:#ffd23f;">첫 도전 보상 2배 + 40🎖</span>'
         + (save.mods.length < EVOLUTIONS.length ? '<span style="color:#9fe8ff;"> + 🧩모듈 확률</span>' : ''))
     + '<br>날짜 시드 고정 · 자정 리셋';
@@ -8776,7 +8826,7 @@ function startGame(dk, surv, isDaily) {
   // 일일 도전: 날짜 시드로 난수 고정 — 오늘은 몇 번을 하든 같은 판
   Math.random = daily ? mulberry32((dayNum() * 2654435761) >>> 0) : ORIG_RANDOM;
   survT = 0; survKills = 0; survNext = 25; survWave = 1; survBanner = 0;
-  survMod = null; survUltMul = 1;
+  survMod = null; survUltMul = 1; survWon = false;
   odShown = 0;
   run = { kills: 0, maxCombo: 0, pow: 0, vehicles: {} };
   player = makePlayer(selChar);
@@ -8844,11 +8894,13 @@ function resumeRun() {
 }
 
 function endGame(win) {
+  if (state === 'win' || state === 'over') return;   // 탈출·사망 연출이 겹칠 때 이중 정산 방지
   state = win ? 'win' : 'over';
   S.stopMusic();
   if (win) {
     S.fanfare();
-    if (stageIndex >= STAGES.length - 1) {
+    if (survival) unlockAch('EXTRACT');
+    else if (stageIndex >= STAGES.length - 1) {
       unlockAch('HERO');
       if (diffKey === 'hard') unlockAch('HARD_HERO');
     }
@@ -8858,7 +8910,7 @@ function endGame(win) {
   // — 죽어도 이번 런의 노력이 다음 런의 자본이 된다
   Math.random = ORIG_RANDOM;               // 일일 도전 시드 해제
   let medalEarn = survival
-    ? Math.floor((player ? player.money : 0) * 0.25) + survWave * 5   // 서바이벌: 웨이브 도달 보너스
+    ? Math.floor((player ? player.money : 0) * 0.25) + survWave * 6 + (win ? 40 : 0)   // 서바이벌: 페이즈 도달 + 탈출 성공 보너스
     : Math.floor((player ? player.money : 0) * 0.25) + (stageIndex + 1) * 4 + (win ? 30 : 0);
   // 📅 일일 도전: 하루 첫 판은 정산 2배 + 40, 오늘의 기록 갱신 (자정 리셋)
   let dailyFirst = false, dailyModTxt = '';
@@ -8876,28 +8928,32 @@ function endGame(win) {
         dailyModTxt = ev.icon + ' ' + WEAPONS[ev.to].name + ' 진화 모듈 획득!';
       }
     }
-    if (save.dailyDate !== todayKey()) { save.dailyDate = todayKey(); save.dailyBestT = 0; }
-    if (survT > save.dailyBestT) save.dailyBestT = survT;
+    if (save.dailyDate !== todayKey()) { save.dailyDate = todayKey(); save.dailyBestS = 0; }
+    if (score > save.dailyBestS) save.dailyBestS = score;
   }
   // KIDS 정산 60% · 서바이벌 🎲 랜덤 전장 보너스 +10%
   medalEarn = Math.round(medalEarn * (diff.medalMul || 1) * (survival && survRandomRun ? 1.1 : 1));
   save.medals += medalEarn;
   // 캠페인 종료(승패 무관) — 진행 스냅샷 삭제, [이어하기] 소멸
   if (!survival) save.run = null;
-  // 서바이벌 최장 생존 기록 (전체 + 스테이지별)
-  const newBest = survival && survT > save.survBest;
-  if (newBest) save.survBest = survT;
-  if (survival && survT > (save.survBestBy[stageIndex] | 0)) save.survBestBy[stageIndex] = survT;
+  // 서바이벌 최고 점수 기록 (전체 + 전장별) + 탈출 성공 횟수
+  const newBest = survival && score > save.survBestS;
+  if (newBest) save.survBestS = score;
+  if (survival && score > (save.survBestSBy[stageIndex] | 0)) save.survBestSBy[stageIndex] = score;
+  if (survival && win) save.survWins = (save.survWins | 0) + 1;
   commitSave();
-  elEndTitle.innerHTML = win ? 'MISSION<br>COMPLETE' : 'GAME<br>OVER';
+  elEndTitle.innerHTML = win
+    ? (survival ? '🚁 EXTRACTION<br>COMPLETE' : 'MISSION<br>COMPLETE')
+    : 'GAME<br>OVER';
   elEndTitle.style.color = win ? '#ffcf3f' : '#e8412c';
   elEndScore.textContent = 'SCORE ' + String(score).padStart(6, '0');
   elEndHi.textContent = 'HI-SCORE ' + String(save.hi).padStart(6, '0');
   const survLine = survival
     ? '<span style="color:' + (daily ? '#c8a0ff' : '#9fe8ff') + ';">' + (daily ? '📅 일일 도전 ' : '🌊 서바이벌 ')
-      + Math.floor(survT / 3600) + ':' + String(Math.floor(survT / 60) % 60).padStart(2, '0')
-      + ' 생존 · WAVE ' + survWave + '</span>'
-      + (newBest ? ' <span style="color:#ffd23f;">NEW BEST!</span>' : '')
+      + (win ? '🚁 탈출 성공' : '☠ 탈출 실패')
+      + ' · ' + Math.floor(survT / 3600) + ':' + String(Math.floor(survT / 60) % 60).padStart(2, '0')
+      + ' 생존 · PHASE ' + survWave + '/' + SURV_PHASES + '</span>'
+      + (newBest ? ' <span style="color:#ffd23f;">🏆 NEW BEST SCORE!</span>' : '')
       + (dailyFirst ? ' <span style="color:#ffd23f;">오늘 첫 도전 — 보상 2배!</span>' : '')
       + (dailyModTxt ? '<br><span style="color:#9fe8ff;">🧩 ' + dailyModTxt + ' (대원 선택에서 장착)</span>' : '')
     : '도달 ' + STAGES[stageIndex].name + ' · ' + diff.label + (lastRank ? ' · 최종 RANK ' + lastRank : '');
@@ -8987,20 +9043,20 @@ function updateDeploySummary() {
     'STEP 3/3 · ' +
     (surv ? '<span style="color:#9fe8ff;">🌊 서바이벌</span>' : '<span style="color:#ffd23f;">🎖 작전</span>') +
     ' · <span style="color:#f3ead2;">' + CHARS[selChar].name + '</span>' +
-    ' · ' + fieldName + (surv ? ' (무한 웨이브)' : '');
+    ' · ' + fieldName + (surv ? ' (5분 버티기)' : '');
   // 모드별 기록 표시 — 갱신할 목표를 출격 직전에 보여준다
   const rec = document.getElementById('deployRecord');
   if (surv) {
     if (selSurvField < 0) {
       rec.innerHTML = '🎲 매번 다른 전장 · <span style="color:#ffd23f;">훈장 정산 +10%</span>'
-        + (save.survBest > 0 ? ' &nbsp;·&nbsp; 전체 최장 <span style="color:#9fe8ff;">' + fmtTime(save.survBest) + '</span>' : '');
+        + (save.survBestS > 0 ? ' &nbsp;·&nbsp; 최고 점수 <span style="color:#9fe8ff;">' + save.survBestS + '</span>' : '');
       return;
     }
-    const sb = save.survBestBy[selSurvField] | 0;
+    const sb = save.survBestSBy[selSurvField] | 0;
     rec.innerHTML = (sb > 0
-      ? '이 전장 최장 생존 <span style="color:#9fe8ff;">' + fmtTime(sb) + '</span>'
+      ? '이 전장 최고 점수 <span style="color:#9fe8ff;">' + sb + '</span>'
       : '<span style="color:#8a8158;">이 전장 기록 없음 — 첫 기록에 도전!</span>')
-      + (save.survBest > 0 ? ' &nbsp;·&nbsp; 전체 최장 <span style="color:#ffd23f;">' + fmtTime(save.survBest) + '</span>' : '');
+      + (save.survBestS > 0 ? ' &nbsp;·&nbsp; 전체 최고 <span style="color:#ffd23f;">' + save.survBestS + '</span>' : '');
   } else {
     rec.innerHTML = 'HI-SCORE <span style="color:#9bb24a;">' + String(save.hi).padStart(6, '0') + '</span>'
       + ' &nbsp;·&nbsp; 최고 도달 <span style="color:#9fe8ff;">STAGE ' + (save.best + 1) + '</span>';
