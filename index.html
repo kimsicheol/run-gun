@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>JUNGLE STRIKE DX — 런앤건</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" rel="stylesheet">
 <style>
   /* ═══════════════════════════════════════════════════════════
      JUNGLE STRIKE DX — 스타일시트
@@ -15,7 +16,7 @@
     height:100%;
     background:#06070a;
     overflow:hidden;
-    font-family:'Press Start 2P',monospace;
+    font-family:'Press Start 2P','Galmuri11',monospace;
     color:#f3ead2;
     -webkit-tap-highlight-color:transparent;
     user-select:none;
@@ -54,7 +55,7 @@
     width:6.3%;aspect-ratio:1;border-radius:50%;
     background:rgba(20,16,8,.5);
     border:1px solid rgba(255,207,63,.55);
-    color:#ffcf3f;font-family:'Press Start 2P';
+    color:#ffcf3f;font-family:inherit;
     font-size:clamp(5px,1vw,8px);
     display:flex;align-items:center;justify-content:center;
     touch-action:none;transition:transform .05s,background .05s;
@@ -104,57 +105,168 @@
   .title.small{font-size:clamp(11px,2.4vw,20px);}
   .step{font-size:clamp(7px,1.3vw,10px);color:#9fe8ff;letter-spacing:1px;line-height:1.9;}
 
-  /* ── 메인 화면 프로 폴리시 ─────────────────────────────────
-     배경 데모 씬이 은은히 비치는 그라디언트 + 타이틀 글로우 +
-     모드 카드의 액센트 바·호버 글로우로 "게임 메뉴"의 밀도를 준다 */
-  #startScreen{
-    background:linear-gradient(180deg,
-      rgba(6,7,10,.93) 0%, rgba(6,7,10,.72) 42%,
-      rgba(6,7,10,.80) 72%, rgba(6,7,10,.93) 100%);
+  /* ═══ 로비(첫 화면) — 모던 픽셀 로비 ═══════════════════════
+     좌: 대형 히어로(선택 대원 + 착용 장비) / 우: 타이틀 + 모드 카드.
+     상단: 계급 엠블럼(XP 링) + 훈장 배지. 참고 레이아웃은 모바일 로비,
+     그림은 게임 자신의 픽셀아트로 통일한다. */
+  :root{
+    --gold:#ffd23f; --amber:#ffcf3f; --cream:#f3ead2; --dim:#9b8f63;
+    --faint:#8a8158; --green:#9bb24a; --cyan:#9fe8ff; --purple:#c8a0ff; --red:#e8412c;
   }
+  #startScreen{
+    background:linear-gradient(105deg,
+      rgba(6,7,10,.94) 0%, rgba(6,7,10,.80) 34%,
+      rgba(6,7,10,.66) 62%, rgba(6,7,10,.88) 100%);
+    gap:clamp(8px,1.6vh,16px);
+  }
+  .screen.lobby > :first-child{margin-top:0;}
+  .screen.lobby > :last-child{margin-bottom:0;}
   .title.glow{animation:titleGlow 2.6s ease-in-out infinite;}
   @keyframes titleGlow{
     0%,100%{text-shadow:3px 3px 0 #e8412c,6px 6px 0 #000,0 0 14px rgba(255,207,63,.25);}
     50%{text-shadow:3px 3px 0 #e8412c,6px 6px 0 #000,0 0 26px rgba(255,207,63,.55);}
   }
   .tagline{
-    font-size:clamp(6px,1.05vw,9px);color:#9b8f63;letter-spacing:3px;
+    font-size:clamp(6px,1.05vw,9px);color:var(--dim);letter-spacing:3px;
     margin-top:-4px;
   }
 
-  /* ── 모드 선택 카드 (메뉴 1단계) ─────────────────────────── */
-  .modes{display:flex;gap:clamp(10px,2.4vw,22px);flex-wrap:wrap;justify-content:center;}
+  /* ── 상단 바: 계급 엠블럼(좌) · 훈장 배지(우) ─────────────── */
+  .lobby-top{
+    width:100%;display:flex;align-items:flex-start;justify-content:space-between;
+    padding:0 clamp(2px,.6vw,8px);
+  }
+  #rankEmblem{display:flex;align-items:center;gap:10px;text-align:left;
+    margin-left:clamp(36px,5vw,60px);}   /* PAUSE 버튼과 겹침 방지 */
+  .re-ring{
+    width:clamp(46px,6.6vw,76px);aspect-ratio:1;border-radius:50%;
+    background:conic-gradient(var(--gold) 0%, rgba(255,210,63,.14) 0);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 14px rgba(255,210,63,.28),0 4px 10px rgba(0,0,0,.5);
+  }
+  .re-core{
+    width:80%;aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle at 38% 30%, #3a2f14, #171208 74%);
+    border:1px solid #6e5518;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #reLv{font-size:clamp(9px,1.6vw,14px);color:var(--gold);text-shadow:1px 2px 0 #000;}
+  .re-txt{display:flex;flex-direction:column;gap:5px;}
+  .re-name{font-size:clamp(10px,1.8vw,15px);color:var(--cream);letter-spacing:1px;text-shadow:2px 2px 0 #000;}
+  .re-xp{font-size:clamp(6px,1vw,8px);color:var(--faint);}
+  #medalBadge{
+    display:flex;align-items:center;gap:7px;
+    background:linear-gradient(180deg,rgba(46,37,16,.88),rgba(18,15,8,.92));
+    border:1px solid #8a6f2a;padding:8px 13px;
+    font-size:clamp(9px,1.6vw,13px);color:var(--gold);
+    box-shadow:0 3px 8px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,210,63,.15);
+    margin-right:clamp(64px,9vw,110px);   /* SOUND 버튼과 겹침 방지 */
+  }
+
+  /* ── 본문: 좌 히어로 패널 / 우 타이틀 + 모드 ─────────────── */
+  .lobby-main{
+    width:100%;flex:1;min-height:0;
+    display:flex;gap:clamp(12px,2.4vw,28px);
+    align-items:stretch;justify-content:center;
+  }
+  #heroPanel{
+    flex:0 0 clamp(180px,27%,310px);
+    align-self:flex-end;max-height:100%;height:clamp(340px,64vh,560px);
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:9px;
+    background:linear-gradient(180deg,rgba(30,40,16,.30),rgba(10,12,6,.55) 65%,rgba(6,7,4,.75));
+    border:1px solid rgba(155,178,74,.35);
+    box-shadow:inset 0 0 44px rgba(0,0,0,.5),0 6px 18px rgba(0,0,0,.45);
+    padding:12px 10px;cursor:pointer;position:relative;overflow:hidden;
+    transition:border-color .12s,box-shadow .12s;
+  }
+  #heroPanel:hover{border-color:var(--amber);
+    box-shadow:inset 0 0 44px rgba(0,0,0,.5),0 0 20px rgba(255,207,63,.22);}
+  .hero-stage{position:relative;flex:1;min-height:0;width:100%;
+    display:flex;align-items:flex-end;justify-content:center;}
+  .hero-stage::before{ /* 히어로 뒤 스포트라이트 */
+    content:'';position:absolute;left:50%;bottom:-6%;transform:translateX(-50%);
+    width:130%;aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(closest-side,rgba(255,207,63,.14),rgba(155,178,74,.05) 55%,transparent 72%);
+  }
+  #heroCv{
+    width:clamp(150px,94%,300px);max-height:100%;
+    image-rendering:pixelated;image-rendering:crisp-edges;
+    position:relative;z-index:1;
+    filter:drop-shadow(0 0 10px rgba(255,207,63,.16)) drop-shadow(3px 5px 0 rgba(0,0,0,.55));
+    animation:heroBob 3.2s ease-in-out infinite;
+  }
+  @keyframes heroBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+  .hero-shadow{
+    position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+    width:64%;height:12px;border-radius:50%;
+    background:radial-gradient(closest-side,rgba(0,0,0,.7),transparent);
+  }
+  .hero-plate{
+    display:flex;flex-direction:column;gap:5px;align-items:center;
+    border-top:1px solid rgba(255,210,63,.22);padding-top:8px;width:100%;
+  }
+  .hero-name{font-size:clamp(12px,2.1vw,17px);color:var(--amber);letter-spacing:2px;text-shadow:2px 2px 0 #000;}
+  .hero-role{font-size:clamp(6px,1.05vw,8px);color:var(--cyan);line-height:1.7;}
+  #heroGear{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;}
+  .gear-chip{
+    display:inline-flex;align-items:center;gap:4px;
+    background:rgba(10,9,5,.8);border:1px solid #6e5518;
+    padding:4px 7px;font-size:clamp(6px,1vw,8px);color:var(--cream);
+    box-shadow:0 2px 0 rgba(0,0,0,.4);
+  }
+  .gear-chip .gc-ic{font-size:clamp(8px,1.3vw,11px);line-height:1;}
+  .gear-chip.dim{color:var(--faint);border-style:dashed;border-color:#4a3f22;box-shadow:none;}
+  .hero-hint{font-size:clamp(6px,.95vw,8px);color:var(--faint);letter-spacing:1px;}
+  #heroPanel:hover .hero-hint{color:var(--amber);}
+  .lobby-right{
+    flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:clamp(7px,1.5vh,14px);
+  }
+
+  /* ── 모드 선택 카드 — 카드마다 미니 전장 씬 배경 ─────────── */
+  .modes{display:flex;gap:clamp(10px,1.8vw,18px);flex-wrap:wrap;justify-content:center;width:100%;}
   .modecard{
-    font-family:'Press Start 2P';cursor:pointer;position:relative;
-    width:clamp(150px,25vw,225px);padding:clamp(14px,2.4vw,22px) 12px clamp(12px,2.2vw,20px);
-    background:linear-gradient(180deg,rgba(38,31,15,.85),rgba(14,12,7,.92));
-    border:2px solid #4a3f22;color:#f3ead2;
-    display:flex;flex-direction:column;align-items:center;gap:9px;
+    font-family:inherit;cursor:pointer;position:relative;overflow:hidden;
+    width:clamp(140px,29%,215px);min-height:clamp(122px,19vw,178px);
+    padding:0;border:2px solid #4a3f22;color:var(--cream);background:#0c0a06;
+    display:flex;flex-direction:column;align-items:stretch;
     transition:transform .1s,border-color .1s,box-shadow .12s;
   }
-  .modecard::before{ /* 모드 색 액센트 바 */
-    content:'';position:absolute;top:0;left:0;right:0;height:3px;
-    background:#ffcf3f;opacity:.85;
+  .mc-scene{
+    position:absolute;inset:0;width:100%;height:100%;
+    image-rendering:pixelated;image-rendering:crisp-edges;
+    opacity:.92;transition:transform .5s ease;
   }
-  .modecard.surv::before{background:#9fe8ff;}
-  .modecard.daily::before{background:#c8a0ff;}
-  .modecard:hover{
-    border-color:#ffcf3f;transform:translateY(-4px);
-    box-shadow:0 8px 22px rgba(0,0,0,.55),0 0 16px rgba(255,207,63,.18);
+  .modecard::after{ /* 씬 위 가독성 그라디언트 */
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(6,7,10,.05) 0%,rgba(6,7,10,.42) 46%,rgba(6,7,10,.9) 80%);
   }
+  .modecard:hover{border-color:var(--amber);transform:translateY(-4px);
+    box-shadow:0 10px 24px rgba(0,0,0,.6),0 0 18px rgba(255,207,63,.22);}
+  .modecard:hover .mc-scene{transform:scale(1.09);}
   .modecard:active{transform:translateY(-1px);}
-  .modecard.surv:hover{border-color:#9fe8ff;box-shadow:0 8px 22px rgba(0,0,0,.55),0 0 16px rgba(159,232,255,.18);}
-  .modecard.daily:hover{border-color:#c8a0ff;box-shadow:0 8px 22px rgba(0,0,0,.55),0 0 16px rgba(200,160,255,.18);}
-  .mc-icon{
-    font-size:clamp(18px,3.4vw,28px);line-height:1.2;
-    filter:drop-shadow(0 3px 6px rgba(0,0,0,.6));
-    transition:transform .12s;
+  .modecard.surv:hover{border-color:var(--cyan);
+    box-shadow:0 10px 24px rgba(0,0,0,.6),0 0 18px rgba(159,232,255,.22);}
+  .modecard.daily:hover{border-color:var(--purple);
+    box-shadow:0 10px 24px rgba(0,0,0,.6),0 0 18px rgba(200,160,255,.22);}
+  .mc-key{
+    position:absolute;top:6px;left:6px;z-index:2;
+    font-size:clamp(6px,1vw,8px);color:var(--faint);
+    background:rgba(6,7,10,.7);border:1px solid #4a3f22;padding:3px 5px;
   }
-  .modecard:hover .mc-icon{transform:scale(1.12);}
-  .mc-name{font-size:clamp(10px,1.9vw,14px);color:#ffcf3f;letter-spacing:1px;text-shadow:2px 2px 0 #000;}
-  .modecard.surv .mc-name{color:#9fe8ff;}
-  .modecard.daily .mc-name{color:#c8a0ff;}
-  .mc-desc{font-size:clamp(6px,1vw,8px);color:#9b8f63;line-height:2;}
+  .modecard:hover .mc-key{color:var(--cream);border-color:var(--faint);}
+  .mc-body{
+    position:relative;z-index:2;margin-top:auto;
+    display:flex;flex-direction:column;gap:6px;padding:10px 8px 11px;
+  }
+  .mc-name{font-size:clamp(11px,2vw,15px);color:var(--amber);letter-spacing:1px;text-shadow:2px 2px 0 #000;}
+  .modecard.surv .mc-name{color:var(--cyan);}
+  .modecard.daily .mc-name{color:var(--purple);}
+  .mc-desc{font-size:clamp(6px,1vw,8px);color:var(--dim);line-height:1.95;text-shadow:1px 1px 0 #000;}
+  .mc-rec{
+    font-size:clamp(6px,1vw,8px);color:var(--green);line-height:1.8;
+    border-top:1px solid rgba(255,255,255,.09);padding-top:6px;
+  }
   .hi{font-size:clamp(8px,1.4vw,11px);color:#9bb24a;line-height:1.8;}
   .hint{font-size:clamp(6px,1.05vw,9px);color:#8a8158;line-height:2;}
   .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
@@ -193,7 +305,7 @@
   /* ── 스테이지 선택 ────────────────────────────────────── */
   #stageRow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
   .stagebtn{
-    font-family:'Press Start 2P';font-size:clamp(6px,1.1vw,9px);
+    font-family:inherit;font-size:clamp(6px,1.1vw,9px);
     background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#cdbf95;
     padding:8px 8px;cursor:pointer;transition:.06s;line-height:1.5;
   }
@@ -202,7 +314,7 @@
 
   /* ── 시작/난이도 버튼 ─────────────────────────────────── */
   .startbtn{
-    font-family:'Press Start 2P';font-size:clamp(8px,1.6vw,12px);
+    font-family:inherit;font-size:clamp(8px,1.6vw,12px);
     color:#0c0a06;background:#ffcf3f;border:none;cursor:pointer;
     padding:12px 16px;box-shadow:4px 4px 0 #000;transition:transform .06s;
   }
@@ -290,7 +402,7 @@
   /* ── 일시정지 ─────────────────────────────────────────── */
   #pauseScreen .optrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
   .optbtn{
-    font-family:'Press Start 2P';font-size:clamp(6px,1.2vw,9px);
+    font-family:inherit;font-size:clamp(6px,1.2vw,9px);
     background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#cdbf95;
     padding:8px 10px;cursor:pointer;
   }
@@ -299,30 +411,9 @@
   #endStats{font-size:clamp(7px,1.3vw,10px);color:#9fe8ff;line-height:2;}
   #menuInfo{font-size:clamp(6px,1.1vw,9px);color:#8a8158;line-height:1.9;}
 
-  /* ── 프로필 카드 (메인 화면 상단 — 내 계급·시작 장비·기록) ── */
+  /* ── 로비 하단 기록 라인 ─────────────────────────────────── */
   .hidden{display:none;}
-  #profileCard{
-    width:min(94%,600px);
-    background:linear-gradient(180deg,rgba(46,37,16,.78),rgba(18,15,8,.85));
-    border:1px solid #8a6f2a;
-    box-shadow:0 0 0 2px rgba(0,0,0,.45),0 6px 18px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,210,63,.12);
-    padding:10px 14px;display:flex;flex-direction:column;gap:7px;
-  }
-  .pc-row{
-    display:flex;align-items:center;gap:9px;justify-content:center;flex-wrap:wrap;
-    font-size:clamp(6px,1.1vw,9px);line-height:1.8;
-  }
-  .pc-rank{color:#ffd23f;font-size:clamp(7px,1.35vw,11px);letter-spacing:1px;}
-  .pc-xp{color:#8a8158;font-size:clamp(5px,.95vw,7px);}
-  .pc-bar{
-    flex:1;min-width:80px;max-width:190px;height:9px;
-    background:#241d0e;border:1px solid #4a3f22;overflow:hidden;
-  }
-  .pc-bar-fill{height:100%;background:linear-gradient(90deg,#9bb24a,#ffd23f);transition:width .3s;}
-  .pc-medals{color:#ffd23f;font-size:clamp(7px,1.3vw,10px);}
-  .pc-load{color:#9fe8ff;}
-  .pc-load b{color:#f3ead2;font-weight:normal;}
-  .pc-rec{color:#8a8158;}
+  .pc-rec{color:#8a8158;font-size:clamp(6px,1.05vw,9px);line-height:1.9;}
   .pc-rec b{color:#9bb24a;font-weight:normal;}
 
   /* ── 이어하기 버튼 ─────────────────────────────────────── */
@@ -347,7 +438,7 @@
     font-size:clamp(6px,1.1vw,9px);color:#8a8158;line-height:1.8;
   }
   .modbtn{
-    font-family:'Press Start 2P';font-size:clamp(6px,1.1vw,9px);
+    font-family:inherit;font-size:clamp(6px,1.1vw,9px);
     background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#cdbf95;
     padding:7px 9px;cursor:pointer;transition:.06s;line-height:1.5;
   }
@@ -357,7 +448,7 @@
 
   /* ── 작전 지도 — 거점(노드)이 경로로 이어진 진행형 월드맵 ── */
   .opnode{
-    font-family:'Press Start 2P';cursor:pointer;position:relative;
+    font-family:inherit;cursor:pointer;position:relative;
     width:clamp(46px,7.4vw,66px);padding:7px 2px;
     background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#8a8158;
     font-size:clamp(6px,1vw,8px);line-height:1.7;transition:.06s;
@@ -380,48 +471,76 @@
   <button class="muteb" id="muteBtn">SOUND: ON</button>
   <button class="muteb" id="pauseBtn">II</button>
 
-  <!-- ═══ 메인 메뉴 1/3 — 타이틀 · 모드 선택 ═══ -->
-  <div id="startScreen" class="screen">
-    <div class="title glow">JUNGLE STRIKE DX</div>
-    <div class="tagline">▰▰▰&nbsp; RUN &amp; GUN ARCADE &nbsp;▰▰▰</div>
-
-    <!-- ═══ 프로필 카드 — 내 계급 · 시작 장비 · 기록 (재방문 동기의 핵심) ═══ -->
-    <div id="profileCard">
-      <div class="pc-row">
-        <span class="pc-rank" id="pcRank"></span>
-        <div class="pc-bar"><div class="pc-bar-fill" id="pcBarFill"></div></div>
-        <span class="pc-xp" id="pcXp"></span>
-        <span class="pc-medals" id="pcMedals"></span>
+  <!-- ═══ 메인 메뉴 1/3 — 로비: 히어로 · 계급 · 모드 선택 ═══ -->
+  <div id="startScreen" class="screen lobby">
+    <!-- 상단 바: 좌 계급 엠블럼(XP 링) · 우 훈장 배지 -->
+    <div class="lobby-top">
+      <div id="rankEmblem">
+        <div class="re-ring" id="reRing"><div class="re-core"><span id="reLv">Lv.1</span></div></div>
+        <div class="re-txt">
+          <span class="re-name" id="pcRank"></span>
+          <span class="re-xp" id="pcXp"></span>
+        </div>
       </div>
-      <div class="pc-row pc-load" id="pcLoadout"></div>
-      <div class="pc-row pc-rec" id="pcRecords"></div>
+      <div id="medalBadge"><span>🎖</span><span id="pcMedals">0</span></div>
     </div>
 
-    <!-- 진행 중인 캠페인이 있을 때만 표시 -->
-    <button class="startbtn resume hidden" id="resumeRunBtn"></button>
+    <!-- 본문: 좌 대형 히어로(착용 장비) / 우 타이틀 + 모드 카드 -->
+    <div class="lobby-main">
+      <div id="heroPanel">
+        <div class="hero-stage">
+          <canvas id="heroCv" width="48" height="64"></canvas>
+          <div class="hero-shadow"></div>
+        </div>
+        <div class="hero-plate">
+          <span class="hero-name" id="heroName"></span>
+          <span class="hero-role" id="heroRole"></span>
+        </div>
+        <div id="heroGear"></div>
+        <div class="hero-hint">▸ 클릭해 대원 변경</div>
+      </div>
 
-    <div class="step">STEP 1/3 · 모드를 선택하라</div>
-    <div class="modes">
-      <button class="modecard" id="modeCampaign">
-        <span class="mc-icon">🎖</span>
-        <span class="mc-name">작전</span>
-        <span class="mc-desc">7개 전장 순차 공략<br>보스 격파 · 클리어 후 보급<br>3전장마다 보너스 게임</span>
-      </button>
-      <button class="modecard surv" id="modeSurvival">
-        <span class="mc-icon">🌊</span>
-        <span class="mc-name">서바이벌</span>
-        <span class="mc-desc">5분 버티면 탈출 성공<br>25킬마다 강화 선택<br>최고 점수에 도전</span>
-      </button>
-      <button class="modecard daily" id="modeDaily">
-        <span class="mc-icon">📅</span>
-        <span class="mc-name">일일 도전</span>
-        <span class="mc-desc" id="dailyDesc">오늘의 시드 5분 버티기</span>
-      </button>
+      <div class="lobby-right">
+        <div class="title glow">JUNGLE STRIKE DX</div>
+        <div class="tagline">▰▰▰&nbsp; RUN &amp; GUN ARCADE &nbsp;▰▰▰</div>
+        <!-- 진행 중인 캠페인이 있을 때만 표시 -->
+        <button class="startbtn resume hidden" id="resumeRunBtn"></button>
+        <div class="step">모드를 선택하라 · <span style="color:#8a8158;">키보드 1 · 2 · 3</span></div>
+        <div class="modes">
+          <button class="modecard" id="modeCampaign">
+            <canvas class="mc-scene" width="120" height="88"></canvas>
+            <span class="mc-key">1</span>
+            <span class="mc-body">
+              <span class="mc-name">🎖 작전</span>
+              <span class="mc-desc">7개 전장 순차 공략<br>보스 격파 · 클리어 후 보급</span>
+              <span class="mc-rec" id="mcRecCampaign"></span>
+            </span>
+          </button>
+          <button class="modecard surv" id="modeSurvival">
+            <canvas class="mc-scene" width="120" height="88"></canvas>
+            <span class="mc-key">2</span>
+            <span class="mc-body">
+              <span class="mc-name">🌊 서바이벌</span>
+              <span class="mc-desc">5분 버티면 탈출 성공<br>25킬마다 강화 선택</span>
+              <span class="mc-rec" id="mcRecSurv"></span>
+            </span>
+          </button>
+          <button class="modecard daily" id="modeDaily">
+            <canvas class="mc-scene" width="120" height="88"></canvas>
+            <span class="mc-key">3</span>
+            <span class="mc-body">
+              <span class="mc-name">📅 일일 도전</span>
+              <span class="mc-desc" id="dailyDesc">오늘의 시드 5분 버티기</span>
+            </span>
+          </button>
+        </div>
+        <div class="row">
+          <button class="startbtn ghost" id="metaBtn">🎖 영구 강화<span class="dot hidden" id="metaDot"></span></button>
+        </div>
+        <div class="pc-rec" id="pcRecords"></div>
+        <div id="menuInfo"></div>
+      </div>
     </div>
-    <div class="row">
-      <button class="startbtn ghost" id="metaBtn">🎖 영구 강화<span class="dot hidden" id="metaDot"></span></button>
-    </div>
-    <div id="menuInfo"></div>
   </div>
 
   <!-- ═══ 메인 메뉴 2/3 — 대원 선택 ═══ -->
@@ -8704,30 +8823,105 @@ function metaAffordable() {
 
 function refreshProfileCard() {
   const r = rankInfo();
-  document.getElementById('pcRank').textContent = '🎖 ' + r.name;
-  document.getElementById('pcBarFill').style.width = r.pct + '%';
-  document.getElementById('pcXp').textContent = r.top ? '최고 계급' : '다음 계급까지 ' + (r.need - r.cur) + 'XP';
-  document.getElementById('pcMedals').textContent = '🎖 ' + save.medals;
-  // 시작 장비 — 영구 강화가 실제 출격 스펙에 반영됨을 첫 화면에서 보여준다
-  const parts = ['🔫 <b>GUN' + (metaLv('mg') ? '+MG' : '') + '</b>'];
-  if (metaLv('vit')) parts.push('❤️ <b>+' + 10 * metaLv('vit') + '</b>');
-  if (metaLv('nades')) parts.push('💣 <b>+' + metaLv('nades') + '</b>');
-  if (metaLv('fund')) parts.push('💵 <b>+$' + 60 * metaLv('fund') + '</b>');
-  if (metaLv('life')) parts.push('💗 <b>+' + metaLv('life') + '</b>');
-  if (metaLv('greed')) parts.push('💰 <b>+' + 10 * metaLv('greed') + '%</b>');
-  if (metaLv('spgage')) parts.push('⭐ <b>SP 50%</b>');
-  document.getElementById('pcLoadout').innerHTML = parts.length > 1
-    ? '시작 장비&nbsp; ' + parts.join(' · ')
-    : '시작 장비&nbsp; ' + parts[0] + ' · <span style="color:#8a8158;">[영구 강화]에서 시작 스펙을 키워라 →</span>';
+  // 계급 엠블럼: 레벨 = 계급 순번, 링 = 승급 진행률
+  document.getElementById('reLv').textContent = 'Lv.' + (r.idx + 1);
+  document.getElementById('pcRank').textContent = r.name;
+  document.getElementById('pcXp').textContent = r.top ? '최고 계급' : '승급까지 ' + (r.need - r.cur) + 'XP';
+  document.getElementById('reRing').style.background =
+    'conic-gradient(#ffd23f ' + r.pct + '%, rgba(255,210,63,.14) 0)';
+  document.getElementById('pcMedals').textContent = save.medals;
+  // 착용 장비 칩 — 영구 강화가 실제 출격 스펙에 반영됨을 히어로 옆에서 보여준다
+  const chips = [['🔫', 'GUN' + (metaLv('mg') ? '+MG' : '')]];
+  if (metaLv('vit')) chips.push(['❤️', 'HP+' + 10 * metaLv('vit')]);
+  if (metaLv('nades')) chips.push(['💣', '+' + metaLv('nades')]);
+  if (metaLv('fund')) chips.push(['💵', '+$' + 60 * metaLv('fund')]);
+  if (metaLv('life')) chips.push(['💗', '+' + metaLv('life')]);
+  if (metaLv('greed')) chips.push(['💰', '+' + 10 * metaLv('greed') + '%']);
+  if (metaLv('spgage')) chips.push(['⭐', 'SP 50%']);
+  document.getElementById('heroGear').innerHTML =
+    chips.map(c => '<span class="gear-chip"><span class="gc-ic">' + c[0] + '</span>' + c[1] + '</span>').join('')
+    + (chips.length <= 1 ? '<span class="gear-chip dim">영구 강화로 장비 확장 →</span>' : '');
+  // 모드 카드별 기록
+  document.getElementById('mcRecCampaign').innerHTML =
+    '최고 <b>STAGE ' + (save.best + 1) + '</b> · HI ' + String(save.hi).padStart(6, '0');
+  document.getElementById('mcRecSurv').innerHTML = save.survBestS > 0
+    ? '최고 점수 <b>' + save.survBestS + '</b>' + ((save.survWins | 0) > 0 ? ' · 🚁×' + save.survWins : '')
+    : '기록 없음 — 첫 기록에 도전';
   document.getElementById('pcRecords').innerHTML =
-    '최고 <b>STAGE ' + (save.best + 1) + '</b> · HI <b>' + String(save.hi).padStart(6, '0') + '</b>'
-    + ' · POW <b>' + save.pow + '</b>'
-    + (save.survBestS > 0 ? ' · 🌊 <b>' + save.survBestS + '</b>' + ((save.survWins | 0) > 0 ? ' 🚁×' + save.survWins : '') : '')
+    'POW <b>' + save.pow + '</b>'
     + (save.mods.length > 0
       ? ' · 🧩 <b>' + save.mods.length + '/4</b> ' + save.mods.map(k => (EVOLUTIONS.find(v => v.to === k) || {}).icon || '').join('')
       : '')
     + ' · 📅 ' + (save.dailyDone === todayKey() ? '<b>완료✔</b>' : '<span style="color:#ffd23f;">도전 가능</span>');
   document.getElementById('metaDot').classList.toggle('hidden', !metaAffordable());
+}
+
+// ── 로비 히어로 — 선택 대원을 크게, idle 애니메이션으로 세운다 ──
+const heroCtx = document.getElementById('heroCv').getContext('2d');
+heroCtx.imageSmoothingEnabled = false;
+let heroT = 0, heroShownChar = -1;
+function heroLoop() {
+  requestAnimationFrame(heroLoop);
+  if (elStart.classList.contains('hidden') || !SPRITES[selChar]) return;
+  if (heroShownChar !== selChar) {   // 대원 선택 화면에서 바꾸고 돌아온 경우 명판 동기화
+    heroShownChar = selChar;
+    document.getElementById('heroName').textContent = CHARS[selChar].name;
+    document.getElementById('heroRole').textContent = CHARS[selChar].role + ' · ' + CHARS[selChar].traitName;
+  }
+  heroT += ANIM_SPD.idle;
+  const set = SPRITES[selChar].idle;
+  const fr = set[Math.floor(heroT) % set.length];
+  heroCtx.clearRect(0, 0, 48, 64);
+  heroCtx.drawImage(fr.cv, 0, 0);
+}
+
+// ── 모드 카드 미니 전장 씬 — 게임 팔레트로 그린 픽셀 배경 (부팅 시 1회) ──
+function paintModeScenes() {
+  const sceneOf = id => document.querySelector('#' + id + ' .mc-scene').getContext('2d');
+  const SW = 120, SH = 88;
+  const sky = (c, bands) => {
+    const h = SH / bands.length;
+    bands.forEach((col, i) => { c.fillStyle = col; c.fillRect(0, Math.floor(i * h), SW, Math.ceil(h) + 1); });
+  };
+  // ① 작전 — 정글 노을: 해 + 능선 + 야자수 실루엣
+  let c = sceneOf('modeCampaign');
+  sky(c, ['#2a1430', '#67243a', '#a83e2e', '#d86b2a', '#f0a03c']);
+  c.fillStyle = '#ffd76a'; c.beginPath(); c.arc(88, 34, 13, 0, 7); c.fill();
+  c.fillStyle = '#3a1e28';
+  for (let x = 0; x < SW; x += 4) c.fillRect(x, 52 + Math.round(Math.sin(x * .09) * 4), 4, SH);
+  c.fillStyle = '#140c12';
+  [[14, 60], [34, 54], [58, 63], [82, 57], [104, 61]].forEach(([x, y]) => {
+    c.fillRect(x - 1, y, 3, SH - y);
+    for (let k = 0; k < 5; k++) {
+      const a = k / 4 * Math.PI;
+      c.fillRect(x - Math.round(Math.cos(a) * 8) - (Math.cos(a) > 0 ? 0 : 8), y - 4 - Math.round(Math.sin(a) * 5), 8, 2);
+    }
+  });
+  c.fillStyle = '#0d1608'; c.fillRect(0, SH - 7, SW, 7);
+  // ② 서바이벌 — 밤바다: 초승달 + 별 + 파도
+  c = sceneOf('modeSurvival');
+  sky(c, ['#050810', '#0a1226', '#101c3a', '#16294e']);
+  c.fillStyle = '#9fe8ff';
+  for (let i = 0; i < 20; i++) c.fillRect((i * 37 + 5) % SW, (i * 23) % 44, 1, 1);
+  c.fillStyle = '#e8f4ff'; c.beginPath(); c.arc(26, 20, 9, 0, 7); c.fill();
+  c.fillStyle = '#0a1226'; c.beginPath(); c.arc(30, 17, 8, 0, 7); c.fill();
+  for (let r = 0; r < 4; r++) {
+    c.fillStyle = ['#16294e', '#1d3a66', '#27507e', '#3a76a8'][r];
+    for (let x = 0; x < SW; x += 2)
+      c.fillRect(x, 54 + r * 8 + Math.round(Math.sin(x * .16 + r * 2) * 2), 2, SH);
+  }
+  c.fillStyle = '#9fe8ff';
+  for (let x = 0; x < SW; x += 6) c.fillRect(x + Math.round(Math.sin(x) * 2), 54 + Math.round(Math.sin(x * .16) * 2), 3, 1);
+  // ③ 일일 도전 — 보랏빛 유성야: 별무리 + 유성 + 능선
+  c = sceneOf('modeDaily');
+  sky(c, ['#0c0618', '#1c0e30', '#2e1848', '#432260']);
+  c.fillStyle = '#e6d8ff';
+  for (let i = 0; i < 26; i++) c.fillRect((i * 31 + 9) % SW, (i * 17) % 56, 1, 1);
+  c.fillStyle = '#ffd23f';
+  for (let k = 0; k < 16; k++) c.fillRect(98 - k * 3, 12 + k * 2, k < 3 ? 3 : 2, 2);
+  c.fillStyle = '#fff2c0'; c.fillRect(96, 10, 5, 5);
+  c.fillStyle = '#1a1030';
+  for (let x = 0; x < SW; x += 3) c.fillRect(x, 68 + Math.round(Math.sin(x * .13 + 2) * 4), 3, SH);
 }
 
 function refreshResumeBtn() {
@@ -9076,6 +9270,17 @@ document.getElementById('modeSurvival').addEventListener('click', () => {
 document.getElementById('modeDaily').addEventListener('click', () => {
   selMode = 'daily'; S.init(); S.pickup(); openCharScreen();
 });
+// 로비 히어로 클릭 → 대원 변경 (현재 모드 유지)
+document.getElementById('heroPanel').addEventListener('click', () => {
+  S.init(); S.pickup(); openCharScreen();
+});
+// 로비 단축키: 1/2/3 으로 모드 즉시 선택
+addEventListener('keydown', e => {
+  if (elStart.classList.contains('hidden')) return;
+  if (e.key === '1') document.getElementById('modeCampaign').click();
+  else if (e.key === '2') document.getElementById('modeSurvival').click();
+  else if (e.key === '3') document.getElementById('modeDaily').click();
+});
 document.getElementById('charBack').addEventListener('click', () => showMenu(elStart));
 document.getElementById('charNext').addEventListener('click', () => {
   S.init(); S.pickup();
@@ -9159,7 +9364,9 @@ function boot() {
   initWeather();
   buildCards();
   buildStageRow();
+  paintModeScenes();
   refreshMenuInfo();
+  heroLoop();
   syncOptBtns();
   elMute.textContent = 'SOUND: ' + (save.opt.mute ? 'OFF' : 'ON');
   S.setMuted(save.opt.mute);
