@@ -382,8 +382,9 @@
       <button class="startbtn normal" data-d="normal">NORMAL</button>
       <button class="startbtn hard" data-d="hard">HARD</button>
     </div>
-    <div class="hint">←→ 이동 · ↑ 사다리/위 조준 · <b style="color:#ffcf3f;">↓ 엎드리기(낮은 적 조준)</b> · SPACE 점프 · J/Z 사격 · K/X 수류탄<br>
-      L/C 필살기 <b style="color:#9fe8ff;">(탈것 탑승 중엔 탈것 특수기 · ↓+점프로 하차)</b> · Q/E 무기교체 · <b style="color:#ffcf3f;">B 보급 상점(언제든)</b> · P/ESC 일시정지 · N 음소거<br>
+    <div class="hint">←→ 이동 · ↑ 사다리/위 조준 · <b style="color:#ffcf3f;">↓ 엎드리기(낮은 적 조준)</b> · SPACE 점프 · J/Z 사격 · K/X 폭탄(대원마다 다름)<br>
+      <b style="color:#ffe27a;">적이 코앞이면 사격이 근접 참격으로</b> · <b style="color:#ffe27a;">사격 0.6초 홀드 후 떼면 차지샷</b><br>
+      L/C 필살기 <b style="color:#9fe8ff;">(탈것 탑승 중엔 탈것 특수기 · ↓+점프로 하차)</b> · P(또는 Q/E) 무기교체 · <b style="color:#ffcf3f;">B 보급 상점(언제든)</b> · ESC 일시정지 · N 음소거<br>
       군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · <b style="color:#ff8a5c;">돌진하는 적에게 들이받히면 잠시 기절</b> — 예고 마커를 보고 피해라</div>
   </div>
 
@@ -412,7 +413,7 @@
       <button class="optbtn" id="optSound">SOUND</button>
       <button class="optbtn" id="optShake">SHAKE</button>
     </div>
-    <div class="hint">Q/E 무기교체 · ↑+사격 위로조준 · 공중 ↓+사격 대각사격 · <b style="color:#ffcf3f;">B 보급 상점</b><br>
+    <div class="hint">P(또는 Q/E) 무기교체 · ↑+사격 위로조준 · 공중 ↓+사격 대각사격 · <b style="color:#ffcf3f;">B 보급 상점</b><br>
       필살기는 SP 게이지가 가득 찼을 때 L/C · 잔여 횟수는 게이지 옆 눈금</div>
   </div>
 
@@ -1127,11 +1128,11 @@ const CHARS = [
     ultGain: 1.15, ultUseMod: 0, maxHp: 100, spd: 1.05, fireMul: 0.95, nades: 3, dmgMul: 0.82, dmgOut: 1.0,
     bodyScale: 1.0, head: 'pony', cute: false, bulk: false,
     pal: { skin: '#e6b88a', skinDk: '#b5895c', suit: '#d2622e', suitDk: '#9a401a', suitLt: '#f0944e', boot: '#3a2418', gear: '#f0e0c0', accent: '#ffe6a0', hair: '#7a3a18' } },
-  { name: 'VOLT', role: 'ENGINEER', ult: 'sentry', ultName: 'SENTRY DROP', trait: 'discount', traitName: '상점 20% 할인', unlock: 180,
+  { name: 'VOLT', role: 'ENGINEER', ult: 'emp', ultName: 'EMP SHUTDOWN', trait: 'discount', traitName: '상점 20% 할인', unlock: 180,
     ultGain: 1.1, ultUseMod: 0, maxHp: 110, spd: 0.95, fireMul: 1.0, nades: 4, dmgMul: 0.95, dmgOut: 0.95,
     bodyScale: 1.0, head: 'helmet', cute: false, bulk: false,
     pal: { skin: '#dcaa78', skinDk: '#a8794a', suit: '#a8862a', suitDk: '#6e5518', suitLt: '#d4b054', boot: '#3a2c10', gear: '#4a4a52', accent: '#ffe27a', hair: '#2a1f12' } },
-  { name: 'KAI', role: 'SNIPER', ult: 'time', ultName: 'BULLET TIME', trait: 'crit', traitName: '15% 치명타 x2', unlock: 280,
+  { name: 'KAI', role: 'SNIPER', ult: 'brush', ultName: 'BLADE RUSH', trait: 'crit', traitName: '15% 치명타 x2', unlock: 280,
     ultGain: 1.2, ultUseMod: 0, maxHp: 85, spd: 1.1, fireMul: 1.1, nades: 2, dmgMul: 1.0, dmgOut: 1.15,
     bodyScale: 0.95, head: 'mask', cute: false, bulk: false,
     pal: { skin: '#d8b090', skinDk: '#a88460', suit: '#3a3a6e', suitDk: '#26264a', suitLt: '#5c5ca0', boot: '#1c1c30', gear: '#2a2a34', accent: '#b18cff', hair: '#1a1a22' } },
@@ -1380,11 +1381,11 @@ const kmap = {
   KeyJ: 'fire', KeyZ: 'fire',
   KeyK: 'nade', KeyX: 'nade',
   KeyL: 'special', KeyC: 'special',
-  KeyQ: 'swap', KeyE: 'swap',
+  KeyQ: 'swap', KeyE: 'swap', KeyP: 'swap',
 };
 addEventListener('keydown', e => {
   if (e.code === 'KeyN') { toggleMute(); e.preventDefault(); return; }
-  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
+  if (e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
   // B: 런 중 언제든 보급 상점 (열려 있으면 닫고 복귀) — 보스전 중에는 잠금
   if (e.code === 'KeyB') {
     if (state === 'play' && !perkChoices && player && !player.dead) {
@@ -1443,6 +1444,9 @@ let survT = 0, survKills = 0, survNext = 25, survWave = 1, survBanner = 0;
 // 서바이벌 확장: 변조 웨이브(승급마다 랜덤 특수 규칙) / 필살기 충전 배율
 // (사용할수록 재충전이 느려지는 소프트 코스트 — 횟수 제한 대신)
 let survMod = null, survUltMul = 1;
+// 필살기 발동 배너 / VOLT EMP 빙결 화면 틴트 타이머
+let ultBannerT = 0, ultBannerTxt = '', ultBannerCol = '#fff';
+let empFxT = 0;
 let daily = false;           // 📅 일일 도전 (서바이벌의 변형: 날짜 시드·스테이지 고정)
 let shopSwapSlot = -1;       // 상점 무기고에서 지정한 교체 대상 슬롯 (-1 = 자동)
 let odShown = 0;             // 이번 런에서 연출까지 끝낸 오버드라이브 단계
@@ -1885,6 +1889,7 @@ function startStage(i) {
   p.ultUses = clamp(stage.ultUses + diff.ultBonus + CHARS[p.char].ultUseMod, 1, 9);
   p.ult = metaLv('spgage') > 0 ? 50 : 0;   // 영구 강화: 예열된 SP
   p.ultReady = false; p.ultT = 0; p.ultMode = null; p.rage = 0;
+  empFxT = 0; ultBannerT = 0;
   if (p.mode !== 'foot') exitMode(false);
   p.y = GROUND_Y - p.h;
   state = 'play';
@@ -2814,7 +2819,7 @@ function buildShopDOM() {
   }
   armHtml += '</div><span class="armhint">' + (full
     ? '슬롯 가득 — 새 무기를 사면 <b style="color:#ff9a3c;">▼ 교체 대상</b>과 바뀝니다. 슬롯을 클릭해 내보낼 무기를 지정하세요 (기본 GUN은 보호)'
-    : '무기는 최대 4종 보유 · 게임 중 Q/E 키로 무기 교체') + '</span>';
+    : '무기는 최대 4종 보유 · 게임 중 P(또는 Q/E) 키로 무기 교체') + '</span>';
   arm.innerHTML = armHtml;
   [].forEach.call(arm.querySelectorAll('.armslot'), el => {
     el.addEventListener('click', () => {
@@ -3064,6 +3069,29 @@ function playerFire() {
   // ── 보병 무기 ──
   const wp = p.weapon, Wd = WEAPONS[wp];
 
+  // ── 자동 근접 참격 (메탈슬러그 방식) ─────────────────────────
+  // 적이 코앞에 붙어 있으면 총 대신 칼이 자동으로 나간다.
+  // 탄약 소모 없음 · 실드 관통 · 넉백 — 근접전의 긴장을 손맛으로 바꾼다.
+  if (wp !== 'blade') {
+    const ax = p.face > 0 ? p.x + p.w - 2 : p.x - 16;
+    const ay = p.y - 2, aw = 18, ah = p.h + 4;
+    let meleeHit = false;
+    enemies.forEach(e => {
+      if (e.dead || !hitBox(ax, ay, aw, ah, e.x, e.y, e.w, e.h)) return;
+      hurtEnemy(e, pdmg(30));
+      if (!e.dead) { e.vx = p.face * 3; if (!e.fly) e.vy = Math.min(e.vy, -2.2); }
+      meleeHit = true;
+    });
+    if (meleeHit) {
+      slashes.push({ x: p.x + p.w / 2 + p.face * 12, y: p.y + p.h / 2, face: p.face, life: 10, col: '#ffffff' });
+      p.fireCd = Math.round(14 * c.fireMul);
+      addHitstop(2);
+      gainUlt(2);
+      S.shoot('blade');
+      return;
+    }
+  }
+
   // 블레이드: 근접 판정 (실드병 정면도 유효한 카운터 수단)
   if (wp === 'blade') {
     const ax = p.face > 0 ? p.x + p.w - 2 : p.x - 18;
@@ -3163,19 +3191,146 @@ function playerFire() {
   for (let i = 0; i < 4; i++) particles.push(spark(mX, mY, '#ffe08a'));
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 차지샷 — 사격을 0.6초(36틱) 이상 홀드하면 게이지가 차고,
+// 키를 떼는 순간 무기 계열별 강화탄이 나간다. 탄약 소모 없음.
+// (홀드 중에는 평소처럼 연사가 계속되므로 기존 조작과 충돌하지 않는다)
+// ═══════════════════════════════════════════════════════════════
+const CHARGE_NEED = 36;
+function fireChargeShot() {
+  const p = player, c = CHARS[p.char], wp = p.weapon;
+  const aimUp = keys.up && p.onGround && p.fly <= 0 && !p.climbing;
+  const aim = aimUp ? -Math.PI / 2 : (p.face > 0 ? 0 : Math.PI);
+  const mX = aimUp ? p.x + p.w / 2 : p.x + (p.face > 0 ? p.w : 0);
+  const mY = aimUp ? p.y - 4 : p.y + Math.round(p.h * 0.4);
+  flashScreen = Math.max(flashScreen, 4);
+  addShake(4);
+  addHitstop(2);
+  for (let i = 0; i < 10; i++) particles.push(spark(mX, mY, '#ffe27a'));
+  if (wp === 'laser' || wp === 'rail' || wp === 'prism') {
+    // 빔 계열 — 하이퍼 빔: 초고속 굵은 관통탄
+    bullets.push({ x: mX, y: mY, vx: Math.cos(aim) * 16, vy: Math.sin(aim) * 16, life: 46, dmg: pdmg(42), r: 5, pierce: true, rail: true, hitList: [] });
+    addFloat(p.x, p.y - 26, '⚡ 하이퍼 빔!', '#9fe8ff');
+    S.shoot('rail');
+  } else if (wp === 'rocket' || wp === 'hellst' || wp === 'flame') {
+    // 폭발 계열 — 대구경 클러스터 고폭탄
+    bullets.push({ x: mX, y: mY, vx: Math.cos(aim) * 5, vy: Math.sin(aim) * 5, life: 120, dmg: pdmg(46), r: 6, explosive: true, rocketP: true, cluster: 4 });
+    addFloat(p.x, p.y - 26, '⚡ 고폭 클러스터!', '#ff8a5c');
+    S.shoot('rocketP');
+  } else if (wp === 'shotgun' || wp === 'spread' || wp === 'dragon') {
+    // 산탄 계열 — 12방향 원형 탄막
+    for (let i = 0; i < 12; i++) {
+      const a = i * Math.PI / 6;
+      bullets.push({ x: p.x + p.w / 2, y: p.y + p.h / 2, vx: Math.cos(a) * 6.5, vy: Math.sin(a) * 6.5, life: 34, dmg: pdmg(10), r: 3 });
+    }
+    addFloat(p.x, p.y - 26, '⚡ 전방위 탄막!', '#ffcf3f');
+    S.shoot('shotgun');
+  } else if (wp === 'homing' || wp === 'swarm') {
+    // 유도 계열 — 유도탄 4연장 일제사
+    for (let i = 0; i < 4; i++)
+      bullets.push({ x: mX, y: mY - 4 + i * 3, vx: Math.cos(aim + (i - 1.5) * 0.3) * 4, vy: Math.sin(aim + (i - 1.5) * 0.3) * 4 - 1, spd: 5, life: 140, dmg: pdmg(13), r: 3, homing: true });
+    addFloat(p.x, p.y - 26, '⚡ 미사일 일제사!', '#c8a0ff');
+    S.shoot('homing');
+  } else if (wp === 'blade') {
+    // 블레이드 — 회전 참격: 주변 360도 광역 베기 + 넉백
+    enemies.forEach(e => {
+      if (e.dead) return;
+      if (Math.hypot(e.x + e.w / 2 - (p.x + p.w / 2), e.y + e.h / 2 - (p.y + p.h / 2)) < 58) {
+        hurtEnemy(e, pdmg(36));
+        if (!e.dead) { e.vx = (e.x > p.x ? 3 : -3); if (!e.fly) e.vy = -3; }
+      }
+    });
+    if (boss && !boss.dead && !boss.hidden && boss.state !== 'enter' &&
+      Math.hypot(boss.x + boss.w / 2 - (p.x + p.w / 2), boss.y + boss.h / 2 - (p.y + p.h / 2)) < 90) hurtBoss(pdmg(28));
+    slashes.push({ x: p.x + p.w / 2 + 14, y: p.y + p.h / 2, face: 1, life: 12, col: c.pal.accent, big: true });
+    slashes.push({ x: p.x + p.w / 2 - 14, y: p.y + p.h / 2, face: -1, life: 12, col: c.pal.accent, big: true });
+    addFloat(p.x, p.y - 26, '⚡ 회전 참격!', c.pal.accent);
+    S.shoot('blade');
+  } else {
+    // 기본(GUN/MG) — 파워샷: 대구경 관통탄
+    bullets.push({ x: mX, y: mY, vx: Math.cos(aim) * 11, vy: Math.sin(aim) * 11, life: 55, dmg: pdmg(36), r: 5, pierce: true, hitList: [] });
+    addFloat(p.x, p.y - 26, '⚡ 파워샷!', '#ffe27a');
+    S.shoot('rail');
+  }
+  p.fireCd = Math.max(p.fireCd, 16);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 캐릭터별 시그니처 폭탄 — 같은 K키라도 대원마다 다른 폭탄이 나간다
+//   IAN 고폭탄 / JADEN 클러스터 / RICHITA 지진 폭탄 / MINA 네이팜
+//   VOLT 전자 수류탄(소형 빙결) / KAI 폭렬 쿠나이(적 명중 시 즉폭)
+// ═══════════════════════════════════════════════════════════════
+const NADE_KINDS = ['std', 'cluster', 'mega', 'napalm', 'emp', 'kunai'];
+const NADE_NAMES = { std: '고폭 수류탄', cluster: '클러스터 폭탄', mega: '지진 폭탄', napalm: '네이팜 폭탄', emp: '전자 수류탄', kunai: '폭렬 쿠나이' };
 function throwNade() {
   const p = player;
   if (p.nades <= 0) { addFloat(p.x, p.y - 30, 'NO NADE', '#e8412c'); p.nadeCd = 20; return; }
   p.nades--;
   p.nadeCd = 30;
-  nades.push({ x: p.x + p.w / 2, y: p.y + 4, vx: p.face * 4.2, vy: -6.2, t: 70, r: 3 });
+  const kind = NADE_KINDS[p.char] || 'std';
+  if (kind === 'kunai') {
+    // 낮고 빠른 직선 투척 — 적 명중 시 즉폭
+    nades.push({ x: p.x + p.w / 2, y: p.y + 8, vx: p.face * 8.5, vy: -0.6, t: 60, r: 3, kind, face: p.face });
+  } else if (kind === 'mega') {
+    // 묵직한 포물선 — 폭발이 크고 강한 대신 던지는 궤적이 짧다
+    nades.push({ x: p.x + p.w / 2, y: p.y + 4, vx: p.face * 3.4, vy: -5.6, t: 78, r: 4, kind });
+    p.nadeCd = 40;
+  } else {
+    nades.push({ x: p.x + p.w / 2, y: p.y + 4, vx: p.face * 4.2, vy: -6.2, t: 70, r: 3, kind });
+  }
+  // 이번 런 첫 투척 때 폭탄 이름을 알려준다
+  if (!p.nadeNamed) { p.nadeNamed = true; addFloat(p.x, p.y - 40, '💣 ' + NADE_NAMES[kind], '#ffcf3f'); }
   S.nade();
+}
+
+// 폭탄 기폭 — 종류별 연출·효과 분기
+function detonateNade(n) {
+  const kind = n.kind || 'std';
+  if (n.mini) { explode(n.x, n.y, 26, pdmg(13), true); return; }
+  if (kind === 'cluster') {
+    // 1차 폭발 후 새끼폭탄 4발이 흩어진다
+    explode(n.x, n.y, 30, pdmg(24), true);
+    for (let i = 0; i < 4; i++)
+      nades.push({ x: n.x, y: n.y - 4, vx: rnd(-3.2, 3.2), vy: -rnd(2.5, 5), t: 22 + i * 7, r: 2, mini: true });
+  } else if (kind === 'mega') {
+    // 지진 폭발: 대형 폭발 + 지면 충격파로 화면 전체가 흔들린다
+    const k = explode(n.x, n.y, 60, pdmg(55), true);
+    addShake(12);
+    flashScreen = Math.max(flashScreen, 7);
+    addHitstop(4);
+    for (let i = 0; i < 10; i++) fx.dust(n.x + rnd(-40, 40), GROUND_Y, rnd(-1.5, 1.5), -rnd(0.5, 2));
+    if (k >= 3) unlockAch('DEMO');
+  } else if (kind === 'napalm') {
+    // 착탄 폭발 + 지면에 불바다를 남긴다 (닿은 적은 화상)
+    explode(n.x, n.y, 30, pdmg(22), true);
+    for (let i = -3; i <= 3; i++)
+      nades.push({ x: n.x + i * 15, y: GROUND_Y - 3, vx: 0, vy: 0, t: 90 + rnd(0, 20), r: 3, fire: true });
+  } else if (kind === 'emp') {
+    // 전자 폭발: 소형 EMP — 주변 적을 1.5초 빙결
+    explode(n.x, n.y, 34, pdmg(18), true);
+    let fz = 0;
+    enemies.forEach(e => {
+      if (e.dead || Math.hypot(e.x + e.w / 2 - n.x, e.y + e.h / 2 - n.y) > 75) return;
+      e.frozenT = Math.max(e.frozenT || 0, 90);
+      fz++;
+      for (let i = 0; i < 3; i++) particles.push(spark(e.x + e.w / 2, e.y + e.h / 2, '#9fe8ff'));
+    });
+    if (fz > 0) addFloat(n.x, n.y - 20, '❄ ' + fz + '기 빙결!', '#9fe8ff');
+  } else if (kind === 'kunai') {
+    const k = explode(n.x, n.y, 44, pdmg(46), true);
+    flashScreen = Math.max(flashScreen, 5);
+    if (k >= 3) unlockAch('DEMO');
+  } else {
+    const k = explode(n.x, n.y, 40, pdmg(42), true);
+    if (k >= 3) unlockAch('DEMO');
+  }
+  n.done = true;
 }
 
 // ═══════════════════════════════════════════════════════════════
 // 필살기 (SP)
 // air: 항공폭격 / rush: 연속 순간이동 참격 / rage: 광폭화
-// beam: 궤도 레이저 / sentry: 자동 포탑 2기 / time: 불릿타임
+// beam: 궤도 레이저 / emp: 전장 셧다운(빙결+센트리) / brush: 블레이드 러시
 // ═══════════════════════════════════════════════════════════════
 function gainUlt(n) {
   n *= (player.ultGainMul || 1);
@@ -3302,56 +3457,62 @@ function triggerUlt() {
   else p.ultUses--;
   const us = ultScale();                 // 서바이벌 웨이브 5마다 지속·위력 +15%
   const u = CHARS[p.char].ult;
+  const acc = CHARS[p.char].pal.accent;
+  // 공통 발동 연출 — 히트스톱 + 강한 플래시 + 대형 배너 + 캐릭터 색 파티클
+  addHitstop(6);
+  flashScreen = 10;
+  ultBannerT = 55;
+  ultBannerTxt = CHARS[p.char].ultName;
+  ultBannerCol = acc;
   addFloat(p.x, p.y - 34, CHARS[p.char].ultName + '!' + (us > 1 ? ' x' + us.toFixed(2) : ''), '#ff8a5c');
+  for (let i = 0; i < 26; i++) particles.push(spark(p.x + p.w / 2, p.y + p.h / 2, i % 2 ? acc : '#ffffff'));
   S.ult();
-  flashScreen = 6;
   if (u === 'air') { p.ultMode = 'air'; p.ultT = Math.round(96 * us); S.alert(); }
-  else if (u === 'rush') { p.ultMode = 'rush'; p.ultT = Math.round(44 * us); p.invuln = Math.max(p.invuln, Math.round(52 * us)); phantomDash(); }
+  else if (u === 'rush') {
+    // JADEN — 짧은 순간이동 다단 참격 (밸런스 상향: 지속 44→66, 참격당 34dmg)
+    p.ultMode = 'rush'; p.ultT = Math.round(66 * us);
+    p.invuln = Math.max(p.invuln, Math.round(74 * us));
+    phantomDash();
+  }
   else if (u === 'rage') { p.ultMode = null; p.rage = Math.round(300 * us); explode(p.x + p.w / 2, p.y + p.h, 120, pdmg(60 * us), true); addShake(12); }
   else if (u === 'beam') { p.ultMode = 'beam'; p.ultT = Math.round(72 * us); p.beamX = p.x + p.w / 2; }
-  else if (u === 'sentry') {
-    // VOLT — 전술 센트리 강하: EMP 충격파로 착지 + 중화기 터렛 2기 배치
+  else if (u === 'emp') {
+    // VOLT — EMP 셧다운: 화면 전체 적 4초 빙결(피해 +30% 취약) + 보스 2초
+    // + 센트리 1기 강하 (엔지니어 정체성 유지)
     p.ultMode = null;
-    addShake(7);
-    flashScreen = Math.max(flashScreen, 9);
+    addShake(9);
     S.boom(false);
-    const spots = [p.x - 30, p.x + p.w + 18];
-    spots.forEach((sx, i) => {
-      sentries.push({
-        x: sx, y: GROUND_Y, life: Math.round(760 * us), cd: 30, dropT: 15 + i * 5,
-        burstLeft: 0, burstCd: 0, tx: sx, ty: GROUND_Y - 20,
-      });
-    });
-    // 착지 충격 EMP: 주변 적/보스에 즉시 피해
-    let empHits = 0;
+    empFxT = Math.round(240 * us);
+    let frozen = 0;
     enemies.forEach(e => {
-      if (!e.dead && Math.abs((e.x + e.w / 2) - (p.x + p.w / 2)) < 180) { hurtEnemy(e, pdmg(16 * us)); empHits++; }
-    });
-    if (boss && !boss.dead && !boss.hidden && boss.state !== 'enter' &&
-      Math.abs((boss.x + boss.w / 2) - (p.x + p.w / 2)) < 230) hurtBoss(pdmg(14 * us));
-    addFloat(p.x, p.y - 44, '전술 센트리 강하!', '#ffe27a');
-  }
-  else if (u === 'time') {
-    // KAI — 불릿타임 진입과 동시에 근처 표적을 확정 저격
-    p.ultMode = 'time'; p.ultT = Math.round(260 * us);
-    addShake(4);
-    flashScreen = Math.max(flashScreen, 10);
-    const cands = enemies.filter(e => !e.dead)
-      .map(e => ({ e, d: Math.hypot(e.x + e.w / 2 - (p.x + p.w / 2), e.y + e.h / 2 - (p.y + p.h / 2)) }))
-      .sort((a, b) => a.d - b.d)
-      .slice(0, 5);
-    cands.forEach(c => {
-      fx.lance(p.x + p.w / 2, p.y + p.h / 2 - 8, c.e.x + c.e.w / 2, c.e.y + c.e.h / 2, '#eafcff');
-      hurtEnemy(c.e, pdmg(34 * us));
+      if (e.dead) return;
+      hurtEnemy(e, pdmg(15 * us));
+      if (!e.dead) {
+        e.frozenT = Math.round(240 * us);
+        frozen++;
+        for (let i = 0; i < 4; i++) particles.push(spark(e.x + e.w / 2, e.y + e.h / 2, '#9fe8ff'));
+      }
     });
     if (boss && !boss.dead && !boss.hidden && boss.state !== 'enter') {
-      const bd = Math.hypot(boss.x + boss.w / 2 - (p.x + p.w / 2), boss.y + boss.h / 2 - (p.y + p.h / 2));
-      if (bd < 340) {
-        fx.lance(p.x + p.w / 2, p.y + p.h / 2 - 8, boss.x + boss.w / 2, boss.y + boss.h / 2, '#eafcff');
-        hurtBoss(pdmg(26 * us));
-      }
+      hurtBoss(pdmg(14 * us));
+      boss.frozenT = Math.round(120 * us);
     }
-    addFloat(p.x, p.y - 34, '정밀 저격!', '#eafcff');
+    sentries.push({
+      x: p.x + p.w + 18, y: GROUND_Y, life: Math.round(760 * us), cd: 30, dropT: 15,
+      burstLeft: 0, burstCd: 0, tx: p.x + p.w + 18, ty: GROUND_Y - 20,
+    });
+    addFloat(p.x, p.y - 44, '⚡ 전장 셧다운! 적 ' + frozen + '기 빙결', '#9fe8ff');
+  }
+  else if (u === 'brush') {
+    // KAI — 블레이드 러시: 칼을 들고 화면 끝까지 질주하며 경로의 모든 적을
+    // 베어 공중으로 띄운다. 질주 중 무적. (JADEN과 달리 관통 한 방 질주)
+    p.ultMode = 'brush'; p.ultT = 42;
+    p.brushId = (p.brushId || 0) + 1;
+    p.brushUs = us;
+    p.invuln = Math.max(p.invuln, 60);
+    p.vy = 0;
+    addShake(5);
+    S.tone('square', 1600, 300, 0.16, 0.2);
   }
 }
 function phantomDash() {
@@ -3360,10 +3521,10 @@ function phantomDash() {
   const lo = Math.min(from, to), hi = Math.max(from, to) + p.w;
   enemies.forEach(e => {
     if (!e.dead && e.x + e.w > lo && e.x < hi && Math.abs((e.y + e.h) - (p.y + p.h)) < 60)
-      hurtEnemy(e, pdmg(28 * us));
+      hurtEnemy(e, pdmg(34 * us));
   });
   if (boss && !boss.dead && !boss.hidden && boss.state !== 'enter' && boss.x + boss.w > lo && boss.x < hi)
-    hurtBoss(pdmg(22 * us));
+    hurtBoss(pdmg(26 * us));
   for (let i = 0; i < 8; i++)
     particles.push({ x: from + (to - from) * (i / 8) + p.w / 2, y: p.y + p.h / 2, vx: 0, vy: 0, life: 18 - i, c: '#7df0ff', r: 6, g: 0 });
   slashes.push({ x: (from + to) / 2, y: p.y + p.h / 2, face: dir, life: 13, col: '#cffcff', big: true });
@@ -3474,6 +3635,7 @@ function hurtEnemy(e, dmg) {
       addFloat(e.x, e.y - 14, 'CRIT!', '#ffe27a');
     }
   }
+  if (e.frozenT > 0) d *= 1.3;   // 빙결된 적은 받는 피해 +30% (VOLT EMP)
   e.hp -= d;
   e.hit = 5;
   // ⑤ 피해 숫자 팝업 — 10틱 단위로 합산해 화염방사 같은 다탄 무기의 폭주 방지
@@ -3761,6 +3923,12 @@ function blockEnemy(e) {
 function updateEnemy(e, T) {
   const p = player;
   if (e.hit > 0) e.hit--;
+  // VOLT EMP 셧다운 — 빙결: AI·이동·사격·접촉 피해 전부 정지 (제자리 동결)
+  if (e.frozenT > 0) {
+    e.frozenT--;
+    if (tick % 8 === 0) particles.push(spark(e.x + rnd(0, e.w), e.y + rnd(0, e.h), '#9fe8ff'));
+    return;
+  }
   if (e.burn > 0) {
     e.burn -= T;
     if (tick % 2 === 0) hurtEnemy(e, 0.14);
@@ -4044,6 +4212,13 @@ function _updateBossFight() {
   if (b.state === 'enter') {
     b.x -= 1.2;
     if (b.x < bossRestX(b) + 20) b.state = 'fight';
+    return;
+  }
+
+  // VOLT EMP 셧다운 — 보스도 잠시 정지 (등장·격파 연출 중에는 적용 안 됨)
+  if (b.frozenT > 0) {
+    b.frozenT--;
+    if (tick % 6 === 0) particles.push(spark(b.x + rnd(0, b.w), b.y + rnd(0, b.h), '#9fe8ff'));
     return;
   }
 
@@ -4743,15 +4918,48 @@ function update() {
       strikes.push({ x: rnd(cam + 20, cam + W - 20), y: -12, vy: 1 });
     if (p.ultMode === 'rush' && p.ultT % 15 === 0 && p.ultT > 0) phantomDash();
     if (p.ultMode === 'beam') {
+      // MINA 밸런스 상향: 판정 폭 9→14, 틱 피해 4→5 (보스 3→4)
       p.beamX += p.face * 4.2;
       const bx = p.beamX;
-      enemies.forEach(e => { if (!e.dead && Math.abs((e.x + e.w / 2) - bx) < 9) hurtEnemy(e, pdmg(4)); });
-      crates.forEach(cr => { if (!cr.dead && Math.abs((cr.x + 7) - bx) < 9) damageCrate(cr, 4); });
-      if (boss && !boss.dead && !boss.hidden && Math.abs((boss.x + boss.w / 2) - bx) < 18) hurtBoss(pdmg(3));
+      enemies.forEach(e => { if (!e.dead && Math.abs((e.x + e.w / 2) - bx) < 14) hurtEnemy(e, pdmg(5)); });
+      crates.forEach(cr => { if (!cr.dead && Math.abs((cr.x + 7) - bx) < 14) damageCrate(cr, 4); });
+      if (boss && !boss.dead && !boss.hidden && Math.abs((boss.x + boss.w / 2) - bx) < 20) hurtBoss(pdmg(4));
       if (p.ultT % 7 === 0) S.tone('sawtooth', 1300, 1300, 0.09, 0.1);
+    }
+    if (p.ultMode === 'brush') {
+      // KAI 블레이드 러시 — 고속 질주하며 경로의 적을 베어 공중으로 띄운다
+      const bus = p.brushUs || 1;
+      p.vy = 0; p.vx = 0;
+      p.x = clamp(p.x + p.face * 11, cam + 4, stage.len - p.w - 4);
+      p.invuln = Math.max(p.invuln, 4);
+      // 참격 잔상
+      if (p.ultT % 2 === 0)
+        slashes.push({ x: p.x + p.w / 2 + p.face * 10, y: p.y + p.h / 2, face: p.face, life: 10, col: '#e8dcff', big: true });
+      particles.push({ k: 'streak', x: p.x + p.w / 2 - p.face * 8, y: p.y + rnd(4, p.h - 4), vx: -p.face * 2.4, vy: 0, life: 12, c: '#b18cff', r: 2, g: 0 });
+      // 경로 타격: 같은 발동에서 적당 1회, 베인 적은 위로 떠오른다
+      enemies.forEach(e => {
+        if (e.dead || e._brushId === p.brushId) return;
+        if (hitBox(p.x - 8, p.y - 14, p.w + 16, p.h + 20, e.x, e.y, e.w, e.h)) {
+          e._brushId = p.brushId;
+          hurtEnemy(e, pdmg(40 * bus));
+          if (!e.dead) { e.vy = -7; e.vx = p.face * 3.5; e.frozenT = 0; }
+          addHitstop(2);
+          slashes.push({ x: e.x + e.w / 2, y: e.y + e.h / 2, face: p.face, life: 12, col: '#ffffff', big: true });
+        }
+      });
+      if (boss && !boss.dead && !boss.hidden && boss.state !== 'enter' && p.brushBossId !== p.brushId &&
+        hitBox(p.x - 8, p.y - 14, p.w + 16, p.h + 20, boss.x, boss.y, boss.w, boss.h)) {
+        p.brushBossId = p.brushId;
+        hurtBoss(pdmg(50 * bus));
+        addHitstop(4);
+      }
+      // 스테이지 경계에 닿으면 조기 종료
+      if (p.x <= cam + 4 || p.x >= stage.len - p.w - 4) p.ultT = Math.min(p.ultT, 1);
+      if (p.ultT === 1) { addShake(6); flashScreen = Math.max(flashScreen, 5); }
     }
     if (p.ultT <= 0) p.ultMode = null;
   }
+  if (empFxT > 0) empFxT--;
 
   // ── 입력 액션 ───────────────────────────────────────────────
   if (bossIntro > 0) { p.vx *= 0.7; }
@@ -4785,6 +4993,20 @@ function update() {
     if (rampageOn()) p.fireCd = Math.max(1, Math.round(p.fireCd * 0.85));
   }
   if (keys.nade && p.nadeCd <= 0 && !p.dead && p.stunT <= 0 && (p.mode === 'foot' || p.mode === 'hulk')) throwNade();
+
+  // ── 차지샷 게이지 — 사격 홀드로 축적, 릴리즈 순간 완충이면 강화탄 ──
+  if (p.mode === 'foot' && !p.dead && p.stunT <= 0 && !perkChoices) {
+    if (keys.fire) {
+      p.chargeT = (p.chargeT || 0) + 1;
+      if (p.chargeT === CHARGE_NEED) { addFloat(p.x, p.y - 26, '⚡ CHARGED', '#ffe27a'); S.power(); }
+      // 완충 상태: 총구에 노란 스파크가 맺힌다
+      if (p.chargeT >= CHARGE_NEED && tick % 5 === 0)
+        particles.push(spark(p.x + (p.face > 0 ? p.w : 0), p.y + Math.round(p.h * 0.4), '#ffe27a'));
+    } else {
+      if ((p.chargeT || 0) >= CHARGE_NEED && !p.climbing) fireChargeShot();
+      p.chargeT = 0;
+    }
+  } else p.chargeT = 0;
 
   // ── 상점 진입 트리거 ────────────────────────────────────────
 
@@ -4912,17 +5134,41 @@ function update() {
 
   // ── 수류탄 ──────────────────────────────────────────────────
   nades.forEach(n => {
-    n.vy += GRAVITY;
+    // 네이팜 불바다: 제자리에서 타오르며 밟은 적을 태운다
+    if (n.fire) {
+      n.t--;
+      if (tick % 3 === 0)
+        particles.push({ x: n.x + rnd(-6, 6), y: GROUND_Y - rnd(0, 5), vx: rnd(-0.3, 0.3), vy: -rnd(0.6, 1.6), life: rnd(8, 16), c: tick % 2 ? '#ff8a2b' : '#ffcf3f', r: rnd(1.5, 2.5), g: 0 });
+      if (tick % 6 === 0)
+        enemies.forEach(e => {
+          if (e.dead || e.fly) return;
+          if (Math.abs(e.x + e.w / 2 - n.x) < 14 && e.y + e.h > GROUND_Y - 26) {
+            hurtEnemy(e, pdmg(3));
+            e.burn = Math.max(e.burn || 0, 40);
+          }
+        });
+      if (n.t <= 0) n.done = true;
+      return;
+    }
+    n.vy += GRAVITY * (n.kind === 'kunai' ? 0.25 : 1);   // 쿠나이는 직선에 가깝게 난다
     n.x += n.vx;
     n.y += n.vy;
     n.t--;
-    if (n.y + n.r >= GROUND_Y) { n.y = GROUND_Y - n.r; n.vy *= -0.45; n.vx *= 0.6; }
-    if (n.t <= 0) {
-      // 미니 폭탄(헬스톰 새끼탄)은 작고 약한 폭발
-      const k = explode(n.x, n.y, n.mini ? 26 : 38, pdmg(n.mini ? 13 : 40), true);
-      if (!n.mini && k >= 3) unlockAch('DEMO');
-      n.done = true;
+    // KAI 쿠나이: 적/보스에 명중하는 순간 즉폭
+    if (n.kind === 'kunai' && !n.done) {
+      for (let i = 0; i < enemies.length; i++) {
+        const e = enemies[i];
+        if (!e.dead && hitBox(n.x - 3, n.y - 3, 6, 6, e.x, e.y, e.w, e.h)) { detonateNade(n); break; }
+      }
+      if (!n.done && boss && !boss.dead && !boss.hidden && boss.state !== 'enter' &&
+        hitBox(n.x - 3, n.y - 3, 6, 6, boss.x, boss.y, boss.w, boss.h)) detonateNade(n);
+      if (n.done) return;
     }
+    if (n.y + n.r >= GROUND_Y) {
+      if (n.kind === 'kunai') { detonateNade(n); return; }   // 쿠나이는 착지 즉폭
+      n.y = GROUND_Y - n.r; n.vy *= -0.45; n.vx *= 0.6;
+    }
+    if (n.t <= 0) detonateNade(n);
   });
   nades = nades.filter(n => !n.done);
 
@@ -5030,6 +5276,14 @@ function draw() {
   drawCorpses();
   enemies.forEach(e => outlined(() => drawEnemy(e)));
 
+  // VOLT EMP 빙결 오버레이 — 얼음 틴트 (풀리기 직전 40프레임은 깜빡여 예고)
+  enemies.forEach(e => {
+    if (e.dead || !(e.frozenT > 0)) return;
+    const blink = e.frozenT < 40 && tick % 10 < 5;
+    ctx.fillStyle = 'rgba(159,232,255,' + (blink ? '.14' : '.38') + ')';
+    ctx.fillRect(e.x - 1, e.y - 1, e.w + 2, e.h + 2);
+  });
+
   // 적 체력바
   enemies.forEach(e => {
     if (!e.dead && e.hp < e.maxhp) {
@@ -5053,10 +5307,30 @@ function draw() {
   });
 
   if (boss) outlined(drawBoss);
+  if (boss && !boss.dead && !boss.hidden && boss.frozenT > 0) {
+    const blink = boss.frozenT < 40 && tick % 10 < 5;
+    ctx.fillStyle = 'rgba(159,232,255,' + (blink ? '.12' : '.32') + ')';
+    ctx.fillRect(boss.x - 1, boss.y - 1, boss.w + 2, boss.h + 2);
+  }
 
   // 수류탄 / 항공폭격탄 / 고드름
   nades.forEach(n => {
-    if (n.mini) { px(n.x - 2, n.y - 2, 3, 3, '#ff6a5c'); px(n.x - 2, n.y - 2, 3, 1, '#ffcf8a'); }
+    if (n.fire) {
+      // 네이팜 불웅덩이: 일렁이는 불꽃 기둥
+      const fh = 4 + Math.round(Math.abs(Math.sin((tick + n.x) * 0.35)) * 4);
+      px(n.x - 5, GROUND_Y - fh, 10, fh, tick % 4 < 2 ? '#ff8a2b' : '#ff5a3c');
+      px(n.x - 2, GROUND_Y - fh - 2, 4, 3, '#ffcf3f');
+    } else if (n.kind === 'kunai') {
+      // 폭렬 쿠나이: 날붙이 + 붉은 심지
+      px(n.x - 4, n.y - 1, 8, 2, '#cfd6e8');
+      px(n.x + (n.face > 0 ? 3 : -5), n.y - 1, 2, 2, '#ff5a3c');
+    } else if (n.kind === 'mega') {
+      px(n.x - 3, n.y - 3, 6, 6, '#2a2a2a');
+      px(n.x - 3, n.y - 3, 6, 2, tick % 8 < 4 ? '#ff8a5c' : '#5a3a2a');
+    } else if (n.kind === 'emp') {
+      px(n.x - 2, n.y - 2, 4, 4, '#2a3a52');
+      px(n.x - 1, n.y - 2, 2, 1, tick % 6 < 3 ? '#9fe8ff' : '#4a6a8a');
+    } else if (n.mini) { px(n.x - 2, n.y - 2, 3, 3, '#ff6a5c'); px(n.x - 2, n.y - 2, 3, 1, '#ffcf8a'); }
     else { px(n.x - 2, n.y - 2, 4, 4, '#3a4a22'); px(n.x - 2, n.y - 2, 4, 1, '#9bb24a'); }
   });
   strikes.forEach(s => { px(s.x - 2, s.y - 5, 4, 9, '#2a2a2a'); px(s.x - 1, s.y - 5, 2, 3, '#ff5a3c'); px(s.x - 3, s.y + 3, 6, 2, '#aaa'); });
@@ -5198,9 +5472,14 @@ function draw() {
   drawWeather();
   drawForeground();
 
-  // 불릿타임 청색 틴트
-  if (player && player.ultMode === 'time' && player.ultT > 0) {
-    ctx.fillStyle = 'rgba(120,180,255,' + (0.10 + 0.04 * Math.sin(tick * 0.2)) + ')';
+  // VOLT EMP 셧다운 청색 틴트 (빙결 지속 동안 서서히 옅어진다)
+  if (empFxT > 0) {
+    ctx.fillStyle = 'rgba(120,180,255,' + (0.12 * clamp(empFxT / 240, 0.3, 1) + 0.03 * Math.sin(tick * 0.2)).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+  // KAI 블레이드 러시 보라 틴트
+  if (player && player.ultMode === 'brush' && player.ultT > 0) {
+    ctx.fillStyle = 'rgba(177,140,255,.10)';
     ctx.fillRect(0, 0, W, H);
   }
   if (flashScreen > 0) {
@@ -7849,6 +8128,20 @@ function drawArenaHUD() {
     }
   }
 
+  // 필살기 발동 대형 배너 — 캐릭터 색으로 이름을 크게 띄운다
+  if (ultBannerT > 0) {
+    ultBannerT--;
+    const ua = clamp(ultBannerT / 18, 0, 1);
+    const slide = (1 - clamp((55 - ultBannerT) / 8, 0, 1)) * 14;
+    ctx.globalAlpha = ua;
+    ctx.textAlign = 'center';
+    ctx.font = '13px "Press Start 2P", monospace';
+    ctx.fillStyle = '#07060a'; ctx.fillText(ultBannerTxt, W / 2 + 2, 72 - slide + 2);
+    ctx.fillStyle = ultBannerCol; ctx.fillText(ultBannerTxt, W / 2, 72 - slide);
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+  }
+
   // 구역 진입 배너
   if (arenaBanner > 0) {
     arenaBanner--;
@@ -8514,6 +8807,12 @@ if (location.search.indexOf('debug') >= 0) {
     ultimate() { triggerUlt(); },
     enemies() { return enemies.map(e => ({ type: e.type, mb: !!e.miniboss, hp: e.hp, x: Math.round(e.x), y: Math.round(e.y) })); },
     hurt(i, d) { if (enemies[i]) hurtEnemy(enemies[i], d); },
+    step(n) { for (let i = 0; i < (n | 0); i++) if (state === 'play') update(); },   // rAF 없이 프레임 강제 진행
+    key(name, v) { keys[name] = !!v; },                                             // 가상 키 입력
+    pstate() { const p = player; return p && { x: Math.round(p.x), y: Math.round(p.y), nades: p.nades, chargeT: p.chargeT | 0, weapon: p.weapon, hp: p.hp, money: p.money, fireCd: p.fireCd, stunT: p.stunT, climbing: p.climbing, dead: p.dead, mode: p.mode }; },
+    nades() { return nades.map(n => ({ kind: n.kind || (n.mini ? 'mini' : 'std'), fire: !!n.fire, t: n.t, x: Math.round(n.x), y: Math.round(n.y) })); },
+    bullets() { return bullets.map(b => ({ dmg: Math.round(b.dmg || 0), r: b.r, pierce: !!b.pierce, homing: !!b.homing, explosive: !!b.explosive })); },
+    spawn(type, dx) { enemies.push(mkEnemy(player.x + (dx == null ? 60 : dx), GROUND_Y - ECFG[type].h, type, 1)); },
   };
 }
 })();
