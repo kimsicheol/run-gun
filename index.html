@@ -104,24 +104,57 @@
   .title.small{font-size:clamp(11px,2.4vw,20px);}
   .step{font-size:clamp(7px,1.3vw,10px);color:#9fe8ff;letter-spacing:1px;line-height:1.9;}
 
+  /* ── 메인 화면 프로 폴리시 ─────────────────────────────────
+     배경 데모 씬이 은은히 비치는 그라디언트 + 타이틀 글로우 +
+     모드 카드의 액센트 바·호버 글로우로 "게임 메뉴"의 밀도를 준다 */
+  #startScreen{
+    background:linear-gradient(180deg,
+      rgba(6,7,10,.93) 0%, rgba(6,7,10,.72) 42%,
+      rgba(6,7,10,.80) 72%, rgba(6,7,10,.93) 100%);
+  }
+  .title.glow{animation:titleGlow 2.6s ease-in-out infinite;}
+  @keyframes titleGlow{
+    0%,100%{text-shadow:3px 3px 0 #e8412c,6px 6px 0 #000,0 0 14px rgba(255,207,63,.25);}
+    50%{text-shadow:3px 3px 0 #e8412c,6px 6px 0 #000,0 0 26px rgba(255,207,63,.55);}
+  }
+  .tagline{
+    font-size:clamp(6px,1.05vw,9px);color:#9b8f63;letter-spacing:3px;
+    margin-top:-4px;
+  }
+
   /* ── 모드 선택 카드 (메뉴 1단계) ─────────────────────────── */
   .modes{display:flex;gap:clamp(10px,2.4vw,22px);flex-wrap:wrap;justify-content:center;}
   .modecard{
-    font-family:'Press Start 2P';cursor:pointer;
-    width:clamp(150px,25vw,225px);padding:clamp(12px,2.2vw,20px) 12px;
-    background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#f3ead2;
+    font-family:'Press Start 2P';cursor:pointer;position:relative;
+    width:clamp(150px,25vw,225px);padding:clamp(14px,2.4vw,22px) 12px clamp(12px,2.2vw,20px);
+    background:linear-gradient(180deg,rgba(38,31,15,.85),rgba(14,12,7,.92));
+    border:2px solid #4a3f22;color:#f3ead2;
     display:flex;flex-direction:column;align-items:center;gap:9px;
-    transition:.08s;
+    transition:transform .1s,border-color .1s,box-shadow .12s;
   }
-  .modecard:hover{border-color:#ffcf3f;background:rgba(255,207,63,.10);transform:translateY(-3px);}
-  .modecard:active{transform:translateY(0);}
-  .modecard.surv:hover{border-color:#9fe8ff;background:rgba(159,232,255,.10);}
-  .modecard.daily:hover{border-color:#c8a0ff;background:rgba(200,160,255,.10);}
-  .mc-icon{font-size:clamp(18px,3.4vw,28px);line-height:1.2;}
-  .mc-name{font-size:clamp(10px,1.9vw,14px);color:#ffcf3f;letter-spacing:1px;}
+  .modecard::before{ /* 모드 색 액센트 바 */
+    content:'';position:absolute;top:0;left:0;right:0;height:3px;
+    background:#ffcf3f;opacity:.85;
+  }
+  .modecard.surv::before{background:#9fe8ff;}
+  .modecard.daily::before{background:#c8a0ff;}
+  .modecard:hover{
+    border-color:#ffcf3f;transform:translateY(-4px);
+    box-shadow:0 8px 22px rgba(0,0,0,.55),0 0 16px rgba(255,207,63,.18);
+  }
+  .modecard:active{transform:translateY(-1px);}
+  .modecard.surv:hover{border-color:#9fe8ff;box-shadow:0 8px 22px rgba(0,0,0,.55),0 0 16px rgba(159,232,255,.18);}
+  .modecard.daily:hover{border-color:#c8a0ff;box-shadow:0 8px 22px rgba(0,0,0,.55),0 0 16px rgba(200,160,255,.18);}
+  .mc-icon{
+    font-size:clamp(18px,3.4vw,28px);line-height:1.2;
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,.6));
+    transition:transform .12s;
+  }
+  .modecard:hover .mc-icon{transform:scale(1.12);}
+  .mc-name{font-size:clamp(10px,1.9vw,14px);color:#ffcf3f;letter-spacing:1px;text-shadow:2px 2px 0 #000;}
   .modecard.surv .mc-name{color:#9fe8ff;}
   .modecard.daily .mc-name{color:#c8a0ff;}
-  .mc-desc{font-size:clamp(6px,1vw,8px);color:#8a8158;line-height:2;}
+  .mc-desc{font-size:clamp(6px,1vw,8px);color:#9b8f63;line-height:2;}
   .hi{font-size:clamp(8px,1.4vw,11px);color:#9bb24a;line-height:1.8;}
   .hint{font-size:clamp(6px,1.05vw,9px);color:#8a8158;line-height:2;}
   .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
@@ -269,8 +302,10 @@
   .hidden{display:none;}
   #profileCard{
     width:min(94%,600px);
-    background:rgba(20,16,8,.62);border:2px solid #6e5518;
-    padding:9px 12px;display:flex;flex-direction:column;gap:7px;
+    background:linear-gradient(180deg,rgba(46,37,16,.78),rgba(18,15,8,.85));
+    border:1px solid #8a6f2a;
+    box-shadow:0 0 0 2px rgba(0,0,0,.45),0 6px 18px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,210,63,.12);
+    padding:10px 14px;display:flex;flex-direction:column;gap:7px;
   }
   .pc-row{
     display:flex;align-items:center;gap:9px;justify-content:center;flex-wrap:wrap;
@@ -304,6 +339,20 @@
   }
   .dot.hidden{display:none;}
   @keyframes dotBlink{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  /* ── 진화 모듈 장착 (대원 선택 화면) ─────────────────────── */
+  #charModRow{
+    display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:center;
+    font-size:clamp(6px,1.1vw,9px);color:#8a8158;line-height:1.8;
+  }
+  .modbtn{
+    font-family:'Press Start 2P';font-size:clamp(6px,1.1vw,9px);
+    background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#cdbf95;
+    padding:7px 9px;cursor:pointer;transition:.06s;line-height:1.5;
+  }
+  .modbtn:hover{border-color:#8a7a3a;}
+  .modbtn.on{border-color:#9fe8ff;color:#9fe8ff;background:rgba(159,232,255,.12);}
+  .modbtn.locked{opacity:.38;cursor:not-allowed;}
 </style>
 </head>
 <body>
@@ -315,7 +364,8 @@
 
   <!-- ═══ 메인 메뉴 1/3 — 타이틀 · 모드 선택 ═══ -->
   <div id="startScreen" class="screen">
-    <div class="title">JUNGLE STRIKE DX</div>
+    <div class="title glow">JUNGLE STRIKE DX</div>
+    <div class="tagline">▰▰▰&nbsp; RUN &amp; GUN ARCADE &nbsp;▰▰▰</div>
 
     <!-- ═══ 프로필 카드 — 내 계급 · 시작 장비 · 기록 (재방문 동기의 핵심) ═══ -->
     <div id="profileCard">
@@ -362,6 +412,8 @@
     <div class="step">STEP 2/3 · 함께 출격할 대원을 골라라</div>
     <div class="hi" id="charMedals"></div>
     <div class="chars" id="charRow"></div>
+    <!-- 진화 모듈 장착 — 선택한 대원에게 소장 모듈을 끼운다 -->
+    <div id="charModRow"></div>
     <div class="row">
       <button class="startbtn ghost" id="charBack">◀ 뒤로</button>
       <button class="startbtn" id="charNext">다음 ▶</button>
@@ -484,8 +536,10 @@ const GRAVITY = 0.46;          // 중력 가속도
 // ach: 획득 업적 id 배열 / pow: 누적 POW 구출 수 / opt: 옵션
 // ═══════════════════════════════════════════════════════════════
 // run: 진행 중인 캠페인 스냅샷(스테이지 진입 시점) — 메인 화면 [이어하기]로 재개
+// mods: 소장한 진화 모듈(진화 무기 든 채 보스 격파로 획득) / equip: 대원별 장착 모듈
+// modBoxes: 수령한 스테이지 클리어 보상 상자(3·6스테이지 첫 클리어 — 조기 모듈 획득 경로)
 const SAVE_KEY = 'jsdx_save';
-let save = { hi: 0, best: 0, ach: [], pow: 0, medals: 0, meta: {}, survBest: 0, survBestBy: {}, chars: [0, 1, 3], achPaid: false, dailyDone: '', dailyDate: '', dailyBestT: 0, run: null, opt: { mute: false, shake: true } };
+let save = { hi: 0, best: 0, ach: [], pow: 0, medals: 0, meta: {}, survBest: 0, survBestBy: {}, chars: [0, 1, 3], achPaid: false, dailyDone: '', dailyDate: '', dailyBestT: 0, run: null, mods: [], equip: {}, modBoxes: [], opt: { mute: false, shake: true } };
 
 function loadSave() {
   try {
@@ -509,6 +563,9 @@ function loadSave() {
       save.dailyBestT = s.dailyBestT | 0;
       // 진행 중이던 캠페인 스냅샷 — 최소 형태 검증 후 복원
       save.run = (s.run && typeof s.run === 'object' && Number.isInteger(s.run.stage)) ? s.run : null;
+      save.mods = Array.isArray(s.mods) ? s.mods.filter(k => typeof k === 'string') : [];
+      save.equip = (s.equip && typeof s.equip === 'object') ? s.equip : {};
+      save.modBoxes = Array.isArray(s.modBoxes) ? s.modBoxes.filter(Number.isInteger) : [];
       if (s.opt) {
         save.opt.mute = !!s.opt.mute;
         save.opt.shake = s.opt.shake !== false;
@@ -599,6 +656,14 @@ function applyMetaStart() {
   p.nades = Math.min(9, p.nades + metaLv('nades'));
   p.lives += metaLv('life');
   if (metaLv('mg') > 0) { p.inv.push('mg'); setAmmo('mg', wMax('mg')); }
+  // 장착한 진화 모듈: 해당 진화의 재료 퍼크 1레벨을 갖고 출격
+  // (applyPerk를 쓰므로 스탯형 퍼크의 효과도 정확히 반영된다)
+  const mk = equippedMod(p.char);
+  const ev = mk && EVOLUTIONS.find(v => v.to === mk);
+  if (ev && rperk(ev.perk) < 1) {
+    applyPerk(ev.perk);
+    addFloat(p.x + p.w / 2, p.y - 40, ev.icon + ' 모듈 장착 — ' + WEAPONS[ev.base].name + ' 획득 시 즉시 진화!', '#9fe8ff');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1554,6 +1619,63 @@ function checkEvolutions() {
     S.power();
   });
 }
+// ═══════════════════════════════════════════════════════════════
+// 진화 모듈 — 진화 무기를 든 채 보스/미니보스를 격파하면 그 무기의
+// 모듈이 영구 소장품이 된다. 메인 화면 대원 선택에서 대원에게 장착하면
+// 해당 진화의 재료 퍼크 1레벨을 갖고 출격 → 기본 무기만 구하면 즉시 진화.
+// 수집(4종) → 장착(대원별 조합) → 출격(빠른 파워스파이크) 루프.
+// ═══════════════════════════════════════════════════════════════
+function awardEvoModules() {
+  const p = player;
+  if (!p) return;
+  let got = false;
+  EVOLUTIONS.forEach(ev => {
+    if (p.inv.indexOf(ev.to) < 0 || save.mods.indexOf(ev.to) >= 0) return;
+    save.mods.push(ev.to);
+    got = true;
+    addFloat(p.x + p.w / 2, p.y - 66, ev.icon + ' 진화 모듈 획득!', '#ffd23f');
+    addFloat(p.x + p.w / 2, p.y - 54, WEAPONS[ev.to].name + ' — 대원 선택 화면에서 장착', '#9fe8ff');
+    toasts.push({ txt: ev.icon + ' ' + WEAPONS[ev.to].name + ' 진화 모듈 영구 획득! 대원 선택에서 장착하라', life: 260 });
+  });
+  if (got) {
+    flashScreen = Math.max(flashScreen, 6);
+    S.fanfare();
+    commitSave();
+  }
+}
+// 대원에게 장착된 유효한 모듈 (소장 중일 때만)
+function equippedMod(ci) {
+  const mk = save.equip && save.equip[ci];
+  return (mk && save.mods.indexOf(mk) >= 0) ? mk : null;
+}
+
+// ── 클리어 보상 상자 — 조기 모듈 획득 경로 ─────────────────────
+// 스테이지 3·6(인덱스 2·5) 보스를 처음 격파하면 미소장 모듈 중 하나를
+// 무작위로 지급한다. 진화 무기를 못 만든 플레이어도 캠페인 진행만으로
+// 수집 루프에 진입할 수 있게 하는 장치. 전부 소장 상태면 훈장 +30.
+function grantModuleBox(si) {
+  if (save.modBoxes.indexOf(si) >= 0) return;            // 이미 수령한 상자
+  save.modBoxes.push(si);
+  const p = player;
+  const bx = p ? p.x + p.w / 2 : cam + W / 2;
+  const by = p ? p.y - 70 : 90;
+  const pool = EVOLUTIONS.filter(ev => save.mods.indexOf(ev.to) < 0);
+  if (pool.length === 0) {
+    save.medals += 30;
+    addFloat(bx, by, '📦 클리어 보상 상자 — 모듈 전부 소장! 🎖 +30', '#ffd23f');
+    toasts.push({ txt: '📦 보상 상자: 진화 모듈을 이미 전부 소장 — 훈장 +30 지급', life: 220 });
+  } else {
+    const ev = pool[Math.floor(Math.random() * pool.length)];
+    save.mods.push(ev.to);
+    addFloat(bx, by, '📦 클리어 보상 상자!', '#ffd23f');
+    addFloat(bx, by + 12, ev.icon + ' ' + WEAPONS[ev.to].name + ' 진화 모듈 획득!', '#9fe8ff');
+    toasts.push({ txt: '📦 ' + ev.icon + ' ' + WEAPONS[ev.to].name + ' 진화 모듈 영구 획득! 대원 선택에서 장착하라', life: 260 });
+    flashScreen = Math.max(flashScreen, 6);
+    S.fanfare();
+  }
+  commitSave();
+}
+
 function cycleWeapon() {
   const p = player;
   if (p.inv.length < 2) return;
@@ -2467,31 +2589,32 @@ function updatePerkChoice() {
 
 function drawPerkChoice() {
   const t = clamp(perkAnimT / 14, 0, 1);
-  ctx.fillStyle = 'rgba(6,5,3,' + (0.62 * t).toFixed(3) + ')';
+  // 가독성: 배경 전투 장면을 강하게 눌러(0.85) 카드와 글자가 또렷하게 뜨도록
+  ctx.fillStyle = 'rgba(6,5,3,' + (0.85 * t).toFixed(3) + ')';
   ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center';
   ctx.globalAlpha = t;
-  ctx.font = '12px "Press Start 2P", monospace';
+  ctx.font = '13px "Press Start 2P", monospace';
   ctx.fillStyle = '#07060a'; ctx.fillText('전술 업그레이드', W / 2 + 2, 52);
   ctx.fillStyle = '#ffd23f'; ctx.fillText('전술 업그레이드', W / 2, 50);
-  ctx.font = '6px "Press Start 2P", monospace';
-  ctx.fillStyle = '#cdbf95';
-  ctx.fillText('구역 제압 보상 — 하나를 선택하라 (이번 런 동안 유지)', W / 2, 66);
+  ctx.font = '7px "Press Start 2P", monospace';
+  ctx.fillStyle = '#07060a'; ctx.fillText('구역 제압 보상 — 하나를 선택하라 (이번 런 동안 유지)', W / 2 + 1, 67);
+  ctx.fillStyle = '#e8e0c8'; ctx.fillText('구역 제압 보상 — 하나를 선택하라 (이번 런 동안 유지)', W / 2, 66);
 
-  const n = perkChoices.length, cw = 118, ch = 126, gap = 12;
+  const n = perkChoices.length, cw = 130, ch = 134, gap = 14;
   const x0 = W / 2 - (n * cw + (n - 1) * gap) / 2;
   for (let i = 0; i < n; i++) {
     const pk = perkChoices[i], sel = i === perkSel, lv = rperk(pk.k);
     // 카드별 시차 등장 (아래에서 슬라이드 인)
     const kt = clamp((perkAnimT - i * 3) / 12, 0, 1);
     const cx3 = x0 + i * (cw + gap);
-    const cy3 = 80 + (1 - kt) * 26 - (sel ? 4 : 0);
+    const cy3 = 78 + (1 - kt) * 26 - (sel ? 4 : 0);
     ctx.globalAlpha = t * kt;
-    ctx.fillStyle = sel ? '#241d0c' : '#141210';
+    ctx.fillStyle = sel ? '#2e2410' : '#1a170f';
     ctx.fillRect(cx3, cy3, cw, ch);
-    ctx.lineWidth = sel ? 2 : 1;
-    ctx.strokeStyle = sel ? '#ffd23f' : '#5a5340';
-    ctx.strokeRect(cx3 + 0.5, cy3 + 0.5, cw - 1, ch - 1);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = sel ? '#ffd23f' : '#6e6350';
+    ctx.strokeRect(cx3 + 1, cy3 + 1, cw - 2, ch - 2);
     if (sel) {                                         // 선택 카드 깜빡이는 모서리 화살표
       ctx.fillStyle = '#ffd23f';
       if (tick % 24 < 16) {
@@ -2501,45 +2624,46 @@ function drawPerkChoice() {
       }
     }
     ctx.font = '17px "Press Start 2P", monospace';
-    ctx.fillText(pk.icon, cx3 + cw / 2, cy3 + 34);
-    ctx.font = '8px "Press Start 2P", monospace';
-    ctx.fillStyle = sel ? '#ffd23f' : '#e8e0c8';
-    ctx.fillText(pk.name, cx3 + cw / 2, cy3 + 56);
-    ctx.font = '6px "Press Start 2P", monospace';
-    ctx.fillStyle = '#cdbf95';
-    ctx.fillText(pk.desc, cx3 + cw / 2, cy3 + 74);
+    ctx.fillText(pk.icon, cx3 + cw / 2, cy3 + 33);
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillStyle = '#07060a'; ctx.fillText(pk.name, cx3 + cw / 2 + 1, cy3 + 58);
+    ctx.fillStyle = sel ? '#ffd23f' : '#f3ead2';
+    ctx.fillText(pk.name, cx3 + cw / 2, cy3 + 57);
+    ctx.font = '7px "Press Start 2P", monospace';
+    ctx.fillStyle = '#07060a'; ctx.fillText(pk.desc, cx3 + cw / 2 + 1, cy3 + 78);
+    ctx.fillStyle = '#efe6cc'; ctx.fillText(pk.desc, cx3 + cw / 2, cy3 + 77);
     // 이 퍼크가 무기 진화 재료라면 레시피 힌트 표시
     const ev2 = EVOLUTIONS.find(v => v.perk === pk.k);
     if (ev2) {
       ctx.fillStyle = player.inv.indexOf(ev2.to) >= 0 ? '#5ad15a'
-        : (player.inv.indexOf(ev2.base) >= 0 ? '#ff8a5c' : '#6a6350');
-      ctx.fillText(ev2.icon + ' ' + WEAPONS[ev2.base].name + '▶' + WEAPONS[ev2.to].name, cx3 + cw / 2, cy3 + 86);
+        : (player.inv.indexOf(ev2.base) >= 0 ? '#ff8a5c' : '#9b8f63');
+      ctx.fillText(ev2.icon + ' ' + WEAPONS[ev2.base].name + '▶' + WEAPONS[ev2.to].name, cx3 + cw / 2, cy3 + 93);
     }
     // 중첩 레벨 핍: 채워진 칸 = 보유, 빛나는 칸 = 지금 얻을 레벨
     // (무한 스택 카드는 상한이 없어 핍 대신 ∞ 표기)
     if (pk.inf) {
-      ctx.font = '9px "Press Start 2P", monospace';
+      ctx.font = '10px "Press Start 2P", monospace';
       ctx.fillStyle = '#9fe8ff';
-      ctx.fillText('∞', cx3 + cw / 2, cy3 + 102);
+      ctx.fillText('∞', cx3 + cw / 2, cy3 + 110);
     } else {
-      const pw = 10, ph2 = 5, px0 = cx3 + cw / 2 - (pk.max * pw + (pk.max - 1) * 4) / 2;
+      const pw = 11, ph2 = 5, px0 = cx3 + cw / 2 - (pk.max * pw + (pk.max - 1) * 4) / 2;
       for (let j = 0; j < pk.max; j++) {
         const fx2 = px0 + j * (pw + 4);
         if (j < lv) ctx.fillStyle = '#ffd23f';
         else if (j === lv) ctx.fillStyle = (tick % 20 < 12) ? '#ffefad' : '#8a7a3a';
         else ctx.fillStyle = '#3a352a';
-        ctx.fillRect(fx2, cy3 + 97, pw, ph2);
+        ctx.fillRect(fx2, cy3 + 103, pw, ph2);
       }
     }
-    ctx.font = '6px "Press Start 2P", monospace';
-    ctx.fillStyle = lv > 0 ? '#9fe8ff' : '#6a6350';
-    ctx.fillText(lv > 0 ? 'LV' + lv + ' → LV' + (lv + 1) : 'NEW', cx3 + cw / 2, cy3 + 112);
+    ctx.font = '7px "Press Start 2P", monospace';
+    ctx.fillStyle = lv > 0 ? '#9fe8ff' : '#8a8158';
+    ctx.fillText(lv > 0 ? 'LV' + lv + ' → LV' + (lv + 1) : 'NEW', cx3 + cw / 2, cy3 + 124);
   }
   ctx.globalAlpha = t;
   if (tick % 40 < 26) {
-    ctx.font = '6px "Press Start 2P", monospace';
-    ctx.fillStyle = '#8a8158';
-    ctx.fillText('◀▶ 선택  ·  점프/발사 확인  ·  1~3 바로 선택', W / 2, 228);
+    ctx.font = '7px "Press Start 2P", monospace';
+    ctx.fillStyle = '#07060a'; ctx.fillText('◀▶ 선택  ·  점프/발사 확인  ·  1~3 바로 선택', W / 2 + 1, 232);
+    ctx.fillStyle = '#cdbf95'; ctx.fillText('◀▶ 선택  ·  점프/발사 확인  ·  1~3 바로 선택', W / 2, 231);
   }
   ctx.globalAlpha = 1;
   ctx.textAlign = 'left';
@@ -3679,6 +3803,7 @@ function hurtEnemy(e, dmg) {
         // 서바이벌 미니보스: 무기 드랍(위)에 더해 SP 완충 + 훈장 + 회복 보급
         gainUlt(9999);
         save.medals += 10;
+        awardEvoModules();             // 진화 무기 소지 중이면 모듈 영구 획득
         commitSave();
         pickups.push({ x: e.x + 30, y: GROUND_Y - 16, type: 'hp' });
         pickups.push({ x: e.x - 14, y: GROUND_Y - 16, type: 'nade' });
@@ -3687,6 +3812,14 @@ function hurtEnemy(e, dmg) {
         addShake(8);
         S.fanfare();
       } else addFloat(e.x + 20, e.y - 16, 'APC 격파!', '#ffd23f');
+    } else if (e.burn > 0 && d < 8) {
+      // 화상·네이팜 불바다로 연소사한 적은 폭발 대신 조용한 불꽃 연소.
+      // (불바다 다중킬 때마다 explode의 화면 흔들림이 리필되어
+      //  화면이 쉬지 않고 떨리던 문제의 수정 — 연출만 다르고 보상은 동일)
+      for (let i = 0; i < 6; i++)
+        fx.fire(e.x + rnd(0, e.w), e.y + rnd(0, e.h), rnd(-0.6, 0.6), -rnd(0.5, 1.5), rnd(2.5, 4.5));
+      for (let i = 0; i < 3; i++)
+        fx.smoke(e.x + e.w / 2 + rnd(-4, 4), e.y + rnd(0, e.h), rnd(-0.4, 0.4), -rnd(0.6, 1.2), rnd(2.5, 4), 0.5);
     } else {
       explode(e.x + e.w / 2, e.y + e.h / 2, 18, 0, true);
     }
@@ -4196,6 +4329,9 @@ function _updateBossFight() {
     if (b.deathT <= 0) {
       calcRank();
       save.best = Math.max(save.best, stageIndex + 1);
+      awardEvoModules();               // 진화 무기를 들고 있었다면 모듈 영구 획득
+      // 스테이지 3·6 첫 클리어: 보상 상자 — 미소장 모듈 랜덤 지급 (조기 획득 경로)
+      if (stageIndex === 2 || stageIndex === 5) grantModuleBox(stageIndex);
       commitSave();
       if (stageIndex >= STAGES.length - 1) {
         endGame(true);
@@ -8309,9 +8445,46 @@ function buildCards() {
       }
       selChar = i;
       [].forEach.call(elCharRow.children, (n, k) => n.classList.toggle('sel', k === i));
+      buildModRow();                             // 대원이 바뀌면 그 대원의 장착 상태로 갱신
       S.pickup();
     });
     elCharRow.appendChild(d);
+  });
+  buildModRow();
+}
+
+// ── 진화 모듈 장착 줄 — 선택한 대원에게 소장 모듈을 끼우거나 뺀다 ──
+function buildModRow() {
+  const box = document.getElementById('charModRow');
+  box.innerHTML = '';
+  const label = document.createElement('span');
+  if (save.mods.length === 0) {
+    // 아직 모듈이 없다 — 획득 방법을 안내 (수집 루프의 입구)
+    label.innerHTML = '🧩 진화 모듈: <span style="color:#6e6650;">진화 무기를 든 채 보스 격파, 또는 스테이지 3·6 첫 클리어 📦보상 상자로 영구 획득 — 여기서 대원에게 장착한다</span>';
+    box.appendChild(label);
+    return;
+  }
+  label.innerHTML = '🧩 <span style="color:#ffd23f;">' + CHARS[selChar].name + '</span> 장착 모듈:';
+  box.appendChild(label);
+  const cur = equippedMod(selChar);
+  EVOLUTIONS.forEach(ev => {
+    const ownedMod = save.mods.indexOf(ev.to) >= 0;
+    const b = document.createElement('button');
+    b.className = 'modbtn' + (cur === ev.to ? ' on' : '') + (ownedMod ? '' : ' locked');
+    b.innerHTML = ev.icon + ' ' + WEAPONS[ev.to].name + (cur === ev.to ? ' ✔' : '');
+    b.title = ownedMod
+      ? WEAPONS[ev.base].name + ' 획득 시 즉시 ' + WEAPONS[ev.to].name + '로 진화 (재료 퍼크 보유 출격)'
+      : '미소장 — ' + ev.icon + ' ' + WEAPONS[ev.to].name + '을(를) 든 채 보스를 격파하면 획득';
+    b.addEventListener('click', () => {
+      if (!ownedMod) { S.warn(); return; }
+      // 같은 모듈을 다시 누르면 해제, 다른 모듈을 누르면 교체
+      if (cur === ev.to) delete save.equip[selChar];
+      else save.equip[selChar] = ev.to;
+      commitSave();
+      S.pickup();
+      buildModRow();
+    });
+    box.appendChild(b);
   });
 }
 
@@ -8388,6 +8561,9 @@ function refreshProfileCard() {
     '최고 <b>STAGE ' + (save.best + 1) + '</b> · HI <b>' + String(save.hi).padStart(6, '0') + '</b>'
     + ' · POW <b>' + save.pow + '</b>'
     + (save.survBest > 0 ? ' · 🌊 <b>' + fmtTime(save.survBest) + '</b>' : '')
+    + (save.mods.length > 0
+      ? ' · 🧩 <b>' + save.mods.length + '/4</b> ' + save.mods.map(k => (EVOLUTIONS.find(v => v.to === k) || {}).icon || '').join('')
+      : '')
     + ' · 📅 ' + (save.dailyDone === todayKey() ? '<b>완료✔</b>' : '<span style="color:#ffd23f;">도전 가능</span>');
   document.getElementById('metaDot').classList.toggle('hidden', !metaAffordable());
 }
@@ -8424,7 +8600,8 @@ function refreshDailyCard() {
   el.innerHTML = '오늘의 전장: <span style="color:#f3ead2;">' + STAGES[dailyStage()].name + '</span><br>'
     + (done
       ? (bestToday > 0 ? '오늘 기록 <span style="color:#c8a0ff;">' + fmtTime(bestToday) + '</span> · 완료 ✔' : '완료 ✔')
-      : '<span style="color:#ffd23f;">첫 도전 보상 2배 + 40🎖</span>')
+      : '<span style="color:#ffd23f;">첫 도전 보상 2배 + 40🎖</span>'
+        + (save.mods.length < EVOLUTIONS.length ? '<span style="color:#9fe8ff;"> + 🧩모듈 확률</span>' : ''))
     + '<br>날짜 시드 고정 · 자정 리셋';
 }
 
@@ -8564,10 +8741,21 @@ function endGame(win) {
     ? Math.floor((player ? player.money : 0) * 0.25) + survWave * 5   // 서바이벌: 웨이브 도달 보너스
     : Math.floor((player ? player.money : 0) * 0.25) + (stageIndex + 1) * 4 + (win ? 30 : 0);
   // 📅 일일 도전: 하루 첫 판은 정산 2배 + 40, 오늘의 기록 갱신 (자정 리셋)
-  let dailyFirst = false;
+  let dailyFirst = false, dailyModTxt = '';
   if (daily) {
     dailyFirst = save.dailyDone !== todayKey();
-    if (dailyFirst) { medalEarn = medalEarn * 2 + 40; save.dailyDone = todayKey(); }
+    if (dailyFirst) {
+      medalEarn = medalEarn * 2 + 40;
+      save.dailyDone = todayKey();
+      // 첫 완료 보너스: 30% 확률로 미소장 진화 모듈 지급 (네 번째 획득 경로)
+      // — 시드 난수는 위에서 이미 해제됐으므로 실제 무작위로 굴린다
+      const pool = EVOLUTIONS.filter(ev => save.mods.indexOf(ev.to) < 0);
+      if (pool.length > 0 && Math.random() < 0.3) {
+        const ev = pool[Math.floor(Math.random() * pool.length)];
+        save.mods.push(ev.to);
+        dailyModTxt = ev.icon + ' ' + WEAPONS[ev.to].name + ' 진화 모듈 획득!';
+      }
+    }
     if (save.dailyDate !== todayKey()) { save.dailyDate = todayKey(); save.dailyBestT = 0; }
     if (survT > save.dailyBestT) save.dailyBestT = survT;
   }
@@ -8589,6 +8777,7 @@ function endGame(win) {
       + ' 생존 · WAVE ' + survWave + '</span>'
       + (newBest ? ' <span style="color:#ffd23f;">NEW BEST!</span>' : '')
       + (dailyFirst ? ' <span style="color:#ffd23f;">오늘 첫 도전 — 보상 2배!</span>' : '')
+      + (dailyModTxt ? '<br><span style="color:#9fe8ff;">🧩 ' + dailyModTxt + ' (대원 선택에서 장착)</span>' : '')
     : '도달 ' + STAGES[stageIndex].name + ' · ' + diff.label + (lastRank ? ' · 최종 RANK ' + lastRank : '');
   elEndStats.innerHTML =
     'KILLS ' + run.kills + ' · MAX COMBO x' + run.maxCombo + ' · POW ' + run.pow + ' · $' + (player ? player.money : 0) + '<br>' +
@@ -8799,7 +8988,8 @@ if (location.search.indexOf('debug') >= 0) {
     state() {
       return { state, survT, survWave, survMod, survUltMul,
         ult: player && player.ult, ultUses: player && player.ultUses,
-        rperks: player && player.rperks, maxHp: player && player.maxHp, medals: save.medals };
+        rperks: player && player.rperks, maxHp: player && player.maxHp, medals: save.medals,
+        shake: +shake.toFixed(2), flashScreen, hitstop, nNades: nades.length, nParticles: particles.length };
     },
     setUlt(v) { if (player) { player.ult = v; player.ultReady = v >= 100; } },
     maxPerks() { if (player) ARENA_PERKS.forEach(pk => { player.rperks[pk.k] = pk.max; }); },
@@ -8813,6 +9003,11 @@ if (location.search.indexOf('debug') >= 0) {
     nades() { return nades.map(n => ({ kind: n.kind || (n.mini ? 'mini' : 'std'), fire: !!n.fire, t: n.t, x: Math.round(n.x), y: Math.round(n.y) })); },
     bullets() { return bullets.map(b => ({ dmg: Math.round(b.dmg || 0), r: b.r, pierce: !!b.pierce, homing: !!b.homing, explosive: !!b.explosive })); },
     spawn(type, dx) { enemies.push(mkEnemy(player.x + (dx == null ? 60 : dx), GROUND_Y - ECFG[type].h, type, 1)); },
+    give(w) { pickupWeapon(w); },
+    saveData() { return JSON.parse(JSON.stringify({ mods: save.mods, equip: save.equip, medals: save.medals, modBoxes: save.modBoxes })); },
+    box(si) { grantModuleBox(si); },
+    end(win) { if (state === 'play') endGame(!!win); },
+    resetDaily() { save.dailyDone = ''; commitSave(); },
   };
 }
 })();
