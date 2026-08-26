@@ -432,6 +432,11 @@
   .shopit.prem::before{content:'특별';position:absolute;top:-7px;left:50%;transform:translateX(-50%);
     background:#ffd23f;color:#1a1408;font-size:5px;padding:1px 4px;letter-spacing:1px;}
   .shopit{position:relative;}
+  /* 🧩 장착 모듈 대응 무기 — 사면 즉시 진화하는 상품 강조 */
+  .shopit.modmatch{border-color:#9fe8ff;background:rgba(14,36,46,.65);box-shadow:0 0 0 1px rgba(159,232,255,.35) inset;}
+  .shopit.modmatch .shoplabel{color:#9fe8ff;}
+  .shopit.modmatch::before{content:'🧩 모듈';position:absolute;top:-7px;left:50%;transform:translateX(-50%);
+    background:#9fe8ff;color:#0c1a20;font-size:5px;padding:1px 4px;letter-spacing:1px;white-space:nowrap;}
   #shopClose.leftover{border-color:#ffd23f;animation:pulseBtn 1s infinite;}
   @keyframes pulseBtn{0%,100%{box-shadow:0 0 0 0 rgba(255,210,63,.5);}50%{box-shadow:0 0 0 5px rgba(255,210,63,0);}}
 
@@ -3195,8 +3200,19 @@ const PREMIUM_ITEMS = [
 ];
 function premiumFor(si) { return PREMIUM_ITEMS[si % PREMIUM_ITEMS.length]; }
 
+// 장착 모듈의 진화 재료(기본 무기) — 아직 그 계열(기본·진화형)을 미보유일 때만
+function modTargetWeapon() {
+  const mk = player && equippedMod(player.char);
+  const ev = mk && EVOLUTIONS.find(v => v.to === mk);
+  if (!ev) return null;
+  if (player.inv.indexOf(ev.base) >= 0 || player.inv.indexOf(ev.to) >= 0) return null;
+  return ev;
+}
 function shopCost(it) {
-  return CHARS[player.char].trait === 'discount' ? Math.ceil(it.cost * 0.8) : it.cost;
+  let c = CHARS[player.char].trait === 'discount' ? it.cost * 0.8 : it.cost;
+  const mt = modTargetWeapon();
+  if (mt && it.k === mt.base) c *= 0.8;    // 🧩 모듈 대응 무기 할인 (수집 보상 체감)
+  return Math.ceil(c);
 }
 // 상점은 스테이지 클리어 직후(결과 화면 다음)에만 열린다.
 // shopNext가 설정돼 있으면 상점을 닫을 때 그 스테이지로 진행한다.
@@ -3244,11 +3260,18 @@ function buildShopDOM() {
   document.getElementById('shopMoney').textContent = '$' + player.money;
   const noteEl = document.getElementById('shopNote');
   const discount = CHARS[player.char].trait === 'discount' ? 'VOLT 특성: 전 품목 20% 할인 · ' : '';
-  noteEl.innerHTML = discount;
+  const mt = modTargetWeapon();
+  noteEl.innerHTML = discount
+    + (mt ? '<span style="color:#9fe8ff;">🧩 장착 모듈 대응 ' + WEAPONS[mt.base].name + ' 20% 할인 — 구매 즉시 ' + WEAPONS[mt.to].name + ' 진화</span>' : '');
   const list = SHOP_ITEMS.slice();
   if (shopNext >= 0) {
     const prem = premiumFor(stageIndex);
     if (!player.perks[prem.k.slice(2)]) list.unshift(Object.assign({ premium: true }, prem));
+  }
+  // 🧩 모듈 대응 무기: 공격 구획 최상단으로 끌어올려 강조 진열
+  if (mt) {
+    const mi = list.findIndex(it => it.k === mt.base);
+    if (mi >= 0) { const it = list.splice(mi, 1)[0]; list.unshift(Object.assign({ modmatch: true }, it)); }
   }
   // ── 내 무기고 (슬롯 4칸 시각화) ──────────────────────────────
   // 구매하면 빈 슬롯이 채워지는 게 눈에 보이고, 가득 찼을 때는
@@ -3305,11 +3328,16 @@ function buildShopDOM() {
       const cost = shopCost(it);
       const b = document.createElement('button');
       const can = player.money >= cost;
-      b.className = 'shopit' + (can ? '' : ' no') + (it.cat === 'prem' ? ' prem' : '');
-      // 무기 카드: 보유/진화됨/슬롯 교체 예고 표시
+      b.className = 'shopit' + (can ? '' : ' no') + (it.cat === 'prem' ? ' prem' : '') + (it.modmatch ? ' modmatch' : '');
+      // 무기 카드: 모듈 대응/보유/진화됨/슬롯 교체 예고 표시
       let wNote = '';
       if (WEAPONS[it.k]) {
-        if (player.inv.indexOf(it.k) >= 0)
+        if (it.modmatch) {
+          wNote = '<span style="color:#9fe8ff;">🧩 모듈 대응 — 구매 즉시 ' + WEAPONS[mt.to].name + ' 진화</span>';
+          if (player.inv.length >= 4)
+            wNote += '<br><span style="color:#ff9a3c;">⚠ ' + WEAPONS[player.inv[shopSwapTarget()]].name + '와 교체됨</span>';
+        }
+        else if (player.inv.indexOf(it.k) >= 0)
           wNote = '<span style="color:#5ad15a;">보유중 · 재구매 시 탄약 완충</span>';
         else if (EVOLUTIONS.some(ev => ev.base === it.k && player.inv.indexOf(ev.to) >= 0))
           wNote = '<span style="color:#5ad15a;">진화 무기로 보유중</span>';
@@ -9048,7 +9076,9 @@ function buildTrophyShelf() {
     b.className = 'ht-slot ' + (cur === ev.to ? 'eq' : owned ? 'own' : 'none');
     b.innerHTML = '<span class="ht-ic">' + (owned ? ev.icon : '❓') + '</span>';
     b.title = owned
-      ? WEAPONS[ev.to].name + ' — ' + ev.kr + (cur === ev.to ? ' (장착 중 · 클릭해 해제)' : ' (클릭해 장착)')
+      ? WEAPONS[ev.to].name + ' — ' + ev.kr
+        + ' · 장착 시 재료 퍼크 보유 출격 + ' + WEAPONS[ev.base].name + ' 획득 즉시 진화 (보급 20% 할인)'
+        + (cur === ev.to ? ' (장착 중 · 클릭해 해제)' : ' (클릭해 장착)')
       : '미획득 — ' + ev.icon + ' ' + WEAPONS[ev.to].name + '을(를) 든 채 보스 격파 시 영구 소장';
     b.addEventListener('click', e => {
       e.stopPropagation();                     // 히어로 패널 클릭(대원 변경)과 분리
@@ -9071,10 +9101,12 @@ function buildTrophyShelf() {
   const badge = document.getElementById('heroEquipBadge');
   badge.classList.toggle('hidden', !eq);
   if (eq) badge.textContent = (EVOLUTIONS.find(ev => ev.to === eq) || {}).icon || '';
+  const eqEv = eq && EVOLUTIONS.find(ev => ev.to === eq);
   hint.innerHTML = save.mods.length === 0
     ? '스테이지 3·6 첫 클리어 📦 상자로 첫 모듈 획득'
-    : eq
-      ? '<b style="color:#ffd23f;">' + WEAPONS[eq].name + '</b> 장착 중 — 슬롯 클릭으로 교체·해제'
+    : eqEv
+      ? '<b style="color:#ffd23f;">' + WEAPONS[eq].name + '</b> 장착 — <b style="color:#9fe8ff;">'
+        + WEAPONS[eqEv.base].name + '</b> 획득 즉시 진화 · 보급 20% 할인'
       : '슬롯을 클릭해 <b style="color:#ffd23f;">' + CHARS[selChar].name + '</b>에게 장착';
 }
 
