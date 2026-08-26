@@ -218,6 +218,43 @@
   .gear-chip.dim{color:var(--faint);border-style:dashed;border-color:#4a3f22;box-shadow:none;}
   .hero-hint{font-size:clamp(6px,.95vw,8px);color:var(--faint);letter-spacing:1px;}
   #heroPanel:hover .hero-hint{color:var(--amber);}
+
+  /* ── 전리품 진열장 — 진화 모듈 4종 수집 현황 + 즉시 장착 ──── */
+  #heroTrophy{width:100%;display:flex;flex-direction:column;gap:6px;align-items:center;}
+  .ht-head{font-size:clamp(6px,1.05vw,8px);color:var(--gold);letter-spacing:1px;}
+  .ht-head b{color:var(--cream);font-weight:normal;}
+  .ht-slots{display:flex;gap:7px;justify-content:center;}
+  .ht-slot{
+    font-family:inherit;cursor:pointer;position:relative;
+    width:clamp(34px,4.6vw,50px);aspect-ratio:1;padding:0;
+    background:rgba(10,9,5,.85);border:2px solid #4a3f22;color:var(--cream);
+    display:flex;align-items:center;justify-content:center;
+    font-size:clamp(13px,2.2vw,20px);transition:.08s;
+  }
+  .ht-slot:hover{border-color:#8a7a3a;transform:translateY(-2px);}
+  .ht-slot.none{cursor:help;}
+  .ht-slot.none .ht-ic{filter:grayscale(1) brightness(.4);opacity:.6;}
+  .ht-slot.own{border-color:#8a6f2a;box-shadow:0 0 8px rgba(255,210,63,.14);}
+  .ht-slot.eq{
+    border-color:var(--gold);background:rgba(46,37,16,.95);
+    box-shadow:0 0 12px rgba(255,210,63,.42);
+  }
+  .ht-slot.eq::after{
+    content:'장착';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
+    background:var(--gold);color:#1a1408;font-size:5px;padding:1px 4px;letter-spacing:1px;
+    white-space:nowrap;
+  }
+  .ht-hint{font-size:clamp(5px,.95vw,7px);color:var(--faint);line-height:1.9;min-height:1.4em;}
+  .ht-hint b{font-weight:normal;}
+  /* 장착 모듈이 히어로 곁에 떠 있는 배지 */
+  #heroEquipBadge{
+    position:absolute;top:5%;right:7%;z-index:2;
+    font-size:clamp(15px,2.5vw,24px);
+    filter:drop-shadow(0 0 8px rgba(255,210,63,.6)) drop-shadow(1px 2px 0 #000);
+    animation:eqFloat 2.6s ease-in-out infinite;pointer-events:none;
+  }
+  #heroEquipBadge.hidden{display:none;}
+  @keyframes eqFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
   .lobby-right{
     flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;
     justify-content:center;gap:clamp(7px,1.5vh,14px);
@@ -543,11 +580,18 @@
       <div id="heroPanel">
         <div class="hero-stage">
           <canvas id="heroCv" width="48" height="64"></canvas>
+          <div id="heroEquipBadge" class="hidden"></div>
           <div class="hero-shadow"></div>
         </div>
         <div class="hero-plate">
           <span class="hero-name" id="heroName"></span>
           <span class="hero-role" id="heroRole"></span>
+        </div>
+        <!-- 전리품 진열장 — 진화 모듈 수집 현황 · 클릭해 즉시 장착 -->
+        <div id="heroTrophy">
+          <div class="ht-head">🏆 전리품 <b id="htCount"></b></div>
+          <div class="ht-slots" id="htSlots"></div>
+          <div class="ht-hint" id="htHint"></div>
         </div>
         <div id="heroGear"></div>
         <div class="hero-hint">▸ 클릭해 대원 변경</div>
@@ -8988,6 +9032,50 @@ function refreshProfileCard() {
       : '')
     + ' · 📅 ' + (save.dailyDone === todayKey() ? '<b>완료✔</b>' : '<span style="color:#ffd23f;">도전 가능</span>');
   document.getElementById('metaDot').classList.toggle('hidden', !metaAffordable());
+  buildTrophyShelf();
+}
+
+// ── 로비 전리품 진열장 — 진화 모듈 수집 현황 + 현재 대원에게 즉시 장착 ──
+function buildTrophyShelf() {
+  document.getElementById('htCount').textContent = save.mods.length + '/' + EVOLUTIONS.length;
+  const row = document.getElementById('htSlots');
+  const hint = document.getElementById('htHint');
+  row.innerHTML = '';
+  const cur = equippedMod(selChar);
+  EVOLUTIONS.forEach(ev => {
+    const owned = save.mods.indexOf(ev.to) >= 0;
+    const b = document.createElement('button');
+    b.className = 'ht-slot ' + (cur === ev.to ? 'eq' : owned ? 'own' : 'none');
+    b.innerHTML = '<span class="ht-ic">' + (owned ? ev.icon : '❓') + '</span>';
+    b.title = owned
+      ? WEAPONS[ev.to].name + ' — ' + ev.kr + (cur === ev.to ? ' (장착 중 · 클릭해 해제)' : ' (클릭해 장착)')
+      : '미획득 — ' + ev.icon + ' ' + WEAPONS[ev.to].name + '을(를) 든 채 보스 격파 시 영구 소장';
+    b.addEventListener('click', e => {
+      e.stopPropagation();                     // 히어로 패널 클릭(대원 변경)과 분리
+      if (!owned) {
+        S.warn();
+        hint.innerHTML = ev.icon + ' <b style="color:#ffd23f;">' + WEAPONS[ev.to].name + '</b> — '
+          + WEAPONS[ev.base].name + ' 진화 무기를 든 채 <b style="color:#ff8a5c;">보스 격파</b> 시 영구 소장';
+        return;
+      }
+      if (cur === ev.to) delete save.equip[selChar];
+      else save.equip[selChar] = ev.to;
+      commitSave();
+      S.pickup();
+      buildTrophyShelf();
+    });
+    row.appendChild(b);
+  });
+  // 장착 배지(히어로 곁 부유 아이콘) + 기본 힌트
+  const eq = equippedMod(selChar);
+  const badge = document.getElementById('heroEquipBadge');
+  badge.classList.toggle('hidden', !eq);
+  if (eq) badge.textContent = (EVOLUTIONS.find(ev => ev.to === eq) || {}).icon || '';
+  hint.innerHTML = save.mods.length === 0
+    ? '스테이지 3·6 첫 클리어 📦 상자로 첫 모듈 획득'
+    : eq
+      ? '<b style="color:#ffd23f;">' + WEAPONS[eq].name + '</b> 장착 중 — 슬롯 클릭으로 교체·해제'
+      : '슬롯을 클릭해 <b style="color:#ffd23f;">' + CHARS[selChar].name + '</b>에게 장착';
 }
 
 // ── 로비 히어로 — 선택 대원을 크게, idle 애니메이션으로 세운다 ──
@@ -8997,10 +9085,11 @@ let heroT = 0, heroShownChar = -1;
 function heroLoop() {
   requestAnimationFrame(heroLoop);
   if (elStart.classList.contains('hidden') || !SPRITES[selChar]) return;
-  if (heroShownChar !== selChar) {   // 대원 선택 화면에서 바꾸고 돌아온 경우 명판 동기화
+  if (heroShownChar !== selChar) {   // 대원 선택 화면에서 바꾸고 돌아온 경우 명판·전리품 동기화
     heroShownChar = selChar;
     document.getElementById('heroName').textContent = CHARS[selChar].name;
     document.getElementById('heroRole').textContent = CHARS[selChar].role + ' · ' + CHARS[selChar].traitName;
+    buildTrophyShelf();
   }
   heroT += ANIM_SPD.idle;
   const set = SPRITES[selChar].idle;
@@ -9422,7 +9511,10 @@ addEventListener('keydown', e => {
   else if (e.key === '2') document.getElementById('modeSurvival').click();
   else if (e.key === '3') document.getElementById('modeDaily').click();
 });
-document.getElementById('charBack').addEventListener('click', () => showMenu(elStart));
+document.getElementById('charBack').addEventListener('click', () => {
+  showMenu(elStart);
+  refreshMenuInfo();               // 대원 화면에서 바꾼 모듈 장착 상태를 진열장에 반영
+});
 document.getElementById('charNext').addEventListener('click', () => {
   S.init(); S.pickup();
   // 일일 도전: 스테이지·난이도가 고정이라 출격 화면 없이 바로 시작 (NORMAL)
