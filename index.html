@@ -303,7 +303,6 @@
   .card .tr{font-size:5px;color:#9fe8ff;}
 
   /* ── 스테이지 선택 ────────────────────────────────────── */
-  #stageRow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
   .stagebtn{
     font-family:inherit;font-size:clamp(6px,1.1vw,9px);
     background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#cdbf95;
@@ -446,22 +445,76 @@
   .modbtn.on{border-color:#9fe8ff;color:#9fe8ff;background:rgba(159,232,255,.12);}
   .modbtn.locked{opacity:.38;cursor:not-allowed;}
 
-  /* ── 작전 지도 — 거점(노드)이 경로로 이어진 진행형 월드맵 ── */
-  .opnode{
-    font-family:inherit;cursor:pointer;position:relative;
-    width:clamp(46px,7.4vw,66px);padding:7px 2px;
-    background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#8a8158;
-    font-size:clamp(6px,1vw,8px);line-height:1.7;transition:.06s;
+  /* ── 작전 지도 — 픽셀 지형 위에 거점이 행군 경로로 이어진 월드맵 ── */
+  #opMap{
+    position:relative;width:min(94%,880px);aspect-ratio:16/5;
+    border:1px solid #6e5518;background:#0c0a06;
+    box-shadow:0 0 0 2px rgba(0,0,0,.5),0 8px 22px rgba(0,0,0,.5),inset 0 0 30px rgba(0,0,0,.4);
   }
-  .opnode .icn{font-size:clamp(11px,1.9vw,15px);display:block;filter:drop-shadow(1px 1px 0 #000);}
+  #opMapCv{
+    position:absolute;inset:0;width:100%;height:100%;
+    image-rendering:pixelated;image-rendering:crisp-edges;
+  }
+  #stageRow{position:absolute;inset:0;}
+  /* 서바이벌: 지도 대신 전장 카드 나열 */
+  #opMap.flat{aspect-ratio:auto;border:none;background:none;box-shadow:none;}
+  #opMap.flat #opMapCv{display:none;}
+  #opMap.flat #stageRow{position:static;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .opnode{
+    font-family:inherit;cursor:pointer;position:absolute;
+    transform:translate(-50%,-50%);
+    width:clamp(66px,10.5vw,100px);padding:7px 3px 6px;
+    background:rgba(10,9,5,.84);border:2px solid #4a3f22;color:var(--dim);
+    font-size:clamp(7px,1.15vw,9px);line-height:1.7;transition:.08s;
+    display:flex;flex-direction:column;gap:2px;align-items:center;
+    box-shadow:0 4px 10px rgba(0,0,0,.5);
+  }
+  .opnode .icn{font-size:clamp(15px,2.6vw,22px);line-height:1.15;filter:drop-shadow(1px 2px 0 #000);}
+  .opnode .rec{font-size:clamp(5px,.95vw,7px);color:var(--faint);line-height:1.6;}
+  .opnode:hover{transform:translate(-50%,-54%);z-index:3;}
   .opnode.done{border-color:#9bb24a;color:#cdd8a0;}
-  .opnode.done:hover{border-color:#ffcf3f;transform:translateY(-2px);}
-  .opnode.sel{border-color:#ffcf3f;background:rgba(255,207,63,.12);color:#ffd23f;}
+  .opnode.done .rec{color:#9bb24a;}
+  .opnode.done:hover{border-color:#ffcf3f;}
+  .opnode.sel{
+    border-color:var(--gold);background:rgba(46,37,16,.95);color:var(--gold);z-index:2;
+    box-shadow:0 0 14px rgba(255,210,63,.35),0 4px 10px rgba(0,0,0,.5);
+  }
   .opnode.cur{border-color:#ff6a3c;color:#ff8a5c;cursor:default;animation:curBlink 1.2s infinite;}
-  @keyframes curBlink{0%,100%{box-shadow:0 0 0 0 rgba(255,106,60,0);}50%{box-shadow:0 0 10px 2px rgba(255,106,60,.4);}}
-  .opnode.lock{opacity:.35;cursor:not-allowed;}
-  .oplink{display:inline-block;width:clamp(8px,1.5vw,16px);height:2px;background:#4a3f22;flex:0 0 auto;}
-  .oplink.done{background:#9bb24a;}
+  .opnode.cur .rec{color:#ff8a5c;}
+  @keyframes curBlink{0%,100%{box-shadow:0 0 0 0 rgba(255,106,60,0);}50%{box-shadow:0 0 12px 3px rgba(255,106,60,.45);}}
+  .opnode.lock{opacity:.5;cursor:not-allowed;background:rgba(6,7,10,.86);}
+  .opnode.field{position:static;transform:none;width:clamp(96px,16vw,140px);padding:10px 4px 9px;}
+  .opnode.field:hover{transform:translateY(-3px);}
+  .opnode.field.sel:hover{transform:translateY(-3px);}
+
+  /* ── 출격 브리핑 카드 ─────────────────────────────────────── */
+  #deployRecord{
+    width:min(94%,880px);
+    background:linear-gradient(180deg,rgba(46,37,16,.55),rgba(18,15,8,.78));
+    border:1px solid #6e5518;border-left:4px solid var(--gold);
+    padding:9px 13px;font-size:clamp(7px,1.2vw,10px);color:var(--cream);
+    line-height:2;text-align:left;
+  }
+
+  /* ── 난이도 버튼 부제 ─────────────────────────────────────── */
+  .startbtn .d-sub{
+    display:block;font-size:clamp(5px,.9vw,7px);
+    margin-top:6px;opacity:.8;letter-spacing:0;line-height:1.4;
+  }
+
+  /* ── 조작 가이드 3열 패널 ─────────────────────────────────── */
+  .kguide{
+    display:flex;gap:clamp(10px,2.2vw,26px);justify-content:center;flex-wrap:wrap;
+    width:min(94%,880px);
+    background:rgba(10,9,5,.62);border:1px solid #3a3220;padding:11px 13px 9px;
+  }
+  .kg-col{flex:1;min-width:170px;text-align:left;font-size:clamp(6px,1.05vw,8px);color:var(--dim);line-height:2.2;}
+  .kg-h{color:var(--cyan);font-size:clamp(7px,1.2vw,9px);margin-bottom:5px;letter-spacing:1px;}
+  .kg-col b{color:var(--cream);font-weight:normal;}
+  .kg-k{
+    display:inline-block;background:#241d0e;border:1px solid #4a3f22;
+    padding:1px 4px;margin-right:3px;color:var(--gold);
+  }
 </style>
 </head>
 <body>
@@ -557,25 +610,48 @@
     </div>
   </div>
 
-  <!-- ═══ 메인 메뉴 3/3 — 스테이지·난이도 · 출격 ═══ -->
+  <!-- ═══ 메인 메뉴 3/3 — 출격 브리핑: 작전 지도 · 난이도 · 출격 ═══ -->
   <div id="deployScreen" class="screen hidden">
     <div class="title small">출격 준비</div>
     <div class="step" id="deploySummary"></div>
-    <div class="hi" id="deployRecord"></div>
     <div class="sub" style="color:#9fe8ff;" id="stageLabel">출격 스테이지</div>
-    <div id="stageRow"></div>
+    <div id="opMap">
+      <canvas id="opMapCv" width="480" height="150"></canvas>
+      <div id="stageRow"></div>
+    </div>
+    <div id="deployRecord"></div>
     <div class="sub" style="color:#ffcf3f;">난이도를 고르면 즉시 출격</div>
     <div class="row">
       <button class="startbtn ghost" id="deployBack">◀ 뒤로</button>
-      <button class="startbtn kids" data-d="kids">KIDS</button>
-      <button class="startbtn easy" data-d="easy">EASY</button>
-      <button class="startbtn normal" data-d="normal">NORMAL</button>
-      <button class="startbtn hard" data-d="hard">HARD</button>
+      <button class="startbtn kids" data-d="kids">KIDS<span class="d-sub">목숨 5 · 피해 절반</span></button>
+      <button class="startbtn easy" data-d="easy">EASY<span class="d-sub">목숨 4 · 순한 적</span></button>
+      <button class="startbtn normal" data-d="normal">NORMAL<span class="d-sub">목숨 3 · 표준 작전</span></button>
+      <button class="startbtn hard" data-d="hard">HARD<span class="d-sub">목숨 2 · 정예 적</span></button>
     </div>
-    <div class="hint">←→ 이동 · ↑ 사다리/위 조준 · <b style="color:#ffcf3f;">↓ 엎드리기(낮은 적 조준)</b> · SPACE 점프 · J/Z 사격 · K/X 폭탄(대원마다 다름)<br>
-      <b style="color:#ffe27a;">적이 코앞이면 사격이 근접 참격으로</b> · <b style="color:#ffe27a;">사격 0.6초 홀드 후 떼면 차지샷</b><br>
-      L/C 필살기 <b style="color:#9fe8ff;">(탈것 탑승 중엔 탈것 특수기 · ↓+점프로 하차)</b> · P(또는 Q/E) 무기교체 · <b style="color:#ffcf3f;">B 보급 상점(언제든)</b> · ESC 일시정지 · N 음소거<br>
-      군견처럼 키가 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · <b style="color:#ff8a5c;">돌진하는 적에게 들이받히면 잠시 기절</b> — 예고 마커를 보고 피해라</div>
+    <div class="kguide">
+      <div class="kg-col">
+        <div class="kg-h">🏃 이동</div>
+        <span class="kg-k">← →</span>이동<br>
+        <span class="kg-k">↑</span>사다리 · 위 조준<br>
+        <span class="kg-k">↓</span><b>엎드리기</b> — 낮은 적 조준<br>
+        <span class="kg-k">SPACE</span>점프
+      </div>
+      <div class="kg-col">
+        <div class="kg-h">🔫 공격</div>
+        <span class="kg-k">J/Z</span>사격 — <b>코앞이면 근접 참격</b><br>
+        <span class="kg-k">J 홀드</span>0.6초 후 떼면 <b>차지샷</b><br>
+        <span class="kg-k">K/X</span>폭탄 (대원마다 다름)<br>
+        <span class="kg-k">L/C</span>필살기 · 탑승 중 탈것 특수기
+      </div>
+      <div class="kg-col">
+        <div class="kg-h">⚙ 시스템</div>
+        <span class="kg-k">P·Q/E</span>무기 교체<br>
+        <span class="kg-k">B</span><b>보급 상점</b> (언제든)<br>
+        <span class="kg-k">↓+점프</span>탈것 하차<br>
+        <span class="kg-k">ESC</span>일시정지 · <span class="kg-k">N</span>음소거
+      </div>
+    </div>
+    <div class="hint">군견처럼 낮은 적은 <b style="color:#ffcf3f;">↓로 엎드려야</b> 총알이 닿는다 · <b style="color:#ff8a5c;">돌진 적에게 들이받히면 잠시 기절</b> — 예고 마커를 보고 피해라</div>
   </div>
 
   <!-- ═══ 상점 (좌: 내 무기고 / 우: 상품 스크롤) ═══ -->
@@ -8735,19 +8811,75 @@ const SURV_FIELDS = [
   { i: 4,  icon: '🌋', name: 'VOLCANO',   desc: '간헐천 분출 — 회피 도전' },
 ];
 
+// 작전 지도 거점 좌표 (% — 노드 배치와 캔버스 경로가 공유)
+const OP_POS = [[8, 63], [22, 30], [36, 66], [50, 28], [64, 64], [78, 30], [91, 56]];
+
+// 지도 배경 — 스테이지 순서대로 이어지는 픽셀 지형 밴드 + 행군 점선 경로
+function paintOpMap() {
+  const cv = document.getElementById('opMapCv'), c = cv.getContext('2d');
+  const MW = cv.width, MH = cv.height;
+  const zones = [                                    // [상단, 하단] 정글→사막→설원→도시→화산→상공→궤도
+    ['#12200c', '#1c2e12'], ['#3a2c14', '#4c3c20'], ['#243642', '#2e4450'],
+    ['#161430', '#201c40'], ['#2c130e', '#3c1c12'], ['#14283c', '#1c344c'], ['#080a18', '#0e1026'],
+  ];
+  const zw = MW / zones.length;
+  zones.forEach((z, i) => {
+    const g = c.createLinearGradient(0, 0, 0, MH);
+    g.addColorStop(0, z[0]); g.addColorStop(1, z[1]);
+    c.fillStyle = g; c.fillRect(Math.floor(i * zw), 0, Math.ceil(zw) + 1, MH);
+    if (i > 0) {                                     // 경계 디더링
+      c.fillStyle = z[0];
+      for (let y = 0; y < MH; y += 3) if ((y / 3) % 2) c.fillRect(Math.floor(i * zw) - 2, y, 2, 3);
+    }
+  });
+  // 구역 상징 실루엣
+  c.fillStyle = '#0a1408';                                             // 정글 수풀
+  for (let x = 4; x < zw - 6; x += 9) { c.fillRect(x, MH - 26, 2, 26); c.fillRect(x - 4, MH - 34, 10, 9); }
+  c.fillStyle = '#2c2210';                                             // 사막 모래언덕
+  c.beginPath(); c.arc(zw * 1.5, MH + 16, 40, 0, 7); c.fill();
+  c.fillStyle = '#3c5260';                                             // 설원 봉우리
+  [[.2, 34], [.55, 46], [.85, 28]].forEach(([k, h]) => {
+    c.beginPath(); c.moveTo(zw * (2 + k) - 16, MH); c.lineTo(zw * (2 + k), MH - h); c.lineTo(zw * (2 + k) + 16, MH); c.fill();
+  });
+  c.fillStyle = '#0c0a20';                                             // 도시 스카이라인
+  for (let x = 6; x < zw - 8; x += 12) c.fillRect(zw * 3 + x, MH - 22 - (x * 7) % 26, 9, 60);
+  c.fillStyle = '#1c0c08';                                             // 화산
+  c.beginPath(); c.moveTo(zw * 4.5 - 26, MH); c.lineTo(zw * 4.5, MH - 44); c.lineTo(zw * 4.5 + 26, MH); c.fill();
+  c.fillStyle = '#ff7a2b'; c.fillRect(zw * 4.5 - 3, MH - 46, 6, 4);    // 분화구
+  c.fillStyle = 'rgba(226,240,255,.25)';                               // 상공 구름
+  [[.25, .3], [.6, .55], [.85, .25]].forEach(([k, ky]) => c.fillRect(zw * (5 + k) - 14, MH * ky, 28, 5));
+  c.fillStyle = '#cfe8ff';                                             // 상공~궤도 별
+  for (let i = 0; i < 26; i++) c.fillRect(zw * 5 + (i * 37) % (zw * 2 - 8), (i * 23) % (MH - 10), 1, 1);
+  c.fillStyle = 'rgba(6,7,10,.30)'; c.fillRect(0, 0, MW, MH);          // 전체 톤 다운 — 노드 대비 확보
+  // 행군 점선 경로 (탈환 구간은 초록)
+  for (let s2 = 0; s2 < OP_POS.length - 1; s2++) {
+    const x1 = OP_POS[s2][0] / 100 * MW, y1 = OP_POS[s2][1] / 100 * MH;
+    const x2 = OP_POS[s2 + 1][0] / 100 * MW, y2 = OP_POS[s2 + 1][1] / 100 * MH;
+    c.fillStyle = s2 + 1 <= save.best ? '#9bb24a' : '#6a6046';
+    const steps = Math.max(1, Math.floor(Math.hypot(x2 - x1, y2 - y1) / 7));
+    for (let k = 0; k <= steps; k++) {
+      if (k % 2) continue;
+      c.fillRect(Math.round(x1 + (x2 - x1) * k / steps) - 1, Math.round(y1 + (y2 - y1) * k / steps) - 1, 3, 3);
+    }
+  }
+}
+
 function buildStageRow() {
   elStageRow.innerHTML = '';
   const label = document.getElementById('stageLabel');
-  // ── 서바이벌: 전장 4종 (전부 개방 · 캠페인 해금과 무관) ──
+  const opMap = document.getElementById('opMap');
+  // ── 서바이벌: 전장 카드 나열 (전부 개방 · 캠페인 해금과 무관) ──
   if (selMode === 'survival') {
-    label.textContent = '출격 전장';
+    label.textContent = '🌊 출격 전장을 골라라';
+    opMap.classList.add('flat');
     SURV_FIELDS.forEach(f => {
       const b = document.createElement('button');
-      b.className = 'stagebtn' + (f.i === selSurvField ? ' sel' : '');
+      b.className = 'opnode field' + (f.i === selSurvField ? ' sel' : '');
       const rec = f.i < 0
         ? (save.survBestS > 0 ? '🏆 최고 ' + save.survBestS : f.desc)
         : ((save.survBestSBy[f.i] | 0) > 0 ? '🏆 ' + save.survBestSBy[f.i] : f.desc);
-      b.innerHTML = f.icon + ' ' + f.name + '<br><span style="font-size:5px;opacity:.7;">' + rec + '</span>';
+      b.innerHTML = '<span class="icn">' + f.icon + '</span>' + f.name
+        + '<span class="rec">' + rec + '</span>';
       b.title = f.desc;
       b.addEventListener('click', () => {
         selSurvField = f.i;
@@ -8759,18 +8891,15 @@ function buildStageRow() {
     });
     return;
   }
-  // ── 작전 지도 — 순차 진행형 월드맵 ─────────────────────────
+  // ── 작전 지도 — 지형 배경 위 지그재그 행군 경로형 월드맵 ────
   // 새 작전은 무조건 STAGE 1부터. 탈환한(클리어) 거점만 클릭해 "재출격"
   // 재방문이 가능하고, 다음 목표 거점은 깜빡이며 미확보 거점은 실루엣.
   label.textContent = '🗺 작전 지도 — 거점을 차례로 탈환하라';
+  opMap.classList.remove('flat');
+  paintOpMap();
   const OP_ICONS = ['🌴', '🏜️', '❄', '🌃', '🌋', '✈️', '🛰️'];
   if (!(selStage === 0 || selStage < save.best)) selStage = 0;   // 유효하지 않은 재출격 선택은 새 작전으로
   STAGES.forEach((s, i) => {
-    if (i > 0) {
-      const lk = document.createElement('span');
-      lk.className = 'oplink' + (i <= save.best ? ' done' : '');
-      elStageRow.appendChild(lk);
-    }
     const cleared = i < save.best;
     const isCur = i === save.best && save.best > 0 && i < STAGES.length;   // 다음 목표 거점
     const selectable = i === 0 || cleared;
@@ -8778,8 +8907,13 @@ function buildStageRow() {
     const b = document.createElement('button');
     b.className = 'opnode' + (cleared ? ' done' : '') + (isCur ? ' cur' : '')
       + (!selectable && !isCur ? ' lock' : '') + (selectable && i === selStage ? ' sel' : '');
+    b.style.left = OP_POS[i][0] + '%';
+    b.style.top = OP_POS[i][1] + '%';
+    const recLine = cleared ? '✔ 탈환' : isCur ? '⚔ 다음 목표'
+      : i === 0 ? '🚩 시작 거점' : '미확보';
     b.innerHTML = '<span class="icn">' + (known ? OP_ICONS[i] : '❓') + '</span>'
-      + (i + 1) + '<br><span style="font-size:5px;opacity:.75;">' + (known ? s.name : '???') + '</span>';
+      + (i + 1) + '. ' + (known ? s.name : '???')
+      + '<span class="rec">' + recLine + '</span>';
     b.title = isCur ? '다음 목표 — STAGE 1부터 진격해 도달하라'
       : cleared ? '재출격 — 탈환한 거점 재방문 (훈장 파밍·보스 재도전)'
       : i === 0 ? '새 작전 시작 (STAGE 1부터 순차 진행)'
@@ -9252,8 +9386,15 @@ function updateDeploySummary() {
       : '<span style="color:#8a8158;">이 전장 기록 없음 — 첫 기록에 도전!</span>')
       + (save.survBestS > 0 ? ' &nbsp;·&nbsp; 전체 최고 <span style="color:#ffd23f;">' + save.survBestS + '</span>' : '');
   } else {
-    rec.innerHTML = 'HI-SCORE <span style="color:#9bb24a;">' + String(save.hi).padStart(6, '0') + '</span>'
-      + ' &nbsp;·&nbsp; 최고 도달 <span style="color:#9fe8ff;">STAGE ' + (save.best + 1) + '</span>';
+    const status = selStage === 0 && save.best === 0 ? '🚩 첫 작전 — 여기서 시작한다'
+      : selStage < save.best ? '↺ 재출격 — 탈환 거점 재방문 (훈장 파밍 · 보스 재도전)'
+      : '🚩 새 작전 — STAGE 1부터 순차 진격';
+    rec.innerHTML =
+      '<span style="color:#ffd23f;">' + (selStage + 1) + '. ' + STAGES[selStage].name + '</span>'
+      + ' · 거점 보스 <span style="color:#ff8a5c;">' + BOSSCFG[selStage].name + '</span>'
+      + ' · ' + status + '<br>'
+      + 'HI-SCORE <span style="color:#9bb24a;">' + String(save.hi).padStart(6, '0') + '</span>'
+      + ' · 최고 도달 <span style="color:#9fe8ff;">STAGE ' + (save.best + 1) + '</span>';
   }
 }
 function openCharScreen() {
@@ -9328,11 +9469,17 @@ function loop() {
     else update();
     draw();
   } else if (state === 'pause') {
+    // update()가 돌지 않는 화면에서도 흔들림·섬광은 반드시 감쇠시킨다
+    // (폭발 직후 일시정지/상점/승패 화면이 무한 진동하던 버그 방지)
+    if (shake > 0) { shake *= 0.85; if (shake < 0.3) shake = 0; }
+    if (flashScreen > 0) flashScreen--;
     draw();
     ctx.fillStyle = 'rgba(6,5,3,.55)';
     ctx.fillRect(0, 0, W, H);
   } else if (state === 'shop' || state === 'win' || state === 'over') {
     tick++;
+    if (shake > 0) { shake *= 0.85; if (shake < 0.3) shake = 0; }
+    if (flashScreen > 0) flashScreen--;
     draw();
   } else {
     // 메뉴 배경: 잔잔한 데모 화면
