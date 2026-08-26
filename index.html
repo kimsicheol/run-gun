@@ -207,6 +207,7 @@
     padding:12px 16px;box-shadow:4px 4px 0 #000;transition:transform .06s;
   }
   .startbtn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #000;}
+  .startbtn.kids{background:#5ce8c8;}
   .startbtn.easy{background:#5ad15a;}
   .startbtn.normal{background:#ffcf3f;}
   .startbtn.hard{background:#e8412c;color:#fff;}
@@ -353,6 +354,23 @@
   .modbtn:hover{border-color:#8a7a3a;}
   .modbtn.on{border-color:#9fe8ff;color:#9fe8ff;background:rgba(159,232,255,.12);}
   .modbtn.locked{opacity:.38;cursor:not-allowed;}
+
+  /* ── 작전 지도 — 거점(노드)이 경로로 이어진 진행형 월드맵 ── */
+  .opnode{
+    font-family:'Press Start 2P';cursor:pointer;position:relative;
+    width:clamp(46px,7.4vw,66px);padding:7px 2px;
+    background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#8a8158;
+    font-size:clamp(6px,1vw,8px);line-height:1.7;transition:.06s;
+  }
+  .opnode .icn{font-size:clamp(11px,1.9vw,15px);display:block;filter:drop-shadow(1px 1px 0 #000);}
+  .opnode.done{border-color:#9bb24a;color:#cdd8a0;}
+  .opnode.done:hover{border-color:#ffcf3f;transform:translateY(-2px);}
+  .opnode.sel{border-color:#ffcf3f;background:rgba(255,207,63,.12);color:#ffd23f;}
+  .opnode.cur{border-color:#ff6a3c;color:#ff8a5c;cursor:default;animation:curBlink 1.2s infinite;}
+  @keyframes curBlink{0%,100%{box-shadow:0 0 0 0 rgba(255,106,60,0);}50%{box-shadow:0 0 10px 2px rgba(255,106,60,.4);}}
+  .opnode.lock{opacity:.35;cursor:not-allowed;}
+  .oplink{display:inline-block;width:clamp(8px,1.5vw,16px);height:2px;background:#4a3f22;flex:0 0 auto;}
+  .oplink.done{background:#9bb24a;}
 </style>
 </head>
 <body>
@@ -386,8 +404,8 @@
     <div class="modes">
       <button class="modecard" id="modeCampaign">
         <span class="mc-icon">🎖</span>
-        <span class="mc-name">캠페인</span>
-        <span class="mc-desc">스테이지 7개 공략<br>보스 격파 · 클리어 후 보급<br>3스테이지마다 보너스 게임</span>
+        <span class="mc-name">작전</span>
+        <span class="mc-desc">7개 전장 순차 공략<br>보스 격파 · 클리어 후 보급<br>3전장마다 보너스 게임</span>
       </button>
       <button class="modecard surv" id="modeSurvival">
         <span class="mc-icon">🌊</span>
@@ -425,11 +443,12 @@
     <div class="title small">출격 준비</div>
     <div class="step" id="deploySummary"></div>
     <div class="hi" id="deployRecord"></div>
-    <div class="sub" style="color:#9fe8ff;">출격 스테이지</div>
+    <div class="sub" style="color:#9fe8ff;" id="stageLabel">출격 스테이지</div>
     <div id="stageRow"></div>
     <div class="sub" style="color:#ffcf3f;">난이도를 고르면 즉시 출격</div>
     <div class="row">
       <button class="startbtn ghost" id="deployBack">◀ 뒤로</button>
+      <button class="startbtn kids" data-d="kids">KIDS</button>
       <button class="startbtn easy" data-d="easy">EASY</button>
       <button class="startbtn normal" data-d="normal">NORMAL</button>
       <button class="startbtn hard" data-d="hard">HARD</button>
@@ -1127,7 +1146,10 @@ const S = {
 // ═══════════════════════════════════════════════════════════════
 // 난이도 설정
 // ═══════════════════════════════════════════════════════════════
+// kids: 아이용 — 잔기 5, 받는 피해 40%, 느린 적탄, 필살기 +2, 시작 수류탄 +2.
+//       훈장 정산은 60%(medalMul)로 잡아 영구 강화 메타가 무너지지 않게 한다.
 const DIFF = {
+  kids:   { label: 'KIDS',   lives: 5, eHp: 0.6,  eFire: 1.9,  eBulletSpd: 0.6,  dmgTaken: 0.4,  spawnRate: 2.0,  ultBonus: 2, medalMul: 0.6, bonusNades: 2 },
   easy:   { label: 'EASY',   lives: 4, eHp: 0.85, eFire: 1.35, eBulletSpd: 0.85, dmgTaken: 0.75, spawnRate: 1.5,  ultBonus: 1 },
   normal: { label: 'NORMAL', lives: 3, eHp: 1.0,  eFire: 1.0,  eBulletSpd: 1.05, dmgTaken: 1.1,  spawnRate: 1.05, ultBonus: 0 },
   hard:   { label: 'HARD',   lives: 2, eHp: 1.3,  eFire: 0.72, eBulletSpd: 1.3,  dmgTaken: 1.6,  spawnRate: 0.85, ultBonus: -1 },
@@ -1322,7 +1344,8 @@ const STAGES = [
     roster: ['grunt', 'grunt', 'gunner', 'dog'],
     pal: { a: '#1d3a2c', b: '#2f5238', c: '#5e6b38', far: '#3a5240', mid: '#1d2e1a',
       gTop: '#6a5226', gBody: '#473418', gDot: '#7d5e2c', plat: '#6b4f24', platTop: '#8f6f38' } },
-  { name: 'DESERT', len: 3500, intensity: 1.02, enemyHpMul: 1.12, ultUses: 3, theme: 'desert',
+  // sandstorm: 주기적 모래폭풍 — 시야 저하 + 바람이 플레이어를 민다
+  { name: 'DESERT', len: 3500, intensity: 1.02, enemyHpMul: 1.12, ultUses: 3, theme: 'desert', sandstorm: true,
     roster: ['grunt', 'gunner', 'heavy', 'rocket', 'sniper'],
     pal: { a: '#3c2a30', b: '#9c5536', c: '#e0a85a', far: '#a06a3c', mid: '#6e4524',
       gTop: '#d6ab5e', gBody: '#a87e3e', gDot: '#ecc986', plat: '#a07a40', platTop: '#cda058' } },
@@ -1330,7 +1353,8 @@ const STAGES = [
     roster: ['gunner', 'shield', 'dog', 'sniper', 'heavy'],
     pal: { a: '#20304a', b: '#4a6a8a', c: '#cfe0ea', far: '#8aa4bc', mid: '#5a7690',
       gTop: '#e8f0f6', gBody: '#aebfcf', gDot: '#f6fbff', plat: '#7d93a8', platTop: '#c8d8e4' } },
-  { name: 'NIGHT FORTRESS', len: 3900, intensity: 1.28, enemyHpMul: 1.32, ultUses: 4, theme: 'night',
+  // blackout: 주기적 정전 — 플레이어 주변만 보인다 (보스전 중엔 미발동)
+  { name: 'NIGHT FORTRESS', len: 3900, intensity: 1.28, enemyHpMul: 1.32, ultUses: 4, theme: 'night', blackout: true,
     roster: ['gunner', 'heavy', 'rocket', 'ninja', 'drone', 'turret'],
     pal: { a: '#0a0e22', b: '#172046', c: '#39345a', far: '#1a2240', mid: '#0a0d1c',
       gTop: '#3e3e4a', gBody: '#26262e', gDot: '#56565f', plat: '#33333d', platTop: '#54545f' } },
@@ -1343,8 +1367,9 @@ const STAGES = [
     pal: { a: '#3a6ea8', b: '#6aa8d8', c: '#a8d8f0', far: '#cfe8f8', mid: '#8ab8d8',
       gTop: '#8a94a2', gBody: '#5c6672', gDot: '#a2acb8', plat: '#6a7480', platTop: '#98a2ae' } },
   // 비행 전용 스테이지 — 지상 발판이 거의 없고 적의 대부분이 비행체
+  // gravMul: 저중력 0.65 — 점프가 높아지고 낙하가 느려져 조작 감각이 바뀐다
   { name: 'ORBITAL RUN', len: 4600, intensity: 1.7, enemyHpMul: 1.7, ultUses: 4, theme: 'sky',
-    windy: true, movp: true, airStage: true,
+    windy: true, movp: true, airStage: true, gravMul: 0.65,
     roster: ['jet', 'drone', 'jet', 'drone', 'sniper', 'ninja'],
     pal: { a: '#101a3a', b: '#23386e', c: '#4a6ea8', far: '#5c7ab0', mid: '#1c2a52',
       gTop: '#4a5470', gBody: '#2a3350', gDot: '#6a76a0', plat: '#3c4666', platTop: '#6c78a0' } },
@@ -1516,6 +1541,9 @@ let daily = false;           // 📅 일일 도전 (서바이벌의 변형: 날�
 let shopSwapSlot = -1;       // 상점 무기고에서 지정한 교체 대상 슬롯 (-1 = 자동)
 let odShown = 0;             // 이번 런에서 연출까지 끝낸 오버드라이브 단계
 let selMode = 'campaign';    // 메인 화면 모드 토글 (campaign | survival)
+// 서바이벌 전장 선택: -1 = 🎲 랜덤(훈장 +10%), 그 외 = STAGES 인덱스.
+// 캠페인 해금과 무관하게 전부 개방 — 서바이벌은 "아무 때나 기록 도전" 모드.
+let selSurvField = -1, survRandomRun = false;
 let bullets = [], ebullets = [], enemies = [], particles = [], pickups = [];
 let nades = [], floaters = [], platforms = [], strikes = [], eshards = [], barriers = [];
 let slashes = [], ladders = [], crates = [], hazards = [], sentries = [];
@@ -1534,6 +1562,32 @@ let st = { deaths: 0, dmg: 0, maxCombo: 0, pow: 0, powCount: 0, midDone: false }
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+// 스테이지별 중력 (ORBITAL RUN 저중력 0.65) — 플레이어·적·수류탄에 적용
+function GRAV() { return GRAVITY * (stage.gravMul || 1); }
+// ── 스테이지 기믹 타이밍 — 사막 모래폭풍 / 요새 정전 (주기 사이클) ──
+function sandstormActive() { return !!stage.sandstorm && state === 'play' && !bonus && (stageTime % 900) >= 600; }
+function sandstormDir() { return (Math.floor(stageTime / 900) % 2) ? -1 : 1; }
+function blackoutActive() { return !!stage.blackout && state === 'play' && !bonus && !boss && (stageTime % 1200) >= 960; }
+function updateStageGimmicks() {
+  const p = player;
+  if (!p) return;
+  // 모래폭풍: 예고(1초 전) → 5초간 황사 시야 저하 + 바람이 플레이어를 민다
+  if (stage.sandstorm) {
+    if (stageTime % 900 === 540) { addFloat(p.x + p.w / 2, p.y - 44, '⚠ 모래폭풍 접근!', '#ffcf8a'); S.warn(); }
+    if (sandstormActive()) {
+      const d = sandstormDir();
+      if (tick % 2 === 0)
+        particles.push({ k: 'streak', x: cam + rnd(-20, W + 20), y: rnd(10, GROUND_Y), vx: d * rnd(5, 8), vy: rnd(-0.4, 0.6), life: 12, c: '#d6ab5e', g: 0, r: 1.5 });
+      if (!p.dead && p.mode === 'foot')
+        p.x = clamp(p.x + d * 0.35, cam + 2, stage.len - p.w - 2);
+    }
+  }
+  // 정전: 예고 → 4초간 플레이어 주변만 보인다 (보스전 중엔 미발동)
+  if (stage.blackout && !boss) {
+    if (stageTime % 1200 === 900) { addFloat(p.x + p.w / 2, p.y - 44, '⚠ 곧 정전된다!', '#c8a0ff'); S.warn(); }
+    if (stageTime % 1200 === 960) { addFloat(p.x + p.w / 2, p.y - 44, '🌑 정전!', '#8a8158'); S.alert(); }
+  }
+}
 function ts() { return (player && player.ultMode === 'time') ? 0.45 : 1; }
 function addShake(n) { if (save.opt.shake) shake = Math.min(shake + n, 16); }
 
@@ -4072,7 +4126,7 @@ function updateEnemy(e, T) {
   e.face = (pcx < ecx) ? -1 : 1;
   const dist = Math.abs(ecx - pcx);              // 중심 간 거리
   const egap = dist - (e.w + p.w) / 2;           // 스프라이트 사이 실제 틈
-  if (!e.fly && e.type !== 'turret') e.vy += GRAVITY * T;
+  if (!e.fly && e.type !== 'turret') e.vy += GRAV() * T;
   e._px = e.x;
 
   switch (e.type) {
@@ -4915,7 +4969,7 @@ function update() {
         if (p.vy < -3.6) p.vy = -3.6;
         if (tick % 3 === 0) particles.push({ x: p.x + p.w / 2, y: p.y + p.h, vx: rnd(-1, 1), vy: rnd(1, 2), life: 8, c: '#9fe8ff', r: 1.5, g: 0 });
       }
-      p.vy += GRAVITY * 0.45;
+      p.vy += GRAV() * 0.45;
     } else {
       // JADEN 특성: 2단 점프
       const canDjump = c.trait === 'djump' && p.mode === 'foot';
@@ -4936,7 +4990,7 @@ function update() {
           S.jump();
         }
       }
-      p.vy += GRAVITY;
+      p.vy += GRAV();
     }
     p.jumpHeld = keys.jump;
 
@@ -5164,6 +5218,7 @@ function update() {
       if (!bossAnnounced) { bossAnnounced = true; S.alert(); }
     }
   }
+  updateStageGimmicks();                   // 스테이지 기믹: 모래폭풍·정전 (서바이벌에도 적용)
 
   // ── 플레이어 탄환 ───────────────────────────────────────────
   bullets.forEach(stepBullet);
@@ -5286,7 +5341,7 @@ function update() {
       if (n.t <= 0) n.done = true;
       return;
     }
-    n.vy += GRAVITY * (n.kind === 'kunai' ? 0.25 : 1);   // 쿠나이는 직선에 가깝게 난다
+    n.vy += GRAV() * (n.kind === 'kunai' ? 0.25 : 1);   // 쿠나이는 직선에 가깝게 난다
     n.x += n.vx;
     n.y += n.vy;
     n.t--;
@@ -5616,6 +5671,20 @@ function draw() {
   // KAI 블레이드 러시 보라 틴트
   if (player && player.ultMode === 'brush' && player.ultT > 0) {
     ctx.fillStyle = 'rgba(177,140,255,.10)';
+    ctx.fillRect(0, 0, W, H);
+  }
+  // 사막 모래폭풍 — 황사 오버레이 (파티클 스트릭은 update에서 뿌린다)
+  if (sandstormActive()) {
+    ctx.fillStyle = 'rgba(214,171,94,' + (0.13 + 0.04 * Math.sin(tick * 0.09)).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+  // 요새 정전 — 플레이어 주변만 밝은 랜턴 효과
+  if (blackoutActive() && player) {
+    const lx = player.x + player.w / 2 - cam, ly = player.y + player.h / 2;
+    const g2 = ctx.createRadialGradient(lx, ly, 42, lx, ly, 135);
+    g2.addColorStop(0, 'rgba(2,2,12,0)');
+    g2.addColorStop(1, 'rgba(2,2,12,.86)');
+    ctx.fillStyle = g2;
     ctx.fillRect(0, 0, W, H);
   }
   if (flashScreen > 0) {
@@ -8488,25 +8557,68 @@ function buildModRow() {
   });
 }
 
+// ── 서바이벌 전용 전장 4종 — 실제 플레이가 달라지는 지형만 선별 ──
+// i:-1 랜덤(전 스테이지 풀에서 추첨, 훈장 +10%) / 정글(표준) / 설원(빙판) / 화산(간헐천)
+const SURV_FIELDS = [
+  { i: -1, icon: '🎲', name: '랜덤 출격', desc: '매번 다른 전장 · 🎖 +10%' },
+  { i: 0,  icon: '🌴', name: 'JUNGLE',    desc: '표준 전장 — 입문 추천' },
+  { i: 2,  icon: '❄',  name: 'SNOWFIELD', desc: '빙판 — 미끄러짐 주의' },
+  { i: 4,  icon: '🌋', name: 'VOLCANO',   desc: '간헐천 분출 — 회피 도전' },
+];
+
 function buildStageRow() {
   elStageRow.innerHTML = '';
+  const label = document.getElementById('stageLabel');
+  // ── 서바이벌: 전장 4종 (전부 개방 · 캠페인 해금과 무관) ──
+  if (selMode === 'survival') {
+    label.textContent = '출격 전장';
+    SURV_FIELDS.forEach(f => {
+      const b = document.createElement('button');
+      b.className = 'stagebtn' + (f.i === selSurvField ? ' sel' : '');
+      const rec = f.i < 0
+        ? (save.survBest > 0 ? '🌊 전체 최장 ' + fmtTime(save.survBest) : f.desc)
+        : ((save.survBestBy[f.i] | 0) > 0 ? '🌊 ' + fmtTime(save.survBestBy[f.i]) : f.desc);
+      b.innerHTML = f.icon + ' ' + f.name + '<br><span style="font-size:5px;opacity:.7;">' + rec + '</span>';
+      b.title = f.desc;
+      b.addEventListener('click', () => {
+        selSurvField = f.i;
+        [].forEach.call(elStageRow.children, (n, k) => n.classList.toggle('sel', SURV_FIELDS[k].i === f.i));
+        S.init(); S.pickup();
+        updateDeploySummary();
+      });
+      elStageRow.appendChild(b);
+    });
+    return;
+  }
+  // ── 작전 지도 — 순차 진행형 월드맵 ─────────────────────────
+  // 새 작전은 무조건 STAGE 1부터. 탈환한(클리어) 거점만 클릭해 "재출격"
+  // 재방문이 가능하고, 다음 목표 거점은 깜빡이며 미확보 거점은 실루엣.
+  label.textContent = '🗺 작전 지도 — 거점을 차례로 탈환하라';
+  const OP_ICONS = ['🌴', '🏜️', '❄', '🌃', '🌋', '✈️', '🛰️'];
+  if (!(selStage === 0 || selStage < save.best)) selStage = 0;   // 유효하지 않은 재출격 선택은 새 작전으로
   STAGES.forEach((s, i) => {
-    const unlocked = i <= save.best;
-    if (!unlocked && selStage === i) selStage = 0;
+    if (i > 0) {
+      const lk = document.createElement('span');
+      lk.className = 'oplink' + (i <= save.best ? ' done' : '');
+      elStageRow.appendChild(lk);
+    }
+    const cleared = i < save.best;
+    const isCur = i === save.best && save.best > 0 && i < STAGES.length;   // 다음 목표 거점
+    const selectable = i === 0 || cleared;
+    const known = selectable || isCur || (i === 0);
     const b = document.createElement('button');
-    b.className = 'stagebtn' + (i === selStage ? ' sel' : '') + (unlocked ? '' : ' lock');
-    // 부제: 캠페인은 보스 이름, 서바이벌은 해당 맵 최장 생존 기록
-    const sb2 = save.survBestBy[i] | 0;
-    const subLine = !unlocked ? '- - -'
-      : selMode === 'survival'
-        ? (sb2 > 0 ? '🌊 ' + fmtTime(sb2) : '🌊 기록 없음')
-        : BOSSCFG[i].name;
-    b.innerHTML = (unlocked ? (i + 1) + '. ' + s.name : '🔒 ???') + '<br><span style="font-size:5px;opacity:.7;">' +
-      subLine + '</span>';
+    b.className = 'opnode' + (cleared ? ' done' : '') + (isCur ? ' cur' : '')
+      + (!selectable && !isCur ? ' lock' : '') + (selectable && i === selStage ? ' sel' : '');
+    b.innerHTML = '<span class="icn">' + (known ? OP_ICONS[i] : '❓') + '</span>'
+      + (i + 1) + '<br><span style="font-size:5px;opacity:.75;">' + (known ? s.name : '???') + '</span>';
+    b.title = isCur ? '다음 목표 — STAGE 1부터 진격해 도달하라'
+      : cleared ? '재출격 — 탈환한 거점 재방문 (훈장 파밍·보스 재도전)'
+      : i === 0 ? '새 작전 시작 (STAGE 1부터 순차 진행)'
+      : '미확보 거점';
     b.addEventListener('click', () => {
-      if (!unlocked) return;
+      if (!selectable) { S.warn(); return; }
       selStage = i;
-      [].forEach.call(elStageRow.children, (n, k) => n.classList.toggle('sel', k === i));
+      buildStageRow();               // 선택 표시 갱신
       S.init(); S.pickup();
       updateDeploySummary();
     });
@@ -8670,11 +8782,19 @@ function startGame(dk, surv, isDaily) {
   player = makePlayer(selChar);
   player.lives = diff.lives;
   applyMetaStart();
+  if (diff.bonusNades) player.nades = Math.min(9, player.nades + diff.bonusNades);   // KIDS: 수류탄 +2
   hideMenus();
   elShop.classList.add('hidden');
   elPause.classList.add('hidden');
   elEnd.classList.add('hidden');
-  startStage(daily ? dailyStage() : selStage);
+  // 출격 스테이지 결정 — 서바이벌은 전장 선택(🎲 랜덤 포함), 캠페인은 selStage
+  let sIdx = daily ? dailyStage() : selStage;
+  survRandomRun = false;
+  if (survival && !daily) {
+    if (selSurvField < 0) { survRandomRun = true; sIdx = Math.floor(Math.random() * STAGES.length); }
+    else sIdx = selSurvField;
+  }
+  startStage(sIdx);
 }
 
 // [이어하기] — 세이브된 캠페인 스냅샷에서 런을 재구성해 해당 스테이지부터 재개.
@@ -8759,6 +8879,8 @@ function endGame(win) {
     if (save.dailyDate !== todayKey()) { save.dailyDate = todayKey(); save.dailyBestT = 0; }
     if (survT > save.dailyBestT) save.dailyBestT = survT;
   }
+  // KIDS 정산 60% · 서바이벌 🎲 랜덤 전장 보너스 +10%
+  medalEarn = Math.round(medalEarn * (diff.medalMul || 1) * (survival && survRandomRun ? 1.1 : 1));
   save.medals += medalEarn;
   // 캠페인 종료(승패 무관) — 진행 스냅샷 삭제, [이어하기] 소멸
   if (!survival) save.run = null;
@@ -8858,18 +8980,26 @@ function fmtTime(frames) {
 }
 function updateDeploySummary() {
   const surv = selMode === 'survival';
+  const fieldName = surv
+    ? (selSurvField < 0 ? '🎲 랜덤 전장' : STAGES[selSurvField].name)
+    : (selStage === 0 ? '🚩 새 작전 (STAGE 1부터)' : '↺ 재출격 — ' + (selStage + 1) + '. ' + STAGES[selStage].name);
   document.getElementById('deploySummary').innerHTML =
     'STEP 3/3 · ' +
-    (surv ? '<span style="color:#9fe8ff;">🌊 서바이벌</span>' : '<span style="color:#ffd23f;">🎖 캠페인</span>') +
+    (surv ? '<span style="color:#9fe8ff;">🌊 서바이벌</span>' : '<span style="color:#ffd23f;">🎖 작전</span>') +
     ' · <span style="color:#f3ead2;">' + CHARS[selChar].name + '</span>' +
-    ' · ' + STAGES[selStage].name + (surv ? ' (무한 웨이브)' : '');
+    ' · ' + fieldName + (surv ? ' (무한 웨이브)' : '');
   // 모드별 기록 표시 — 갱신할 목표를 출격 직전에 보여준다
   const rec = document.getElementById('deployRecord');
   if (surv) {
-    const sb = save.survBestBy[selStage] | 0;
+    if (selSurvField < 0) {
+      rec.innerHTML = '🎲 매번 다른 전장 · <span style="color:#ffd23f;">훈장 정산 +10%</span>'
+        + (save.survBest > 0 ? ' &nbsp;·&nbsp; 전체 최장 <span style="color:#9fe8ff;">' + fmtTime(save.survBest) + '</span>' : '');
+      return;
+    }
+    const sb = save.survBestBy[selSurvField] | 0;
     rec.innerHTML = (sb > 0
-      ? '이 스테이지 최장 생존 <span style="color:#9fe8ff;">' + fmtTime(sb) + '</span>'
-      : '<span style="color:#8a8158;">이 스테이지 기록 없음 — 첫 기록에 도전!</span>')
+      ? '이 전장 최장 생존 <span style="color:#9fe8ff;">' + fmtTime(sb) + '</span>'
+      : '<span style="color:#8a8158;">이 전장 기록 없음 — 첫 기록에 도전!</span>')
       + (save.survBest > 0 ? ' &nbsp;·&nbsp; 전체 최장 <span style="color:#ffd23f;">' + fmtTime(save.survBest) + '</span>' : '');
   } else {
     rec.innerHTML = 'HI-SCORE <span style="color:#9bb24a;">' + String(save.hi).padStart(6, '0') + '</span>'
