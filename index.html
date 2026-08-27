@@ -148,9 +148,12 @@
     width:80%;aspect-ratio:1;border-radius:50%;
     background:radial-gradient(circle at 38% 30%, #3a2f14, #171208 74%);
     border:1px solid #6e5518;
-    display:flex;align-items:center;justify-content:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
   }
-  #reLv{font-size:clamp(9px,1.6vw,14px);color:var(--gold);text-shadow:1px 2px 0 #000;}
+  #reIns{width:56%;image-rendering:pixelated;}
+  #reLv{font-size:clamp(8px,1.4vw,12px);color:var(--gold);text-shadow:1px 2px 0 #000;}
+  #rankEmblem{cursor:pointer;}
+  #rankEmblem:hover .re-ring{filter:brightness(1.18);}
   .re-txt{display:flex;flex-direction:column;gap:5px;}
   .re-name{font-size:clamp(10px,1.8vw,15px);color:var(--cream);letter-spacing:1px;text-shadow:2px 2px 0 #000;}
   .re-xp{font-size:clamp(6px,1vw,8px);color:var(--faint);}
@@ -162,6 +165,37 @@
     box-shadow:0 3px 8px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,210,63,.15);
     margin-right:clamp(64px,9vw,110px);   /* SOUND 버튼과 겹침 방지 */
   }
+
+  /* ── 계급표 — 티어별 진급 사다리 + XP 내역 ─────────────── */
+  #rankCols{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;align-items:flex-start;max-width:96%;}
+  #rankLadder,#rankXpBox{
+    background:rgba(20,16,8,.5);border:2px solid #4a3f22;
+    padding:10px 14px;text-align:left;min-width:clamp(220px,30vw,340px);
+  }
+  .rt-head{
+    display:flex;align-items:center;gap:8px;
+    font-size:clamp(8px,1.3vw,11px);line-height:1.6;
+    margin-top:9px;padding-top:7px;border-top:1px dashed rgba(255,255,255,.12);
+  }
+  .rt-head.first{margin-top:0;padding-top:0;border-top:none;}
+  .rt-head canvas,.rk-row canvas{image-rendering:pixelated;width:28px;flex:0 0 28px;}
+  .rt-range{color:#8a8158;font-size:clamp(6px,1vw,8px);margin-left:auto;}
+  .rk-row{
+    display:flex;align-items:center;gap:8px;
+    font-size:clamp(7px,1.15vw,9px);line-height:2.1;padding:1px 4px 1px 8px;
+  }
+  .rk-cur{background:rgba(255,207,63,.10);outline:1px solid rgba(255,207,63,.45);}
+  .rk-dim{opacity:.5;}
+  .rk-st{margin-left:auto;color:#8a8158;font-size:clamp(6px,1vw,8px);}
+  .rk-bar{width:56px;height:5px;background:#07060a;border:1px solid #4a3f22;margin-left:auto;}
+  .rk-bar i{display:block;height:100%;}
+  #rankXpBox .xp-h{font-size:clamp(8px,1.3vw,11px);color:#9fe8ff;line-height:2;}
+  #rankXpBox .xp-row{
+    display:flex;justify-content:space-between;gap:16px;
+    font-size:clamp(7px,1.15vw,9px);line-height:2.2;color:#cdbf95;
+  }
+  #rankXpBox .xp-row b{color:#ffd23f;}
+  #rankXpBox .xp-sum{border-top:1px dashed rgba(255,255,255,.12);margin-top:5px;padding-top:5px;}
 
   /* ── 본문: 좌 히어로 패널 / 우 타이틀 + 모드 ─────────────── */
   .lobby-main{
@@ -578,11 +612,12 @@
   <div id="startScreen" class="screen lobby">
     <!-- 상단 바: 좌 계급 엠블럼(XP 링) · 우 훈장 배지 -->
     <div class="lobby-top">
-      <div id="rankEmblem">
-        <div class="re-ring" id="reRing"><div class="re-core"><span id="reLv">Lv.1</span></div></div>
+      <div id="rankEmblem" title="클릭해 계급표 열기">
+        <div class="re-ring" id="reRing"><div class="re-core"><canvas id="reIns" width="28" height="14"></canvas><span id="reLv">Lv.1</span></div></div>
         <div class="re-txt">
           <span class="re-name" id="pcRank"></span>
           <span class="re-xp" id="pcXp"></span>
+          <span class="re-xp" style="color:#6e6650;">▸ 클릭해 계급표</span>
         </div>
       </div>
       <div id="medalBadge"><span>🎖</span><span id="pcMedals">0</span></div>
@@ -762,6 +797,17 @@
       죽어도 사라지지 않는다 — 여기서 쓴 훈장은 모든 런에 영구 적용</div>
     <div id="metaItems"></div>
     <button class="startbtn" id="metaClose">◀ 메인으로</button>
+  </div>
+
+  <!-- ═══ 계급표 — 티어(병/부사관/위관/영관/장성)별 진급 사다리 + XP 내역 ═══ -->
+  <div id="rankScreen" class="screen hidden">
+    <div class="title" style="font-size:clamp(13px,2.6vw,22px);">계급표</div>
+    <div class="hi" id="rankSummary"></div>
+    <div id="rankCols">
+      <div id="rankLadder"></div>
+      <div id="rankXpBox"></div>
+    </div>
+    <button class="startbtn" id="rankClose">◀ 메인으로</button>
   </div>
 
   <!-- ═══ 가상 패드 ═══ -->
@@ -8785,6 +8831,7 @@ const elStageRow = document.getElementById('stageRow');
 const elMenuInfo = document.getElementById('menuInfo');
 const elStart = document.getElementById('startScreen');
 const elMeta = document.getElementById('metaScreen');
+const elRank = document.getElementById('rankScreen');
 const elShop = document.getElementById('shopScreen');
 const elPause = document.getElementById('pauseScreen');
 const elEnd = document.getElementById('endScreen');
@@ -9465,6 +9512,46 @@ function buildStageRow() {
 // "다음 계급까지" 바가 재방문·연속 플레이의 명시적 목표가 된다.
 // ═══════════════════════════════════════════════════════════════
 const RANKS = ['이등병', '일병', '상병', '병장', '하사', '중사', '상사', '소위', '중위', '대위', '소령', '중령', '대령', '준장', '소장', '중장', '대장'];
+// 계급 티어 — 실제 군 체계(병/부사관/위관/영관/장성) 5묶음. 표시 전용이라
+// XP·계급 산정 로직과 세이브에는 영향이 없다. ins: 휘장 종류, 티어 내 순번만큼 반복.
+const RANK_TIERS = [
+  { name: '병',     from: 0,  to: 3,  col: '#9bb24a', ins: 'bar' },   // 작대기 1~4
+  { name: '부사관', from: 4,  to: 6,  col: '#d18b47', ins: 'chev' },  // 갈매기 1~3
+  { name: '위관',   from: 7,  to: 9,  col: '#c9d6e2', ins: 'dia' },   // 다이아 1~3
+  { name: '영관',   from: 10, to: 12, col: '#ffd23f', ins: 'rose' },  // 무궁화 1~3
+  { name: '장성',   from: 13, to: 16, col: '#b18cff', ins: 'star' },  // 별 1~4
+];
+function tierOf(idx) {
+  const t = RANK_TIERS.find(tt => idx >= tt.from && idx <= tt.to);
+  return { t, n: idx - t.from + 1 };                 // n: 티어 내 순번 = 휘장 개수
+}
+// 계급 idx까지의 누적 요구 XP — 승급 요구치 40+30i의 부분합
+function rankCumXP(idx) { return 40 * idx + 15 * idx * (idx - 1); }
+
+// 휘장 도트 — 티어별 도형을 순번만큼 그린다 (bar만 세로 쌓기, 나머지는 가로 나열)
+const INS_PIX = {
+  chev: ['#...#', '##.##', '.###.', '..#..'],
+  dia:  ['..#..', '.###.', '#####', '.###.', '..#..'],
+  rose: ['..#..', '.###.', '##.##', '.###.', '..#..'],
+  star: ['..#..', '.###.', '#####', '.#.#.', '#...#'],
+};
+function drawInsignia(cv, ins, n, col) {
+  const c = cv.getContext('2d');
+  c.clearRect(0, 0, cv.width, cv.height);
+  c.fillStyle = col;
+  if (ins === 'bar') {
+    const w = 12, x0 = Math.floor((cv.width - w) / 2);
+    for (let i = 0; i < n; i++) c.fillRect(x0, cv.height - 3 - i * 3, w, 2);
+    return;
+  }
+  const px = INS_PIX[ins], pw = px[0].length, ph = px.length;
+  let x0 = Math.floor((cv.width - (n * pw + (n - 1) * 2)) / 2);
+  const y0 = Math.floor((cv.height - ph) / 2);
+  for (let k = 0; k < n; k++, x0 += pw + 2)
+    px.forEach((row, y) => {
+      for (let x = 0; x < pw; x++) if (row[x] === '#') c.fillRect(x0 + x, y0 + y, 1, 1);
+    });
+}
 function profileXP() {
   const metaCnt = META_UPGRADES.reduce((n, u) => n + metaLv(u.k), 0);
   const extraChars = save.chars.filter(i => CHARS[i] && CHARS[i].unlock).length;
@@ -9487,12 +9574,19 @@ function metaAffordable() {
 
 function refreshProfileCard() {
   const r = rankInfo();
-  // 계급 엠블럼: 레벨 = 계급 순번, 링 = 승급 진행률
+  const { t, n } = tierOf(r.idx);
+  // 계급 엠블럼: 레벨 = 계급 순번, 링 = 승급 진행률, 색·휘장 = 티어
   document.getElementById('reLv').textContent = 'Lv.' + (r.idx + 1);
-  document.getElementById('pcRank').textContent = r.name;
-  document.getElementById('pcXp').textContent = r.top ? '최고 계급' : '승급까지 ' + (r.need - r.cur) + 'XP';
-  document.getElementById('reRing').style.background =
-    'conic-gradient(#ffd23f ' + r.pct + '%, rgba(255,210,63,.14) 0)';
+  document.getElementById('reLv').style.color = t.col;
+  drawInsignia(document.getElementById('reIns'), t.ins, n, t.col);
+  const nameEl = document.getElementById('pcRank');
+  nameEl.textContent = r.name;
+  nameEl.style.color = t.col;
+  document.getElementById('pcXp').textContent =
+    t.name + ' 티어 · ' + (r.top ? '최고 계급' : '승급까지 ' + (r.need - r.cur) + 'XP');
+  const ring = document.getElementById('reRing');
+  ring.style.background = 'conic-gradient(' + t.col + ' ' + r.pct + '%, rgba(255,255,255,.12) 0)';
+  ring.style.boxShadow = '0 0 14px ' + t.col + '44, 0 4px 10px rgba(0,0,0,.5)';
   document.getElementById('pcMedals').textContent = save.medals;
   // 착용 장비 칩 — 영구 강화가 실제 출격 스펙에 반영됨을 히어로 옆에서 보여준다
   const chips = [['🔫', 'GUN' + (metaLv('mg') ? '+MG' : '')]];
@@ -9684,6 +9778,107 @@ function closeMeta() {
   elMeta.classList.add('hidden');
   elStart.classList.remove('hidden');
   refreshMenuInfo();
+}
+
+// ── 계급표 화면 — 티어 사다리 + XP 내역 ────────────────────────
+function openRank() {
+  buildRankDOM();
+  elStart.classList.add('hidden');
+  elRank.classList.remove('hidden');
+}
+function closeRank() {
+  elRank.classList.add('hidden');
+  elStart.classList.remove('hidden');
+}
+function buildRankDOM() {
+  const r = rankInfo();
+  const xp = profileXP();
+  const topCum = rankCumXP(RANKS.length - 1);        // 대장까지 누적 요구 XP
+  const { t: curTier } = tierOf(r.idx);
+  document.getElementById('rankSummary').innerHTML =
+    '현재 <span style="color:' + curTier.col + ';">' + r.name + ' (Lv.' + (r.idx + 1) + ')</span>'
+    + ' · 보유 <span style="color:#ffd23f;">' + xp + ' XP</span>'
+    + (r.top ? ' · <span style="color:#b18cff;">최고 계급 달성!</span>'
+      : ' · 대장까지 <span style="color:#9fe8ff;">' + (topCum - xp) + ' XP</span>');
+
+  // 좌: 티어별 진급 사다리
+  const lad = document.getElementById('rankLadder');
+  lad.innerHTML = '';
+  RANK_TIERS.forEach((tier, ti) => {
+    const head = document.createElement('div');
+    head.className = 'rt-head' + (ti === 0 ? ' first' : '');
+    const hc = document.createElement('canvas');
+    hc.width = 28; hc.height = 14;
+    drawInsignia(hc, tier.ins, tier.to - tier.from + 1, tier.col);   // 티어 최고 휘장
+    head.appendChild(hc);
+    const hl = document.createElement('span');
+    hl.style.color = tier.col;
+    hl.textContent = tier.name + ' 티어';
+    head.appendChild(hl);
+    const hr = document.createElement('span');
+    hr.className = 'rt-range';
+    hr.textContent = 'Lv.' + (tier.from + 1) + '–' + (tier.to + 1);
+    head.appendChild(hr);
+    lad.appendChild(head);
+    for (let i = tier.from; i <= tier.to; i++) {
+      const row = document.createElement('div');
+      row.className = 'rk-row' + (i === r.idx ? ' rk-cur' : i > r.idx ? ' rk-dim' : '');
+      const cv = document.createElement('canvas');
+      cv.width = 28; cv.height = 14;
+      drawInsignia(cv, tier.ins, i - tier.from + 1, tier.col);
+      row.appendChild(cv);
+      const nm = document.createElement('span');
+      nm.textContent = RANKS[i] + ' · Lv.' + (i + 1);
+      nm.style.color = i === r.idx ? '#f3ead2' : undefined;
+      row.appendChild(nm);
+      if (i < r.idx) {                               // 지나온 계급
+        const st = document.createElement('span');
+        st.className = 'rk-st'; st.style.color = tier.col; st.textContent = '✔';
+        row.appendChild(st);
+      } else if (i === r.idx) {                      // 현재 — 승급 진행 바
+        if (r.top) {
+          const st = document.createElement('span');
+          st.className = 'rk-st'; st.style.color = tier.col; st.textContent = '★ 최고 계급';
+          row.appendChild(st);
+        } else {
+          const bar = document.createElement('span');
+          bar.className = 'rk-bar';
+          bar.innerHTML = '<i style="width:' + r.pct + '%;background:' + tier.col + ';"></i>';
+          bar.title = '승급까지 ' + (r.need - r.cur) + ' XP';
+          row.appendChild(bar);
+          const st = document.createElement('span');
+          st.className = 'rk-st'; st.textContent = '-' + (r.need - r.cur) + 'XP';
+          st.style.marginLeft = '6px';
+          row.appendChild(st);
+        }
+      } else {                                       // 미래 — 누적 요구 XP
+        const st = document.createElement('span');
+        st.className = 'rk-st'; st.textContent = '누적 ' + rankCumXP(i) + 'XP';
+        row.appendChild(st);
+      }
+      lad.appendChild(row);
+    }
+  });
+
+  // 우: XP를 버는 방법 + 현재 획득 내역
+  const metaCnt = META_UPGRADES.reduce((nn, u) => nn + metaLv(u.k), 0);
+  const extraChars = save.chars.filter(i => CHARS[i] && CHARS[i].unlock).length;
+  const srcs = [
+    ['🎖 영구 강화 1레벨',        15, metaCnt],
+    ['🏅 업적 1개 (총 ' + ACH.length + '개)', 25, save.ach.length],
+    ['🚩 최고 도달 스테이지 1개', 30, save.best],
+    ['👥 추가 대원 해금 1명',     40, extraChars],
+    ['🪖 POW 구출 1명',            4, save.pow],
+    ['🌊 서바이벌 최고점 4,000점', 6, Math.floor((save.survBestS | 0) / 4000)],
+    ['⏱ 서바이벌 5분 완주 1회',  15, save.survWins | 0],
+  ];
+  document.getElementById('rankXpBox').innerHTML =
+    '<div class="xp-h">XP를 버는 방법</div>'
+    + srcs.map(([label, per, cnt]) =>
+      '<div class="xp-row"><span>' + label + ' <b>+' + per + '</b></span>'
+      + '<span>' + cnt + '개 = <b>' + per * cnt + '</b></span></div>').join('')
+    + '<div class="xp-row xp-sum"><span>합계</span><span><b>' + xp + ' XP</b></span></div>'
+    + '<div class="xp-row" style="color:#8a8158;"><span>영구 강화·POW·서바이벌은 무한 반복 가능 — 대장은 장기 목표다</span></div>';
 }
 function buildMetaDOM() {
   document.getElementById('metaMedals').textContent = '🎖 ' + save.medals;
@@ -9936,7 +10131,7 @@ function syncOptBtns() {
 // ── 메뉴 플로우: 1 모드 선택 → 2 대원 선택 → 3 스테이지·난이도 → 출격 ──
 const elCharScr = document.getElementById('charScreen');
 const elDeploy = document.getElementById('deployScreen');
-function hideMenus() { [elStart, elCharScr, elDeploy, elMeta].forEach(el => el.classList.add('hidden')); }
+function hideMenus() { [elStart, elCharScr, elDeploy, elMeta, elRank].forEach(el => el.classList.add('hidden')); }
 function showMenu(el) { hideMenus(); el.classList.remove('hidden'); }
 function fmtTime(frames) {
   return Math.floor(frames / 3600) + ':' + String(Math.floor(frames / 60) % 60).padStart(2, '0');
@@ -10035,6 +10230,8 @@ elOptShake.addEventListener('click', () => {
 elMute.addEventListener('click', toggleMute);
 elPauseBtn.addEventListener('click', () => { if (state === 'play' || state === 'pause') togglePause(); });
 document.getElementById('metaBtn').addEventListener('click', () => { S.init(); openMeta(); });
+document.getElementById('rankEmblem').addEventListener('click', () => { S.init(); S.pickup(); openRank(); });
+document.getElementById('rankClose').addEventListener('click', () => { S.init(); closeRank(); });
 document.getElementById('resumeRunBtn').addEventListener('click', resumeRun);
 document.getElementById('metaClose').addEventListener('click', closeMeta);
 
