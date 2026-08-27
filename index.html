@@ -136,27 +136,38 @@
     width:100%;display:flex;align-items:flex-start;justify-content:space-between;
     padding:0 clamp(2px,.6vw,8px);
   }
-  #rankEmblem{display:flex;align-items:center;gap:10px;text-align:left;
+  #rankEmblem{display:flex;align-items:center;gap:clamp(10px,1.6vw,16px);text-align:left;
     margin-left:clamp(36px,5vw,60px);}   /* PAUSE 버튼과 겹침 방지 */
   .re-ring{
-    width:clamp(46px,6.6vw,76px);aspect-ratio:1;border-radius:50%;
+    position:relative;--re-glow:rgba(255,210,63,.35);
+    width:clamp(66px,9.5vw,110px);aspect-ratio:1;border-radius:50%;
     background:conic-gradient(var(--gold) 0%, rgba(255,210,63,.14) 0);
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 0 14px rgba(255,210,63,.28),0 4px 10px rgba(0,0,0,.5);
+    animation:rePulse 2.8s ease-in-out infinite;
+  }
+  @keyframes rePulse{
+    0%,100%{box-shadow:0 0 14px var(--re-glow),0 5px 12px rgba(0,0,0,.55);}
+    50%    {box-shadow:0 0 28px var(--re-glow),0 5px 12px rgba(0,0,0,.55);}
   }
   .re-core{
-    width:80%;aspect-ratio:1;border-radius:50%;
+    width:82%;aspect-ratio:1;border-radius:50%;
     background:radial-gradient(circle at 38% 30%, #3a2f14, #171208 74%);
     border:1px solid #6e5518;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    display:flex;align-items:center;justify-content:center;
   }
-  #reIns{width:56%;image-rendering:pixelated;}
-  #reLv{font-size:clamp(8px,1.4vw,12px);color:var(--gold);text-shadow:1px 2px 0 #000;}
+  #reIns{width:76%;image-rendering:pixelated;}   /* 휘장이 엠블럼의 주인공 */
+  #reLv{
+    position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
+    font-size:clamp(8px,1.3vw,11px);color:var(--gold);text-shadow:1px 1px 0 #000;
+    background:linear-gradient(180deg,#2e2510,#14100a);
+    border:1px solid #8a6f2a;padding:1px 8px;white-space:nowrap;
+    box-shadow:0 2px 5px rgba(0,0,0,.6);
+  }
   #rankEmblem{cursor:pointer;}
   #rankEmblem:hover .re-ring{filter:brightness(1.18);}
   .re-txt{display:flex;flex-direction:column;gap:5px;}
-  .re-name{font-size:clamp(10px,1.8vw,15px);color:var(--cream);letter-spacing:1px;text-shadow:2px 2px 0 #000;}
-  .re-xp{font-size:clamp(6px,1vw,8px);color:var(--faint);}
+  .re-name{font-size:clamp(13px,2.4vw,20px);color:var(--cream);letter-spacing:1px;text-shadow:2px 2px 0 #000;}
+  .re-xp{font-size:clamp(6px,1.05vw,9px);color:var(--faint);}
   #medalBadge{
     display:flex;align-items:center;gap:7px;
     background:linear-gradient(180deg,rgba(46,37,16,.88),rgba(18,15,8,.92));
@@ -613,7 +624,7 @@
     <!-- 상단 바: 좌 계급 엠블럼(XP 링) · 우 훈장 배지 -->
     <div class="lobby-top">
       <div id="rankEmblem" title="클릭해 계급표 열기">
-        <div class="re-ring" id="reRing"><div class="re-core"><canvas id="reIns" width="28" height="14"></canvas><span id="reLv">Lv.1</span></div></div>
+        <div class="re-ring" id="reRing"><div class="re-core"><canvas id="reIns" width="84" height="42"></canvas></div><span id="reLv">Lv.1</span></div>
         <div class="re-txt">
           <span class="re-name" id="pcRank"></span>
           <span class="re-xp" id="pcXp"></span>
@@ -9535,21 +9546,22 @@ const INS_PIX = {
   rose: ['..#..', '.###.', '##.##', '.###.', '..#..'],
   star: ['..#..', '.###.', '#####', '.#.#.', '#...#'],
 };
-function drawInsignia(cv, ins, n, col) {
+function drawInsignia(cv, ins, n, col, s = 1) {          // s: 도트 배율
   const c = cv.getContext('2d');
   c.clearRect(0, 0, cv.width, cv.height);
   c.fillStyle = col;
   if (ins === 'bar') {
-    const w = 12, x0 = Math.floor((cv.width - w) / 2);
-    for (let i = 0; i < n; i++) c.fillRect(x0, cv.height - 3 - i * 3, w, 2);
+    const w = 12 * s, x0 = Math.floor((cv.width - w) / 2);
+    const yc = Math.floor((cv.height - (n * 3 - 1) * s) / 2);  // 작대기 묶음 세로 중앙
+    for (let i = 0; i < n; i++) c.fillRect(x0, yc + (n - 1 - i) * 3 * s, w, 2 * s);
     return;
   }
   const px = INS_PIX[ins], pw = px[0].length, ph = px.length;
-  let x0 = Math.floor((cv.width - (n * pw + (n - 1) * 2)) / 2);
-  const y0 = Math.floor((cv.height - ph) / 2);
-  for (let k = 0; k < n; k++, x0 += pw + 2)
+  let x0 = Math.floor((cv.width - (n * pw + (n - 1) * 2) * s) / 2);
+  const y0 = Math.floor((cv.height - ph * s) / 2);
+  for (let k = 0; k < n; k++, x0 += (pw + 2) * s)
     px.forEach((row, y) => {
-      for (let x = 0; x < pw; x++) if (row[x] === '#') c.fillRect(x0 + x, y0 + y, 1, 1);
+      for (let x = 0; x < pw; x++) if (row[x] === '#') c.fillRect(x0 + x * s, y0 + y * s, s, s);
     });
 }
 function profileXP() {
@@ -9576,9 +9588,13 @@ function refreshProfileCard() {
   const r = rankInfo();
   const { t, n } = tierOf(r.idx);
   // 계급 엠블럼: 레벨 = 계급 순번, 링 = 승급 진행률, 색·휘장 = 티어
-  document.getElementById('reLv').textContent = 'Lv.' + (r.idx + 1);
-  document.getElementById('reLv').style.color = t.col;
-  drawInsignia(document.getElementById('reIns'), t.ins, n, t.col);
+  const lvEl = document.getElementById('reLv');
+  lvEl.textContent = 'Lv.' + (r.idx + 1);
+  lvEl.style.color = t.col;
+  lvEl.style.borderColor = t.col + '99';
+  const insCv = document.getElementById('reIns');
+  drawInsignia(insCv, t.ins, n, t.col, 3);               // 3배 도트 — 휘장 강조
+  insCv.style.filter = 'drop-shadow(0 0 5px ' + t.col + '88)';
   const nameEl = document.getElementById('pcRank');
   nameEl.textContent = r.name;
   nameEl.style.color = t.col;
@@ -9586,7 +9602,7 @@ function refreshProfileCard() {
     t.name + ' 티어 · ' + (r.top ? '최고 계급' : '승급까지 ' + (r.need - r.cur) + 'XP');
   const ring = document.getElementById('reRing');
   ring.style.background = 'conic-gradient(' + t.col + ' ' + r.pct + '%, rgba(255,255,255,.12) 0)';
-  ring.style.boxShadow = '0 0 14px ' + t.col + '44, 0 4px 10px rgba(0,0,0,.5)';
+  ring.style.setProperty('--re-glow', t.col + '55');     // 펄스 광채도 티어색으로
   document.getElementById('pcMedals').textContent = save.medals;
   // 착용 장비 칩 — 영구 강화가 실제 출격 스펙에 반영됨을 히어로 옆에서 보여준다
   const chips = [['🔫', 'GUN' + (metaLv('mg') ? '+MG' : '')]];
