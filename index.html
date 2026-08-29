@@ -291,6 +291,63 @@
   }
   .ht-hint{font-size:clamp(5px,.95vw,7px);color:var(--faint);line-height:1.9;min-height:1.4em;}
   .ht-hint b{font-weight:normal;}
+  /* ── 전리품 상세 — 로비/대원 선택 양쪽에서 같은 카드를 띄운다 ── */
+  #modDetail{
+    position:absolute;inset:0;z-index:7;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(4,5,8,.82);padding:4%;
+  }
+  #modDetail.hidden{display:none;}
+  .md-card{
+    width:min(92%,430px);max-height:92%;overflow:auto;text-align:left;
+    background:linear-gradient(180deg,rgba(34,28,12,.97),rgba(12,11,7,.98));
+    border:2px solid var(--gold);
+    box-shadow:0 0 0 2px #000,0 0 26px rgba(255,210,63,.28),0 12px 30px rgba(0,0,0,.6);
+    padding:clamp(12px,2.4vw,20px);
+    display:flex;flex-direction:column;gap:clamp(8px,1.5vw,13px);
+  }
+  .md-card.locked{border-color:#4a3f22;box-shadow:0 0 0 2px #000,0 12px 30px rgba(0,0,0,.6);}
+  /* 머리 — 아이콘 + 진화 무기명 + 장착 대원 */
+  .md-top{display:flex;align-items:center;gap:clamp(8px,1.6vw,13px);}
+  .md-ic{
+    flex:0 0 auto;width:clamp(38px,6vw,54px);aspect-ratio:1;
+    display:flex;align-items:center;justify-content:center;
+    font-size:clamp(19px,3.2vw,28px);
+    background:rgba(10,9,5,.9);border:2px solid var(--gold);
+  }
+  .md-card.locked .md-ic{border-color:#4a3f22;filter:grayscale(1) brightness(.55);}
+  .md-tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .md-name{font-size:clamp(10px,1.8vw,15px);color:var(--gold);letter-spacing:1px;text-shadow:2px 2px 0 #000;}
+  .md-card.locked .md-name{color:var(--dim);}
+  .md-who{font-size:clamp(5px,1vw,8px);color:var(--cyan);line-height:1.7;}
+  .md-who.off{color:var(--faint);}
+  /* 본문 — 라벨 + 값 2열 */
+  .md-rows{display:flex;flex-direction:column;gap:clamp(5px,1vw,8px);}
+  .md-row{display:flex;gap:clamp(6px,1.2vw,10px);align-items:baseline;}
+  .md-lb{
+    flex:0 0 clamp(30px,5vw,44px);
+    font-size:clamp(5px,.95vw,8px);color:var(--gold);letter-spacing:1px;
+  }
+  .md-vl{flex:1;min-width:0;font-size:clamp(6px,1.15vw,9.5px);color:var(--cream);line-height:1.85;}
+  .md-vl .sub{color:var(--faint);}
+  /* 재료 칩 — 기본 무기 + 재료 퍼크 */
+  .md-mix{display:flex;align-items:center;gap:clamp(4px,.9vw,7px);flex-wrap:wrap;}
+  .md-chip{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:clamp(6px,1.15vw,9.5px);line-height:1.6;
+    background:rgba(10,9,5,.85);border:1px solid #4a3f22;padding:4px 7px;
+  }
+  .md-plus{font-size:clamp(7px,1.3vw,11px);color:var(--gold);}
+  .md-btn{
+    font-family:inherit;font-size:clamp(6px,1.2vw,10px);letter-spacing:1px;
+    padding:clamp(7px,1.3vw,11px);cursor:pointer;transition:.08s;
+    background:rgba(20,16,8,.75);border:2px solid #4a3f22;color:#cdbf95;
+  }
+  .md-btn:hover{border-color:#8a7a3a;color:var(--cream);}
+  .md-btn.go{border-color:var(--gold);color:var(--gold);background:rgba(46,37,16,.9);}
+  .md-btn.go:hover{background:rgba(66,53,20,.95);}
+  .md-acts{display:flex;gap:clamp(6px,1.2vw,10px);}
+  .md-acts .md-btn{flex:1;}
   /* 장착 모듈이 히어로 곁에 떠 있는 배지 */
   #heroEquipBadge{
     position:absolute;top:5%;right:7%;z-index:2;
@@ -820,6 +877,9 @@
     </div>
     <button class="startbtn" id="rankClose">◀ 메인으로</button>
   </div>
+
+  <!-- ═══ 전리품(진화 모듈) 상세 — 로비·대원 선택 공용 ═══ -->
+  <div id="modDetail" class="hidden"><div class="md-card" id="mdCard"></div></div>
 
   <!-- ═══ 가상 패드 ═══ -->
   <div id="pad">
@@ -1791,6 +1851,13 @@ const kmap = {
   KeyQ: 'swap', KeyE: 'swap', KeyP: 'swap',
 };
 addEventListener('keydown', e => {
+  // 전리품 상세가 떠 있으면 로비 단축키(1/2/3)·일시정지 등으로 새지 않게 가로챈다
+  if (modDetailKey) {
+    if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') closeModDetail();
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return;
+  }
   if (e.code === 'KeyN') { toggleMute(); e.preventDefault(); return; }
   if (e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
   // B: 런 중 언제든 보급 상점 (열려 있으면 닫고 복귀) — 보스전 중에는 잠금
@@ -1912,6 +1979,15 @@ function updateStageGimmicks() {
 }
 function ts() { return (player && player.ultMode === 'time') ? 0.45 : 1; }
 function addShake(n) { if (save.opt.shake) shake = Math.min(shake + n, 16); }
+// 화면 흔들림·섬광 감쇠 — loop()에서 상태와 무관하게 매 프레임 정확히 한 번만 호출한다.
+// 예전에는 감쇠가 update()/updateBonus()/updatePerkChoice()와 loop()의 일부 분기에
+// 흩어져 있어서, 그 어디에도 걸리지 않는 상태(스테이지 클리어 결과 화면 intermission,
+// hitstop 프레임, 메뉴)에서는 감쇠가 통째로 건너뛰어졌다. draw()는 그 사이에도 계속
+// shake만큼 화면을 흔들어 그리므로 "흔들림이 멈추지 않는" 버그가 났다.
+function decayFx() {
+  if (shake > 0) { shake *= 0.85; if (shake < 0.3) shake = 0; }   // 감쇠 계수는 기존과 동일
+  if (flashScreen > 0) flashScreen--;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // 플레이어 생성 및 무기 인벤토리
@@ -2461,7 +2537,6 @@ function updateBonus() {
   updateParticles(); updateFx();
   floaters.forEach(f => { f.y -= 0.5; f.life--; });
   floaters = floaters.filter(f => f.life > 0);
-  if (shake > 0) { shake *= 0.85; if (shake < 0.3) shake = 0; }
   if (p.invuln > 0) p.invuln--;
   if (p.hurtT > 0) p.hurtT--;
 
@@ -2954,7 +3029,6 @@ function updatePerkChoice() {
   updateParticles(); updateFx();
   floaters.forEach(f => { f.y -= 0.5; f.life--; });
   floaters = floaters.filter(f => f.life > 0);
-  if (shake > 0) { shake *= 0.85; if (shake < 0.3) shake = 0; }
   const n = perkChoices.length;
   if (keys.left && !perkPrev.left) { perkSel = (perkSel + n - 1) % n; S.pickup(); }
   if (keys.right && !perkPrev.right) { perkSel = (perkSel + 1) % n; S.pickup(); }
@@ -5180,7 +5254,6 @@ function calcRank() {
 // ═══════════════════════════════════════════════════════════════
 function update() {
   tick++;
-  if (flashScreen > 0) flashScreen--;
 
   // 보너스 스테이지 (미니게임)
   if (state === 'bonus') { updateBonus(); return; }
@@ -5772,9 +5845,6 @@ function update() {
   floaters = floaters.filter(f => f.life > 0);
   toasts.forEach(t2 => t2.life--);
   toasts = toasts.filter(t2 => t2.life > 0);
-
-  if (shake > 0) shake *= 0.85;
-  if (shake < 0.3) shake = 0;
 
   // 음악 강도: 보스전 2 / 교전 중 1 / 평시 0
   S.setEnergy((boss && boss.state !== 'enter' && !boss.dead) ? 2 : (enemies.length > 0 ? 1 : 0));
@@ -8924,7 +8994,7 @@ function buildModRow() {
     box.appendChild(label);
     return;
   }
-  label.innerHTML = '🧩 <span style="color:#ffd23f;">' + CHARS[selChar].name + '</span> 장착 모듈:';
+  label.innerHTML = '🧩 <span style="color:#ffd23f;">' + CHARS[selChar].name + '</span> 장착 모듈 <span style="color:#6e6650;">(클릭해 상세)</span>:';
   box.appendChild(label);
   const cur = equippedMod(selChar);
   EVOLUTIONS.forEach(ev => {
@@ -8932,17 +9002,10 @@ function buildModRow() {
     const b = document.createElement('button');
     b.className = 'modbtn' + (cur === ev.to ? ' on' : '') + (ownedMod ? '' : ' locked');
     b.innerHTML = ev.icon + ' ' + WEAPONS[ev.to].name + (cur === ev.to ? ' ✔' : '');
-    b.title = ownedMod
-      ? WEAPONS[ev.base].name + ' 획득 시 즉시 ' + WEAPONS[ev.to].name + '로 진화 (재료 퍼크 보유 출격)'
-      : '미소장 — ' + ev.icon + ' ' + WEAPONS[ev.to].name + '을(를) 든 채 보스를 격파하면 획득';
+    b.title = (ownedMod ? WEAPONS[ev.to].name : '미소장 모듈') + ' — 클릭해 상세 보기';
     b.addEventListener('click', () => {
-      if (!ownedMod) { S.warn(); return; }
-      // 같은 모듈을 다시 누르면 해제, 다른 모듈을 누르면 교체
-      if (cur === ev.to) delete save.equip[selChar];
-      else save.equip[selChar] = ev.to;
-      commitSave();
       S.pickup();
-      buildModRow();
+      openModDetail(ev.to);                    // 로비 진열장과 같은 상세 패널
     });
     box.appendChild(b);
   });
@@ -9631,7 +9694,109 @@ function refreshProfileCard() {
   buildTrophyShelf();
 }
 
-// ── 로비 전리품 진열장 — 진화 모듈 수집 현황 + 현재 대원에게 즉시 장착 ──
+// ═══════════════════════════════════════════════════════════════
+// 전리품(진화 모듈) 상세 — 로비 진열장과 대원 선택 화면이 공유하는 단일 패널.
+// 슬롯 클릭은 "장착"이 아니라 "펼쳐보기"다: 재료 무기·재료 퍼크·진화 효과를
+// 먼저 보여주고, 장착은 패널 안의 버튼으로 확정한다. 궁금해서 눌렀다가
+// 그대로 장착돼버리던 오조작이 사라지고, 미획득 모듈도 획득 조건을 보여준다.
+// ═══════════════════════════════════════════════════════════════
+let modDetailKey = null;                  // 열려 있는 모듈 키(ev.to) — 없으면 null
+
+// 이 모듈을 장착 중인 대원 이름들 (equip은 대원별이라 다른 대원 것도 알려준다)
+function modOwners(mk) {
+  return CHARS.map((c, i) => (equippedMod(i) === mk ? c.name : null)).filter(Boolean);
+}
+
+function openModDetail(mk) {
+  const ev = EVOLUTIONS.find(v => v.to === mk);
+  if (!ev) return;
+  modDetailKey = mk;
+  document.getElementById('modDetail').classList.remove('hidden');
+  renderModDetail();
+}
+
+function closeModDetail() {
+  modDetailKey = null;
+  document.getElementById('modDetail').classList.add('hidden');
+}
+
+function renderModDetail() {
+  const mk = modDetailKey;
+  const ev = EVOLUTIONS.find(v => v.to === mk);
+  if (!ev) return closeModDetail();
+  const card = document.getElementById('mdCard');
+  const owned = save.mods.indexOf(ev.to) >= 0;
+  const pk = ARENA_PERKS.find(a => a.k === ev.perk);
+  const baseCol = (ITEM_INFO[ev.base] || {}).col || '#cdbf95';
+  const mine = equippedMod(selChar) === ev.to;
+  const others = modOwners(ev.to).filter(n => n !== CHARS[selChar].name);
+
+  card.className = 'md-card' + (owned ? '' : ' locked');
+  // 머리: 아이콘 + 이름 + 장착 현황
+  let html = '<div class="md-top">'
+    + '<div class="md-ic">' + (owned ? ev.icon : '❓') + '</div>'
+    + '<div class="md-tt">'
+    + '<span class="md-name">' + (owned ? WEAPONS[ev.to].name : '??? 미획득 모듈') + '</span>'
+    + '<span class="md-who' + (mine ? '' : ' off') + '">'
+    + (!owned ? '아직 소장하지 않은 전리품'
+      : mine ? '▸ ' + CHARS[selChar].name + ' 장착 중'
+        : others.length ? '▸ ' + others.join(', ') + ' 장착 중 — ' + CHARS[selChar].name + '은(는) 미장착'
+          : '▸ 소장 중 · 아무도 장착하지 않음')
+    + '</span></div></div>';
+
+  html += '<div class="md-rows">';
+  if (owned) {
+    // 재료: 기본 무기 + 재료 퍼크 (퍼크 이름은 여기서 처음으로 명시된다)
+    html += '<div class="md-row"><span class="md-lb">재료</span><span class="md-vl"><span class="md-mix">'
+      + '<span class="md-chip" style="border-color:' + baseCol + ';color:' + baseCol + ';">🔫 '
+      + WEAPONS[ev.base].name + '</span>'
+      + '<span class="md-plus">+</span>'
+      + '<span class="md-chip" style="border-color:#8a6f2a;color:var(--gold);">'
+      + pk.icon + ' ' + pk.name + '</span>'
+      + '</span></span></div>';
+    html += '<div class="md-row"><span class="md-lb">효과</span><span class="md-vl">' + ev.kr + '</span></div>';
+    html += '<div class="md-row"><span class="md-lb">장착 시</span><span class="md-vl">'
+      + pk.icon + ' <b style="color:var(--gold);font-weight:normal;">' + pk.name + ' 1레벨</b>을 갖고 출격<br>'
+      + '<b style="color:' + baseCol + ';font-weight:normal;">' + WEAPONS[ev.base].name + '</b> 획득 즉시 '
+      + '<b style="color:var(--gold);font-weight:normal;">' + WEAPONS[ev.to].name + '</b>(으)로 진화<br>'
+      + '<span class="sub">보급 상점에서 ' + WEAPONS[ev.base].name + ' 20% 할인 · 공격 구획 최상단 표시</span>'
+      + '</span></div>';
+  } else {
+    html += '<div class="md-row"><span class="md-lb">획득법</span><span class="md-vl">'
+      + '① <b style="color:' + baseCol + ';font-weight:normal;">' + WEAPONS[ev.base].name + '</b> + '
+      + pk.icon + ' <b style="color:var(--gold);font-weight:normal;">' + pk.name + '</b>(으)로 진화한 무기를<br>'
+      + '&nbsp;&nbsp;&nbsp;든 채 <b style="color:#ff8a5c;font-weight:normal;">보스·미니보스 격파</b><br>'
+      + '② 스테이지 <b style="color:var(--gold);font-weight:normal;">3·6 첫 클리어</b> 📦 보상 상자'
+      + '</span></div>';
+    html += '<div class="md-row"><span class="md-lb">효과</span><span class="md-vl sub">'
+      + '획득하면 여기에 공개된다</span></div>';
+  }
+  html += '</div>';
+
+  // 조작: 장착/해제 + 닫기
+  html += '<div class="md-acts">';
+  if (owned)
+    html += '<button class="md-btn go" id="mdEquip">' + (mine ? '장착 해제' : CHARS[selChar].name + '에게 장착') + '</button>';
+  html += '<button class="md-btn" id="mdClose">닫기</button></div>';
+  card.innerHTML = html;
+
+  if (owned) document.getElementById('mdEquip').addEventListener('click', () => {
+    if (equippedMod(selChar) === ev.to) delete save.equip[selChar];
+    else save.equip[selChar] = ev.to;
+    commitSave();
+    S.pickup();
+    renderModDetail();          // 패널을 연 채로 상태만 갱신 (연속 비교가 쉬워진다)
+    buildTrophyShelf();
+    buildModRow();
+  });
+  document.getElementById('mdClose').addEventListener('click', closeModDetail);
+}
+// 배경(카드 바깥) 클릭으로 닫기
+document.getElementById('modDetail').addEventListener('click', e => {
+  if (e.target.id === 'modDetail') closeModDetail();
+});
+
+// ── 로비 전리품 진열장 — 진화 모듈 수집 현황 + 클릭해 상세 열기 ──
 function buildTrophyShelf() {
   document.getElementById('htCount').textContent = save.mods.length + '/' + EVOLUTIONS.length;
   const row = document.getElementById('htSlots');
@@ -9643,24 +9808,11 @@ function buildTrophyShelf() {
     const b = document.createElement('button');
     b.className = 'ht-slot ' + (cur === ev.to ? 'eq' : owned ? 'own' : 'none');
     b.innerHTML = '<span class="ht-ic">' + (owned ? ev.icon : '❓') + '</span>';
-    b.title = owned
-      ? WEAPONS[ev.to].name + ' — ' + ev.kr
-        + ' · 장착 시 재료 퍼크 보유 출격 + ' + WEAPONS[ev.base].name + ' 획득 즉시 진화 (보급 20% 할인)'
-        + (cur === ev.to ? ' (장착 중 · 클릭해 해제)' : ' (클릭해 장착)')
-      : '미획득 — ' + ev.icon + ' ' + WEAPONS[ev.to].name + '을(를) 든 채 보스 격파 시 영구 소장';
+    b.title = (owned ? WEAPONS[ev.to].name : '미획득 모듈') + ' — 클릭해 상세 보기';
     b.addEventListener('click', e => {
       e.stopPropagation();                     // 히어로 패널 클릭(대원 변경)과 분리
-      if (!owned) {
-        S.warn();
-        hint.innerHTML = ev.icon + ' <b style="color:#ffd23f;">' + WEAPONS[ev.to].name + '</b> — '
-          + WEAPONS[ev.base].name + ' 진화 무기를 든 채 <b style="color:#ff8a5c;">보스 격파</b> 시 영구 소장';
-        return;
-      }
-      if (cur === ev.to) delete save.equip[selChar];
-      else save.equip[selChar] = ev.to;
-      commitSave();
       S.pickup();
-      buildTrophyShelf();
+      openModDetail(ev.to);                    // 장착이 아니라 상세부터 — 오조작 방지
     });
     row.appendChild(b);
   });
@@ -9675,7 +9827,7 @@ function buildTrophyShelf() {
     : eqEv
       ? '<b style="color:#ffd23f;">' + WEAPONS[eq].name + '</b> 장착 — <b style="color:#9fe8ff;">'
         + WEAPONS[eqEv.base].name + '</b> 획득 즉시 진화 · 보급 20% 할인'
-      : '슬롯을 클릭해 <b style="color:#ffd23f;">' + CHARS[selChar].name + '</b>에게 장착';
+      : '슬롯을 클릭해 재료·효과 확인 후 <b style="color:#ffd23f;">' + CHARS[selChar].name + '</b>에게 장착';
 }
 
 // ── 로비 히어로 — 선택 대원을 크게, idle 애니메이션으로 세운다 ──
@@ -10259,22 +10411,18 @@ addEventListener('pointerdown', () => S.resume());
 // ═══════════════════════════════════════════════════════════════
 function loop() {
   requestAnimationFrame(loop);
+  // 상태와 무관하게 항상 감쇠 — 어떤 화면에서도 흔들림은 반드시 잦아든다
+  decayFx();
   if (state === 'play' || state === 'intermission' || state === 'bonus') {
     if (hitstop > 0) { hitstop--; tick++; }
     else update();
     draw();
   } else if (state === 'pause') {
-    // update()가 돌지 않는 화면에서도 흔들림·섬광은 반드시 감쇠시킨다
-    // (폭발 직후 일시정지/상점/승패 화면이 무한 진동하던 버그 방지)
-    if (shake > 0) { shake *= 0.85; if (shake < 0.3) shake = 0; }
-    if (flashScreen > 0) flashScreen--;
     draw();
     ctx.fillStyle = 'rgba(6,5,3,.55)';
     ctx.fillRect(0, 0, W, H);
   } else if (state === 'shop' || state === 'win' || state === 'over') {
     tick++;
-    if (shake > 0) { shake *= 0.85; if (shake < 0.3) shake = 0; }
-    if (flashScreen > 0) flashScreen--;
     draw();
   } else {
     // 메뉴 배경: 잔잔한 데모 화면
