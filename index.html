@@ -81,7 +81,22 @@
     font-size:clamp(8px,1.4vw,11px);
     padding:6px 8px;cursor:pointer;
   }
-  #pauseBtn{right:auto;left:8px;border-color:rgba(159,232,255,.5);color:#9fe8ff;}
+  /* 일시정지 버튼은 상단 중앙 — 좌상단은 체력바·잔기 HUD가 쓰는 자리라 겹친다 */
+  #pauseBtn{
+    right:auto;left:50%;transform:translateX(-50%);
+    border-color:rgba(159,232,255,.5);color:#9fe8ff;
+    font-size:clamp(10px,1.7vw,14px);line-height:1;
+  }
+  #pauseBtn:active{transform:translateX(-50%) scale(.92);}
+  /* 터치 기기: 손가락으로 누를 수 있는 크기(44px 권장)로 키운다.
+     탭에는 ESC 키가 없어서 이 버튼이 유일한 일시정지 수단이다.
+     SOUND 버튼은 건드리지 않는다 — 키우면 우측 점수 HUD를 더 가린다. */
+  body:not(.no-touch) #pauseBtn{
+    min-width:44px;min-height:44px;padding:8px 12px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(20,16,8,.82);
+    font-size:clamp(13px,2.4vw,20px);
+  }
 
   /* ── 오버레이 화면 공통 ─────────────────────────────────── */
   .screen{
@@ -574,6 +589,26 @@
     animation:pulseBtn 1.4s infinite;
   }
 
+  /* ── 로비 훈장 상점 버튼 — 영구 강화로 들어가는 입구 ────── */
+  .shopbtn{
+    font-family:inherit;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    padding:clamp(9px,1.5vw,13px) clamp(16px,3vw,30px);
+    background:rgba(20,16,8,.6);border:2px solid #4a3f22;color:#cdbf95;
+    transition:.1s;
+  }
+  .shopbtn:hover{border-color:#8a7a3a;background:rgba(34,27,12,.75);}
+  .shopbtn .sb-name{font-size:clamp(8px,1.6vw,12px);letter-spacing:1px;}
+  .shopbtn .sb-sub{font-size:clamp(5px,1vw,8px);color:var(--faint);line-height:1.6;}
+  .shopbtn .sb-sub b{color:var(--gold);font-weight:normal;}
+  /* 지금 훈장으로 살 수 있는 게 있을 때 — 놓치지 않게 */
+  .shopbtn.buyable{
+    border-color:var(--gold);color:var(--gold);
+    background:rgba(46,37,16,.85);
+    box-shadow:0 0 14px rgba(255,210,63,.28);
+  }
+  .shopbtn.buyable .sb-sub{color:var(--cream);}
+
   /* ── 영구 강화 버튼 알림 배지 (구매 가능 시) ──────────── */
   .dot{
     display:inline-block;width:7px;height:7px;margin-left:7px;
@@ -674,7 +709,7 @@
   <canvas id="cv" width="480" height="270"></canvas>
   <div id="scan"></div><div id="vig"></div>
   <button class="muteb" id="muteBtn">SOUND: ON</button>
-  <button class="muteb" id="pauseBtn">II</button>
+  <button class="muteb hidden" id="pauseBtn" title="일시정지">⏸</button>
 
   <!-- ═══ 메인 메뉴 1/3 — 로비: 히어로 · 계급 · 모드 선택 ═══ -->
   <div id="startScreen" class="screen lobby">
@@ -748,7 +783,10 @@
           </button>
         </div>
         <div class="row">
-          <button class="startbtn ghost" id="metaBtn">🎖 영구 강화<span class="dot hidden" id="metaDot"></span></button>
+          <button class="shopbtn" id="metaBtn">
+            <span class="sb-name">🛒 훈장 상점<span class="dot hidden" id="metaDot"></span></span>
+            <span class="sb-sub" id="metaBtnSub"></span>
+          </button>
         </div>
         <div class="pc-rec" id="pcRecords"></div>
         <div id="menuInfo"></div>
@@ -9641,10 +9679,23 @@ function rankInfo() {
   const need = 40 + idx * 30;
   return { idx, name: RANKS[idx], cur: xp, need, top, pct: top ? 100 : Math.min(100, Math.round(xp / need * 100)) };
 }
-// 영구 강화·대원 해금 중 지금 훈장으로 살 수 있는 게 있는가 (버튼 배지용)
-function metaAffordable() {
-  if (META_UPGRADES.some(u => { const lv = metaLv(u.k); return (u.inf || lv < u.max) && save.medals >= u.cost(lv); })) return true;
-  return CHARS.some((c, i) => c.unlock && !charOwned(i) && save.medals >= c.unlock);
+// 영구 강화·대원 해금 중 지금 훈장으로 살 수 있는 항목 수 (상점 버튼 문구용)
+function metaAffordableCount() {
+  let n = 0;
+  META_UPGRADES.forEach(u => { const lv = metaLv(u.k); if ((u.inf || lv < u.max) && save.medals >= u.cost(lv)) n++; });
+  CHARS.forEach((c, i) => { if (c.unlock && !charOwned(i) && save.medals >= c.unlock) n++; });
+  return n;
+}
+function metaAffordable() { return metaAffordableCount() > 0; }
+
+// 로비 상점 버튼: 보유 훈장 + 지금 살 수 있는 종수 → 상점처럼 읽히게 한다
+function refreshShopBtn() {
+  const n = metaAffordableCount();
+  const btn = document.getElementById('metaBtn');
+  btn.classList.toggle('buyable', n > 0);
+  document.getElementById('metaBtnSub').innerHTML =
+    '🎖 <b>' + save.medals + '</b>'
+    + (n > 0 ? ' · 구매 가능 <b>' + n + '종</b>' : ' · 훈장을 모아 영구 강화');
 }
 
 function refreshProfileCard() {
@@ -9691,6 +9742,7 @@ function refreshProfileCard() {
       : '')
     + ' · 📅 ' + (save.dailyDone === todayKey() ? '<b>완료✔</b>' : '<span style="color:#ffd23f;">도전 가능</span>');
   document.getElementById('metaDot').classList.toggle('hidden', !metaAffordable());
+  refreshShopBtn();
   buildTrophyShelf();
 }
 
@@ -10396,7 +10448,9 @@ elOptShake.addEventListener('click', () => {
   syncOptBtns();
 });
 elMute.addEventListener('click', toggleMute);
-elPauseBtn.addEventListener('click', () => { if (state === 'play' || state === 'pause') togglePause(); });
+elPauseBtn.addEventListener('click', () => {
+  if (state === 'play' || state === 'bonus' || state === 'pause') togglePause();
+});
 document.getElementById('metaBtn').addEventListener('click', () => { S.init(); openMeta(); });
 document.getElementById('rankEmblem').addEventListener('click', () => { S.init(); S.pickup(); openRank(); });
 document.getElementById('rankClose').addEventListener('click', () => { S.init(); closeRank(); });
@@ -10413,6 +10467,7 @@ function loop() {
   requestAnimationFrame(loop);
   // 상태와 무관하게 항상 감쇠 — 어떤 화면에서도 흔들림은 반드시 잦아든다
   decayFx();
+  syncChromeBtns();
   if (state === 'play' || state === 'intermission' || state === 'bonus') {
     if (hitstop > 0) { hitstop--; tick++; }
     else update();
@@ -10438,6 +10493,15 @@ function loop() {
     cam += 0.35;
     if (cam > stage.len - W) cam = 0;
   }
+}
+
+// 화면 위 미니 버튼(⏸)은 실제로 멈출 수 있는 상태에서만 보여준다.
+// state가 바뀐 프레임에만 DOM을 건드린다 (매 프레임 toggle 방지).
+let _chromeState = null;
+function syncChromeBtns() {
+  if (_chromeState === state) return;
+  _chromeState = state;
+  elPauseBtn.classList.toggle('hidden', !(state === 'play' || state === 'bonus' || state === 'pause'));
 }
 
 // ═══════════════════════════════════════════════════════════════
