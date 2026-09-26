@@ -13,6 +13,12 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<!-- PWA(앱 설치): manifest·sw.js·icon-512*.png 는 share/ 에 있고 배포 저장소 루트에 함께 올린다 -->
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JUNGLE STRIKE">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="JUNGLE STRIKE DX">
 <meta property="og:locale" content="ko_KR">
@@ -800,6 +806,17 @@
     transition:.1s;
   }
   .shopbtn:hover{border-color:#8a7a3a;background:rgba(34,27,12,.75);}
+  /* 앱 다운로드 버튼 — 청록 테두리로 상점과 구분 */
+  .shopbtn.install{border-color:#2f6a66;color:#bfe8e2;}
+  .shopbtn.install:hover{border-color:#5fd6cf;background:rgba(10,30,28,.75);}
+  .shopbtn.install .sb-sub b{color:#9fe8ff;}
+  #installGuide{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(4,6,4,.72);padding:16px;}
+  #installGuide.hidden{display:none;}
+  #installGuide .ig-box{max-width:460px;width:100%;background:rgba(14,18,12,.96);border:2px solid #2f6a66;padding:18px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 0 1px #0b1a10, 0 12px 40px rgba(0,0,0,.6);}
+  #installGuide .ig-title{font-size:clamp(14px,2.6vw,20px);color:#9fe8ff;letter-spacing:.5px;}
+  #installGuide .ig-body{font-size:clamp(11px,1.9vw,14px);color:#cdbf95;line-height:1.75;}
+  #installGuide .ig-body b{color:#ffd23f;font-weight:normal;}
+  #installGuide .ig-body ol{margin:6px 0 0 18px;padding:0;}
   .shopbtn .sb-name{font-size:clamp(12px,2.3vw,17.4px);letter-spacing:0.3px;}
   .shopbtn .sb-sub{font-size:clamp(9px,1.5vw,11.6px);color:var(--faint);line-height:1.6;}
   .shopbtn .sb-sub b{color:var(--gold);font-weight:normal;}
@@ -1082,6 +1099,19 @@
             <span class="sb-name">🛒 훈장 상점<span class="dot hidden" id="metaDot"></span></span>
             <span class="sb-sub" id="metaBtnSub"></span>
           </button>
+          <!-- 앱 다운로드(PWA 설치) — 설치돼서 앱으로 실행 중이면 숨긴다 -->
+          <button class="shopbtn install" id="installBtn">
+            <span class="sb-name">📲 앱 다운로드</span>
+            <span class="sb-sub" id="installSub">홈 화면에 설치 · <b>오프라인 플레이</b></span>
+          </button>
+        </div>
+        <!-- 설치 안내(브라우저가 설치 프롬프트를 지원하지 않을 때) -->
+        <div id="installGuide" class="hidden" role="dialog">
+          <div class="ig-box">
+            <div class="ig-title">📲 앱으로 설치하기</div>
+            <div class="ig-body" id="installGuideBody"></div>
+            <button class="startbtn ghost" id="installGuideClose">닫기</button>
+          </div>
         </div>
         <div class="pc-rec" id="pcRecords"></div>
         <div id="menuInfo"></div>
@@ -13820,6 +13850,57 @@ document.getElementById('pauseShopBtn').addEventListener('click', () => {
   openShop();
 });
 document.getElementById('retryBtn').addEventListener('click', quitToMenu);
+
+// ═══════════════════════════════════════════════════════════════
+// 앱 다운로드(PWA 설치) 버튼
+// Chrome/Edge/삼성 브라우저: beforeinstallprompt 를 받아 두었다가 클릭 시 설치 프롬프트.
+// iOS Safari 등 프롬프트가 없는 브라우저: 플랫폼별 "홈 화면에 추가" 안내 창.
+// 이미 앱(standalone/fullscreen)으로 실행 중이면 버튼을 숨긴다.
+// ═══════════════════════════════════════════════════════════════
+(function setupInstall() {
+  const btn = document.getElementById('installBtn'), guide = document.getElementById('installGuide');
+  const body = document.getElementById('installGuideBody'), closeB = document.getElementById('installGuideClose');
+  if (!btn || !guide) return;
+  let installEvt = null;
+  const ua = navigator.userAgent || '';
+  const isIOS = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/.test(ua);
+  const standalone = () => (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches)) || navigator.standalone === true;
+  const isFile = location.protocol === 'file:';
+  function sync() {
+    btn.classList.toggle('hidden', standalone());
+    const sub = document.getElementById('installSub');
+    if (sub) sub.innerHTML = installEvt ? '지금 바로 설치 · <b>오프라인 플레이</b>' : '홈 화면에 설치 · <b>오프라인 플레이</b>';
+  }
+  function showGuide(html) { body.innerHTML = html; guide.classList.remove('hidden'); }
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; sync(); });
+  window.addEventListener('appinstalled', () => { installEvt = null; sync(); showGuide('<b>설치 완료!</b> 홈 화면(또는 앱 목록)의 <b>JUNGLE STRIKE</b> 아이콘으로 실행하면 전체 화면 앱으로 켜지고, 오프라인에서도 플레이할 수 있다.'); });
+  btn.addEventListener('click', async () => {
+    if (installEvt) {
+      const ev = installEvt; installEvt = null;
+      try { ev.prompt(); const r = await ev.userChoice; if (r && r.outcome !== 'accepted') { installEvt = ev; } } catch (e) { installEvt = ev; }
+      sync();
+      return;
+    }
+    if (isFile) {
+      showGuide('이 파일을 직접 연 상태에서는 설치할 수 없다. <b>https://run-gun.vercel.app/</b> 에 접속한 뒤 이 버튼을 누르면 앱으로 설치된다.');
+    } else if (isIOS) {
+      showGuide('iPhone·iPad(Safari):<ol><li>하단(또는 상단)의 <b>공유</b> 버튼 <b>⎋</b>을 누른다</li><li><b>홈 화면에 추가</b>를 고른다</li><li>오른쪽 위 <b>추가</b></li></ol>홈 화면 아이콘으로 실행하면 주소창 없는 전체 화면 앱으로 켜진다.');
+    } else if (isAndroid) {
+      showGuide('Android:<ol><li>브라우저 오른쪽 위 <b>⋮ 메뉴</b></li><li><b>앱 설치</b> 또는 <b>홈 화면에 추가</b></li></ol>Chrome·삼성 인터넷·Edge에서 지원된다. 메뉴에 항목이 없으면 페이지를 새로고침한 뒤 다시 눌러 보라.');
+    } else {
+      showGuide('PC(Chrome·Edge):<ol><li>주소창 오른쪽 끝의 <b>설치 아이콘</b>(모니터에 ↓)을 누른다</li><li>없으면 브라우저 <b>⋮ 메뉴 → 앱 → JUNGLE STRIKE DX 설치</b></li></ol>Firefox·Safari(macOS)는 <b>파일 → Dock에 추가</b> 등 브라우저 자체 기능을 쓴다.');
+    }
+  });
+  closeB.addEventListener('click', () => guide.classList.add('hidden'));
+  guide.addEventListener('click', e => { if (e.target === guide) guide.classList.add('hidden'); });
+  // 서비스 워커: 설치 자격 + 오프라인 캐시 (https 또는 localhost에서만 등록된다)
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+  sync();
+})();
+
 document.getElementById('resumeBtn').addEventListener('click', togglePause);
 document.getElementById('quitBtn').addEventListener('click', quitToMenu);
 elOptSound.addEventListener('click', toggleMute);

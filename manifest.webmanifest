@@ -1,0 +1,20 @@
+{
+  "name": "JUNGLE STRIKE DX — 런앤건",
+  "short_name": "JUNGLE STRIKE",
+  "description": "레트로 런앤건 아케이드. 캐릭터 6인 · 스테이지 7개 · 보스 7종 · 3분 서바이벌.",
+  "id": "/",
+  "start_url": "/?src=pwa",
+  "scope": "/",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#0b1a10",
+  "theme_color": "#0b1a10",
+  "lang": "ko",
+  "categories": ["games"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
