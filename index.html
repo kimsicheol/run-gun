@@ -781,6 +781,10 @@
     padding:8px 10px;cursor:pointer;
   }
   .optbtn.on{border-color:#5ad15a;color:#5ad15a;}
+  #pauseScreen .volrows{margin-top:6px;}
+  .volrow{display:flex;align-items:center;gap:6px;font-size:clamp(9px,1.6vw,12px);color:#cdbf95;}
+  .volrow input{width:clamp(70px,16vw,130px);accent-color:#5ad15a;cursor:pointer;}
+  .volrow span{min-width:3ch;text-align:right;color:#ffcf3f;}
 
   #endStats{font-size:clamp(10.5px,1.9vw,14.5px);color:#9fe8ff;line-height:2;}
   #menuInfo{font-size:clamp(9px,1.6vw,13.1px);color:#8a8158;line-height:1.9;}
@@ -894,6 +898,10 @@
   .opnode.field.sel:hover{transform:translateY(-3px);}
 
   /* ── 출격 브리핑 카드 ─────────────────────────────────────── */
+  #deployRecord .brief{margin:0 0 6px;padding:5px 9px;border:1px solid #3a5a6a;border-left:3px solid #9fe8ff;background:rgba(8,18,24,.6);line-height:1.6;}
+  #deployRecord .brief-h{color:#ffd23f;}
+  #deployRecord .brief-goal{color:#9fe8ff;margin-left:10px;}
+  #deployRecord .brief-b{color:#cdbf95;font-size:.92em;}
   #deployRecord{
     width:min(94%,880px);
     background:linear-gradient(180deg,rgba(46,37,16,.55),rgba(18,15,8,.78));
@@ -1210,6 +1218,10 @@
       <button class="optbtn" id="optSound">SOUND</button>
       <button class="optbtn" id="optShake">SHAKE</button>
     </div>
+    <div class="optrow volrows">
+      <label class="volrow">🎵 BGM <input type="range" id="volBgm" min="0" max="100" step="5"><span id="volBgmV">80</span></label>
+      <label class="volrow">🔊 SFX <input type="range" id="volSfx" min="0" max="100" step="5"><span id="volSfxV">100</span></label>
+    </div>
     <div class="hint">P(또는 Q/E) 무기교체 · ↑+사격 위로조준 · 공중 ↓+사격 대각사격 · <b style="color:#ffcf3f;">B 보급 상점</b><br>
       필살기는 SP 게이지가 가득 찼을 때 L/C · 잔여 횟수는 게이지 옆 눈금</div>
   </div>
@@ -1305,7 +1317,7 @@ const GRAVITY = 0.46;          // 중력 가속도
 // mods: 소장한 진화 모듈(진화 무기 든 채 보스 격파로 획득) / equip: 대원별 장착 모듈
 // modBoxes: 수령한 스테이지 클리어 보상 상자(3·6스테이지 첫 클리어 — 조기 모듈 획득 경로)
 const SAVE_KEY = 'jsdx_save';
-let save = { hi: 0, best: 0, ach: [], pow: 0, medals: 0, meta: {}, survBestS: 0, survBestSBy: {}, survWins: 0, surv3m: true, survLegacyXP: 0, chars: [0, 1, 3], achPaid: false, dailyDone: '', dailyDate: '', dailyBestS: 0, run: null, mods: [], equip: {}, modBoxes: [], partner: 1, opt: { mute: false, shake: true } };
+let save = { hi: 0, best: 0, ach: [], pow: 0, medals: 0, meta: {}, survBestS: 0, survBestSBy: {}, survWins: 0, surv3m: true, survLegacyXP: 0, chars: [0, 1, 3], achPaid: false, dailyDone: '', dailyDate: '', dailyBestS: 0, run: null, mods: [], equip: {}, modBoxes: [], partner: 1, opt: { mute: false, shake: true, bgm: 0.8, sfx: 1 } };
 
 function loadSave() {
   try {
@@ -1347,6 +1359,8 @@ function loadSave() {
       if (s.opt) {
         save.opt.mute = !!s.opt.mute;
         save.opt.shake = s.opt.shake !== false;
+        save.opt.bgm = (typeof s.opt.bgm === 'number') ? Math.max(0, Math.min(1, s.opt.bgm)) : 0.8;
+        save.opt.sfx = (typeof s.opt.sfx === 'number') ? Math.max(0, Math.min(1, s.opt.sfx)) : 1;
       }
     }
     // 구버전 하이스코어 마이그레이션
@@ -1931,6 +1945,1003 @@ const S = {
 })();
 
 // ═══════════════════════════════════════════════════════════════
+// 사운드 디렉터 컷 (2026-09-28) — 음향 감독 전면 개편
+// ① 믹스 버스: SFX / BGM / UI / 앰비언스 4버스 + 마스터 리미터, BGM/SFX 볼륨 슬라이더(save.opt.bgm/sfx)
+// ② 위치 오디오: 화면 x좌표 → 스테레오 팬 + 화면 밖 감쇠 (폭발·타격·적 사격·처치)
+// ③ 무기 발사음 재설계: 클릭·바디·서브·테일 4층 + 매 발 ±6% 피치 변주 + 보이스 제한(같은 소리 폭주 방지)
+// ④ 적 사격음을 플레이어 MG와 분리, 착지·발소리(지형별)·저체력 심박·탑승물 엔진 루프·거부 버즈·무기 교체 클랙·진화 상승음·보스 포효
+// ⑤ 스테이지 앰비언스: 정글 벌레·새 / 사막 돌풍 / 설원 휘파람 바람 / 야간 귀뚜라미 / 화산 진동·균열음 / 상공 제트류
+// ⑥ 음악 재작곡: 64스텝(4마디) 코드 진행 + 스케일 도수 멜로디, 킥·스네어·햇·베이스·아르페지오·리드·패드 7레이어,
+//    전투 강도별 편성(평시 패드+아르페지오 / 교전 리드+풀드럼 / 보스 옥타브 더블링+16분 햇), 4마디 필인,
+//    킥 사이드체인 펌핑, 점8분 딜레이, 로비·상점 테마(PATS[7]), 폭발·피격 시 BGM 덕킹
+// ⑦ 일시정지 시 BGM을 끊지 않고 로우패스로 먹먹하게 유지, 탭 숨김 시 오디오 컨텍스트 정지, 메뉴 호버 틱
+// ═══════════════════════════════════════════════════════════════
+(function audioDirectorCut() {
+  const A = S;
+  const mf = n => 440 * Math.pow(2, (n - 69) / 12);
+  const R = (a, b) => a + Math.random() * (b - a);
+  const LOBBY = 7;
+  A.LOBBY = LOBBY;
+  A.vol = { bgm: 0.8, sfx: 1.0 };
+  A.amb = { theme: null, nodes: [], next: 0, gain: null };
+  A.eng = { mode: null, nodes: [], gain: null, lfo: null, lfoG: null, filt: null };
+  A._last = {}; A._budget = { t: 0, n: 0 }; A._stepAcc = 0; A._hbNext = 0; A._lowHp = false; A._paused = false;
+  A.music.idx = -1; A.music.loop = 0;
+
+  // ── ① 믹스 그래프 확장 ──────────────────────────────────────
+  const _init2 = A.init.bind(A);
+  A.init = function () {
+    _init2();
+    if (!this.ctx || this.uGain) return;
+    const c = this.ctx;
+    this.vol.bgm = (save.opt.bgm == null) ? 0.8 : save.opt.bgm;
+    this.vol.sfx = (save.opt.sfx == null) ? 1.0 : save.opt.sfx;
+    // 마스터 리미터: 폭발 겹침·보스전 풀레이어에서도 클리핑 없이
+    try {
+      const lim = c.createDynamicsCompressor();
+      lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20;
+      lim.attack.value = 0.001; lim.release.value = 0.09;
+      this.master.disconnect(); this.master.connect(lim); lim.connect(c.destination);
+      this.limiter = lim;
+    } catch (e) { }
+    // UI 버스 (컴프레서 우회 — 메뉴음은 항상 또렷하게)
+    this.uGain = c.createGain(); this.uGain.connect(this.master);
+    // 앰비언스 버스
+    this.amb.gain = c.createGain(); this.amb.gain.gain.value = 0; this.amb.gain.connect(this.master);
+    // 엔진 버스 (탑승물 루프)
+    this.eng.gain = c.createGain(); this.eng.gain.gain.value = 0; this.eng.gain.connect(this.sGain);
+    // BGM 체인: mGain → 로우패스(일시정지·저체력) → 덕킹 게인 → 마스터
+    this.mFilt = c.createBiquadFilter(); this.mFilt.type = 'lowpass'; this.mFilt.frequency.value = 18000; this.mFilt.Q.value = 0.5;
+    this.mDuck = c.createGain();
+    try { this.mGain.disconnect(); } catch (e) { }
+    this.mGain.connect(this.mFilt); this.mFilt.connect(this.mDuck); this.mDuck.connect(this.master);
+    // 패드·베이스용 사이드체인 게인 (킥마다 살짝 눌렀다 복귀)
+    this.mSc = c.createGain(); this.mSc.connect(this.mGain);
+    // 점8분 딜레이 (아르페지오·리드 공간감)
+    this.dly = c.createDelay(1.0); this.dly.delayTime.value = 0.28;
+    this.dlyFb = c.createGain(); this.dlyFb.gain.value = 0.32;
+    this.dlyLp = c.createBiquadFilter(); this.dlyLp.type = 'lowpass'; this.dlyLp.frequency.value = 2800;
+    this.dlyIn = c.createGain(); this.dlyIn.gain.value = 1;
+    this.dlyIn.connect(this.dly); this.dly.connect(this.dlyLp); this.dlyLp.connect(this.dlyFb); this.dlyFb.connect(this.dly);
+    this.dlyLp.connect(this.mGain);
+    this.setVolumes();
+    this._visBind();
+  };
+  A.ready = function () { return !!this.ctx && !this.muted; };
+  A.setVolumes = function () {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.sGain.gain.setTargetAtTime(0.85 * this.vol.sfx, t, 0.03);
+    this.uGain.gain.setTargetAtTime(0.7 * this.vol.sfx, t, 0.03);
+    this._applyMusicGain();
+  };
+  A.setVolume = function (k, v) {
+    v = Math.max(0, Math.min(1, +v || 0));
+    this.vol[k] = v; save.opt[k] = v;
+    this.setVolumes();
+  };
+  A._musicLevel = function () {
+    const lobby = this.music.idx === LOBBY;
+    const e = lobby ? 0 : this.energy;
+    return (lobby ? 0.42 : e >= 2 ? 0.48 : e >= 1 ? 0.43 : 0.38) * this.vol.bgm * (this._paused ? 0.55 : 1);
+  };
+  A._applyMusicGain = function () {
+    if (!this.mGain || !this.ctx || !this.music.on) return;
+    this.mGain.gain.setTargetAtTime(this._musicLevel(), this.ctx.currentTime, 0.4);
+  };
+  A.setEnergy = function (e) {
+    if (e === this.energy) return;
+    this.energy = e;
+    this._applyMusicGain();
+  };
+  A.duck = function (to, rel) {
+    if (!this.mDuck || !this.ctx) return;
+    const t = this.ctx.currentTime, g = this.mDuck.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(Math.min(g.value, to), t);
+    g.linearRampToValueAtTime(1, t + rel);
+  };
+  A._visBind = function () {
+    if (this._visBound) return; this._visBound = true;
+    document.addEventListener('visibilitychange', () => {
+      if (!this.ctx) return;
+      if (document.hidden) { this._hiddenSusp = this.ctx.state === 'running'; if (this._hiddenSusp) this.ctx.suspend(); }
+      else if (this._hiddenSusp) { this._hiddenSusp = false; this.ctx.resume(); }
+    });
+  };
+
+  // ── ② 위치 오디오 + 보이스 버스 ─────────────────────────────
+  A.spatial = function (x) {
+    if (x == null || typeof cam !== 'number' || !isFinite(x)) return { pan: 0, att: 1 };
+    const rel = (x - cam) / W;
+    const pan = Math.max(-1, Math.min(1, (rel - 0.5) * 1.6)) * 0.75;
+    const out = rel < 0 ? -rel : rel > 1 ? rel - 1 : 0;
+    return { pan, att: 1 / (1 + out * 3) };
+  };
+  // 한 효과음 = 보이스 버스 하나(게인 → 패너 → 목적 버스, 리버브 센드)
+  A.voice = function (x, send, vol, dst) {
+    const c = this.ctx, g = c.createGain(), sp = this.spatial(x);
+    g.gain.value = (vol == null ? 1 : vol) * sp.att;
+    let out = g;
+    if (c.createStereoPanner && sp.pan) { const pn = c.createStereoPanner(); pn.pan.value = sp.pan; g.connect(pn); out = pn; }
+    out.connect(dst || this.sGain);
+    if (send && this.verb) { const s = c.createGain(); s.gain.value = send * sp.att; out.connect(s); s.connect(this.verb); }
+    return g;
+  };
+  // 보이스 제한: 같은 키는 gap초 안에 1회, 전체는 50ms당 12(우선 24)회
+  A.gate = function (key, gap, prio) {
+    const now = this.ctx.currentTime;
+    if (now - (this._last[key] || -9) < gap) return false;
+    if (now - this._budget.t > 0.05) { this._budget.t = now; this._budget.n = 0; }
+    if (++this._budget.n > (prio ? 24 : 12)) return false;
+    this._last[key] = now;
+    return true;
+  };
+  // 레이어 프리미티브 (dst = voice 버스)
+  A.O = function (dst, type, f0, f1, dur, vol, t, curve, det) {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(Math.max(1, f0), t);
+    if (det) o.detune.value = det;
+    if (f1 && f1 !== f0) {
+      if (curve === 'lin') o.frequency.linearRampToValueAtTime(Math.max(1, f1), t + dur);
+      else o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+    }
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.003);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0001, vol * 0.04), t + dur);   // -28dB 감쇠 (0.0001까지 내리면 소리가 순식간에 사라진다)
+    g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.02);
+    o.connect(g); g.connect(dst);
+    o.start(t); o.stop(t + dur + 0.03);
+    return o;
+  };
+  A.N = function (dst, dur, vol, ft, f0, f1, q, t) {
+    const c = this.ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = this.noiseBuf; s.loop = true;
+    f.type = ft || 'lowpass';
+    f.frequency.setValueAtTime(Math.max(20, f0), t);
+    if (f1 && f1 !== f0) f.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+    if (q) f.Q.value = q;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0001, vol * 0.04), t + dur);
+    g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.02);
+    s.connect(f); f.connect(g); g.connect(dst);
+    s.start(t, R(0, 0.4)); s.stop(t + dur + 0.03);
+  };
+  A.K = function (dst, vol, t) { this.N(dst, 0.016, vol, 'highpass', 3400, 5400, 0.7, t); };
+
+  // ── ③ 무기 발사음 ───────────────────────────────────────────
+  A.shoot = function (k, x) {
+    if (!this.ready()) return;
+    if (!this.gate('sh_' + k, (k === 'mg' || k === 'flame') ? 0.03 : 0.045)) return;
+    const t = this.ctx.currentTime, pv = R(0.94, 1.06);
+    const px = x != null ? x : (player ? player.x + player.w / 2 : null);
+    const v = (vol, send) => this.voice(px, send, vol);
+    let d;
+    switch (k) {
+      case 'mg':
+        d = v(0.9, 0.14);
+        this.K(d, 0.34, t);
+        this.N(d, 0.045, 0.28, 'bandpass', 2800 * pv, 900, 1.6, t);
+        this.O(d, 'square', 950 * pv, 420, 0.032, 0.09, t);
+        this.O(d, 'sine', 180 * pv, 90, 0.045, 0.12, t, 'lin');
+        break;
+      case 'shotgun': case 'spread': case 'dragon':
+        d = v(1, 0.42);
+        this.K(d, 0.7, t);
+        this.N(d, 0.22, 0.52, 'lowpass', 3000 * pv, 300, 0.7, t);
+        this.O(d, 'sine', 170 * pv, 52, 0.19, 0.36, t, 'lin');
+        this.O(d, 'square', 420 * pv, 160, 0.06, 0.1, t);
+        // 펌프 액션 (철컥)
+        this.N(d, 0.03, 0.16, 'bandpass', 900, 0, 2, t + 0.17);
+        this.N(d, 0.025, 0.14, 'bandpass', 1900, 0, 2, t + 0.23);
+        if (k === 'dragon') { this.N(d, 0.3, 0.24, 'lowpass', 900, 300, 0.6, t + 0.02); this.N(d, 0.12, 0.1, 'bandpass', R(1300, 2600), 0, 1.2, t + 0.04); }
+        break;
+      case 'laser': case 'prism':
+        d = v(0.9, 0.35);
+        this.O(d, 'sawtooth', 1800 * pv, 500, 0.11, 0.15, t);
+        this.O(d, 'square', 3400 * pv, 900, 0.07, 0.06, t);
+        this.N(d, 0.09, 0.13, 'highpass', 2600, 5500, 0.8, t);
+        this.O(d, 'sine', 120 * pv, 60, 0.1, 0.12, t, 'lin');
+        if (k === 'prism') { this.O(d, 'sine', 1320 * pv, 1320 * pv, 0.09, 0.05, t + 0.01); this.O(d, 'sine', 1980 * pv, 1980 * pv, 0.09, 0.04, t + 0.02); }
+        break;
+      case 'rail':
+        d = v(1, 0.6);
+        this.O(d, 'sawtooth', 2800 * pv, 220, 0.3, 0.22, t);
+        this.O(d, 'sine', 120 * pv, 40, 0.34, 0.34, t, 'lin');
+        this.N(d, 0.24, 0.28, 'highpass', 2400, 7000, 0.9, t);
+        this.O(d, 'triangle', 1200 * pv, 1180 * pv, 0.26, 0.05, t + 0.02);
+        break;
+      case 'flame':
+        d = v(0.9, 0.18);
+        this.N(d, 0.11, 0.2, 'lowpass', 900, 480, 0.6, t);
+        this.N(d, 0.08, 0.09, 'bandpass', R(1400, 2600), 0, 1.2, t);
+        this.N(d, 0.1, 0.1, 'lowpass', 400, 250, 0.5, t);
+        break;
+      case 'rocketP': case 'hellst':
+        d = v(1, 0.42);
+        this.K(d, 0.45, t);
+        this.N(d, 0.38, 0.36, 'lowpass', 1800, 400, 0.7, t);
+        this.O(d, 'sawtooth', 240 * pv, 80, 0.32, 0.22, t, 'lin');
+        this.N(d, 0.3, 0.12, 'highpass', 600, 3000, 0.7, t);
+        if (k === 'hellst') { this.O(d, 'sine', 90, 30, 0.4, 0.3, t, 'lin'); this.N(d, 0.3, 0.2, 'lowpass', 900, 200, 0.7, t + 0.05); }
+        break;
+      case 'homing': case 'swarm':
+        d = v(0.9, 0.3);
+        this.O(d, 'triangle', 600 * pv, 1300, 0.16, 0.16, t);
+        this.N(d, 0.18, 0.12, 'bandpass', 1600, 3600, 1.6, t);
+        this.O(d, 'square', 1800 * pv, 1800 * pv, 0.03, 0.05, t + 0.02);
+        if (k === 'swarm') { this.O(d, 'triangle', 640 * pv, 1400, 0.16, 0.14, t + 0.06); this.N(d, 0.18, 0.1, 'bandpass', 1700, 3800, 1.6, t + 0.06); }
+        break;
+      case 'blade': case 'hulk':
+        d = v(0.9, 0.4);
+        this.N(d, 0.18, 0.32, 'bandpass', 800 * pv, 3800, 1.1, t);
+        this.O(d, 'sawtooth', 320 * pv, 120, 0.14, 0.18, t);
+        this.O(d, 'square', 2400 * pv, 2300, 0.06, 0.04, t + 0.01);
+        break;
+      case 'mech':
+        d = v(0.9, 0.2);
+        this.K(d, 0.4, t);
+        this.O(d, 'square', 1000 * pv, 380, 0.07, 0.16, t);
+        this.N(d, 0.09, 0.2, 'bandpass', 2200, 900, 1.4, t);
+        this.O(d, 'triangle', 300 * pv, 520, 0.06, 0.05, t + 0.01);
+        break;
+      case 'tank':
+        d = v(1, 0.5);
+        this.K(d, 0.9, t);
+        this.O(d, 'sine', 160 * pv, 32, 0.48, 0.66, t, 'lin');
+        this.N(d, 0.44, 0.55, 'lowpass', 2800, 220, 0.8, t);
+        this.N(d, 0.02, 0.3, 'bandpass', 1200, 0, 2, t + 0.5);
+        this.O(d, 'triangle', 480, 300, 0.06, 0.08, t + 0.5);
+        this.duck(0.7, 0.25);
+        break;
+      default: // gun
+        d = v(1, 0.22);
+        this.K(d, 0.5, t);
+        this.N(d, 0.08, 0.38, 'bandpass', 2300 * pv, 600, 1.2, t);
+        this.O(d, 'square', 660 * pv, 240, 0.06, 0.14, t);
+        this.O(d, 'sine', 210 * pv, 90, 0.07, 0.16, t, 'lin');
+    }
+  };
+  // 적 사격 — 플레이어 무기와 구분되는 낮고 둔탁한 음색, 위치 팬, 작은 볼륨
+  A.eshoot = function (e, kind) {
+    if (!this.ready() || !this.gate('esh', 0.04)) return;
+    const t = this.ctx.currentTime, pv = R(0.92, 1.08);
+    const d = this.voice(e ? e.x + e.w / 2 : null, 0.25, 0.62);
+    if (kind === 'rocket') {
+      this.K(d, 0.35, t);
+      this.N(d, 0.3, 0.3, 'lowpass', 1500, 350, 0.8, t);
+      this.O(d, 'sawtooth', 200 * pv, 70, 0.28, 0.16, t, 'lin');
+    } else if (kind === 'turret') {
+      this.K(d, 0.4, t);
+      this.N(d, 0.09, 0.3, 'bandpass', 1500 * pv, 500, 1.0, t);
+      this.O(d, 'square', 420 * pv, 180, 0.07, 0.12, t);
+    } else {
+      this.K(d, 0.3, t);
+      this.N(d, 0.06, 0.26, 'bandpass', 1700 * pv, 700, 1.3, t);
+      this.O(d, 'square', 520 * pv, 260, 0.045, 0.1, t);
+    }
+  };
+
+  // ── 타격 / 처치 / 폭발 ──────────────────────────────────────
+  A.impact = function (x, kind) {
+    if (!this.ready() || !this.gate('imp', 0.03)) return;
+    const t = this.ctx.currentTime, pv = R(0.9, 1.1);
+    const d = this.voice(x, 0.15, 0.9);
+    this.N(d, 0.04, 0.16, 'bandpass', 2400 * pv, 1200, 2, t);
+    this.O(d, 'triangle', 360 * pv, 180, 0.04, 0.06, t);
+    if (kind === 'metal') this.O(d, 'square', 1900 * pv, 1500, 0.06, 0.05, t);
+  };
+  const MECH_T = { mech: 1, tank: 1, drone: 1, jet: 1, heli: 1, turret: 1, apc: 1, bomber: 1, rocket: 1 };
+  const PENT = [0, 2, 4, 7, 9];
+  A.edie = function (x, type) {
+    if (!this.ready() || !this.gate('edie', 0.04)) return;
+    const t = this.ctx.currentTime, pv = R(0.92, 1.08);
+    const d = this.voice(x, 0.35, 1);
+    this.K(d, 0.35, t);
+    if (MECH_T[type]) {
+      this.N(d, 0.3, 0.4, 'lowpass', 2600 * pv, 400, 0.9, t);
+      this.O(d, 'sine', 150 * pv, 45, 0.28, 0.3, t, 'lin');
+      this.O(d, 'square', 1400 * pv, 300, 0.12, 0.05, t + 0.03);
+      for (let i = 0; i < 3; i++) this.N(d, 0.04, 0.12, 'bandpass', R(900, 3200), 0, 2.5, t + 0.06 + i * 0.05);
+    } else {
+      this.N(d, 0.2, 0.32, 'lowpass', 2200 * pv, 500, 0.9, t);
+      this.O(d, 'square', 470 * pv, 140, 0.13, 0.1, t);
+      this.O(d, 'sawtooth', 330 * pv, 90, 0.16, 0.08, t + 0.01, 'lin');
+    }
+    // 콤보 피드백: 연속 처치마다 펜타토닉으로 한 음씩 올라가는 얇은 톤
+    if (typeof combo === 'number' && combo >= 3) {
+      const n = Math.min(combo - 3, 14), midi = 79 + PENT[n % 5] + 12 * Math.floor(n / 5);
+      const u = this.voice(x, 0.5, 0.45, this.uGain);
+      this.O(u, 'square', mf(midi), mf(midi), 0.09, 0.09, t + 0.02);
+    }
+  };
+  A.boom = function (big, x) {
+    if (!this.ready()) return;
+    if (!this.gate('boom', big ? 0.05 : 0.035, true)) return;
+    const now = this.ctx.currentTime, pv = R(0.9, 1.1);
+    this.lastBoom = now;
+    const d = this.voice(x, big ? 0.6 : 0.4, 1);
+    this.K(d, big ? 0.8 : 0.5, now);
+    this.O(d, 'sine', (big ? 128 : 185) * pv, big ? 22 : 40, big ? 0.7 : 0.4, big ? 0.8 : 0.52, now, 'lin');
+    this.O(d, 'triangle', (big ? 88 : 128) * pv, big ? 28 : 48, big ? 0.36 : 0.22, big ? 0.3 : 0.2, now + 0.01, 'lin');
+    this.N(d, big ? 0.6 : 0.34, big ? 0.66 : 0.44, 'lowpass', big ? 3400 : 2500, big ? 160 : 300, 0.9, now);
+    this.N(d, big ? 0.25 : 0.14, big ? 0.3 : 0.2, 'highpass', 1200, 4000, 0.7, now);
+    const gn = big ? 8 : 4;
+    for (let i = 0; i < gn; i++) this.N(d, 0.05, 0.12, 'bandpass', R(600, 3400), 0, 2.5, now + 0.05 + i * R(0.03, 0.07));
+    if (big) this.N(d, 0.9, 0.12, 'lowpass', 500, 120, 0.5, now + 0.15);
+    this.duck(big ? 0.45 : 0.72, big ? 0.35 : 0.18);
+  };
+  A.hurt = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.3, 1);
+    this.K(d, 0.5, t);
+    this.O(d, 'sawtooth', 330, 74, 0.26, 0.3, t, 'lin');
+    this.N(d, 0.16, 0.3, 'bandpass', 1100, 380, 1.2, t);
+    this.O(d, 'square', 165, 60, 0.18, 0.14, t + 0.02);
+    this.O(d, 'sine', 110, 50, 0.2, 0.28, t, 'lin');
+    this.duck(0.6, 0.4);
+  };
+  A.bossDie = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.7, 1);
+    for (let i = 0; i < 6; i++) {
+      this.N(d, 0.5, 0.4, 'lowpass', 2600, 200, 0.8, t + i * 0.15);
+      this.O(d, 'sine', 150 - i * 12, 26, 0.6, 0.5, t + i * 0.15, 'lin');
+      this.K(d, 0.5, t + i * 0.15);
+    }
+    this.N(d, 1.6, 0.3, 'lowpass', 800, 60, 0.6, t + 0.6);
+    this.duck(0.3, 1.6);
+  };
+  A.bossRoar = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.7, 1);
+    this.O(d, 'sawtooth', 95, 48, 0.9, 0.22, t, 'lin', -9);
+    this.O(d, 'sawtooth', 96, 49, 0.9, 0.22, t, 'lin', 9);
+    this.O(d, 'sine', 64, 28, 1.0, 0.5, t, 'lin');
+    this.N(d, 0.8, 0.3, 'lowpass', 1200, 180, 0.8, t);
+    this.N(d, 0.4, 0.15, 'bandpass', 500, 1800, 1.2, t + 0.1);
+    [0.5, 0.68].forEach(o => { this.K(d, 0.7, t + o); this.O(d, 'sine', 120, 36, 0.3, 0.5, t + o, 'lin'); });
+    this.duck(0.35, 1.2);
+  };
+
+  // ── 이동 / 상호작용 ─────────────────────────────────────────
+  A.jump = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.1, 0.9);
+    this.O(d, 'square', 320, 760, 0.1, 0.12, t);
+    this.N(d, 0.06, 0.1, 'lowpass', 900, 400, 0.6, t);
+  };
+  A.land = function (vy) {
+    if (!this.ready() || !this.gate('land', 0.08)) return;
+    const t = this.ctx.currentTime, k = Math.min(1, Math.max(0.35, (vy || 3) / 7)), d = this.voice(null, 0.15, k);
+    this.N(d, 0.06, 0.2, 'lowpass', 600, 200, 0.7, t);
+    this.O(d, 'sine', 120, 55, 0.06, 0.18, t, 'lin');
+  };
+  A.step = function () {
+    if (!this.ready() || !this.gate('step', 0.09)) return;
+    const t = this.ctx.currentTime, th = (typeof stage === 'object' && stage) ? stage.theme : '';
+    const d = this.voice(null, 0.06, 0.55);
+    this._foot = !this._foot;
+    const pv = this._foot ? 1 : 0.9;
+    if (th === 'snow') { this.N(d, 0.05, 0.11, 'bandpass', 1800 * pv, 900, 1.2, t); this.N(d, 0.04, 0.06, 'lowpass', 500, 200, 0.7, t); }
+    else if (th === 'sky') { this.N(d, 0.04, 0.09, 'bandpass', 900 * pv, 500, 2.5, t); this.O(d, 'triangle', 240 * pv, 160, 0.04, 0.04, t); }
+    else if (th === 'desert') { this.N(d, 0.05, 0.08, 'lowpass', 900 * pv, 300, 0.7, t); }
+    else { this.N(d, 0.045, 0.09, 'lowpass', 520 * pv, 220, 0.7, t); this.O(d, 'sine', 90, 60, 0.03, 0.04, t); }
+  };
+  A.nade = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.2, 0.9);
+    this.O(d, 'triangle', 520, 190, 0.15, 0.15, t);
+    this.N(d, 0.1, 0.12, 'bandpass', 1600, 700, 1.4, t);
+    this.N(d, 0.02, 0.2, 'bandpass', 2400, 0, 2, t);
+  };
+  A.pickup = function () {
+    if (!this.ready() || !this.gate('pick', 0.03)) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.35, 0.9, this.uGain);
+    this.O(d, 'square', 660, 660, 0.06, 0.12, t);
+    this.O(d, 'square', 990, 990, 0.09, 0.12, t + 0.06);
+    this.O(d, 'triangle', 1320, 1320, 0.1, 0.06, t + 0.06);
+  };
+  A.coin = function () {
+    if (!this.ready() || !this.gate('coin', 0.03)) return;
+    const t = this.ctx.currentTime, pv = R(0.98, 1.03), d = this.voice(null, 0.3, 0.8, this.uGain);
+    this.O(d, 'square', 1320 * pv, 1320 * pv, 0.05, 0.12, t);
+    this.O(d, 'square', 1976 * pv, 1976 * pv, 0.12, 0.11, t + 0.05);
+    this.O(d, 'sine', 2637 * pv, 2637 * pv, 0.14, 0.05, t + 0.05);
+  };
+  A.crate = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.3, 1);
+    this.K(d, 0.4, t);
+    this.N(d, 0.16, 0.3, 'lowpass', 1900, 500, 0.8, t);
+    this.O(d, 'triangle', 300, 120, 0.1, 0.14, t);
+    for (let i = 0; i < 3; i++) this.N(d, 0.03, 0.1, 'bandpass', R(600, 1600), 0, 2, t + 0.05 + i * 0.04);
+  };
+  A.swap = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.2, 0.9, this.uGain);
+    this.K(d, 0.5, t); this.N(d, 0.03, 0.2, 'bandpass', 1400, 0, 2, t); this.O(d, 'square', 300, 200, 0.04, 0.08, t);
+    this.K(d, 0.4, t + 0.08); this.N(d, 0.03, 0.16, 'bandpass', 2200, 0, 2, t + 0.08); this.O(d, 'square', 420, 300, 0.04, 0.06, t + 0.08);
+  };
+  A.deny = function () {
+    if (!this.ready() || !this.gate('deny', 0.15)) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0, 0.8, this.uGain);
+    this.O(d, 'square', 220, 200, 0.07, 0.1, t);
+    this.O(d, 'square', 220, 200, 0.07, 0.1, t + 0.1);
+  };
+  A.evolve = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.7, 1, this.uGain);
+    [60, 64, 67, 72, 76, 79, 84, 88].forEach((n, i) => { this.O(d, 'square', mf(n), mf(n), 0.09, 0.09, t + i * 0.045); this.O(d, 'triangle', mf(n + 12), mf(n + 12), 0.09, 0.04, t + i * 0.045); });
+    this.N(d, 0.6, 0.16, 'highpass', 3000, 9000, 0.8, t + 0.3);
+    [72, 76, 79, 84].forEach((n, i) => this.O(d, 'sawtooth', mf(n), mf(n), 0.9, 0.05, t + 0.38, null, i % 2 ? 7 : -7));
+    this.O(d, 'sine', 55, 40, 0.5, 0.3, t + 0.36, 'lin');
+    this.duck(0.5, 1.0);
+  };
+  A.power = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.5, 1, this.uGain);
+    [523, 659, 784, 1047].forEach((f, i) => { this.O(d, 'square', f, f, 0.1, 0.16, t + i * 0.06); this.O(d, 'triangle', f * 2, f * 2, 0.1, 0.05, t + i * 0.06); });
+    this.O(d, 'sawtooth', 1047, 1047, 0.4, 0.06, t + 0.24, null, -6);
+    this.O(d, 'sawtooth', 1047, 1047, 0.4, 0.06, t + 0.24, null, 6);
+  };
+  A.ult = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.6, 1);
+    this.N(d, 0.5, 0.18, 'bandpass', 300, 3800, 1.0, t);
+    this.O(d, 'sawtooth', 220, 880, 0.5, 0.12, t, null, -8);
+    this.O(d, 'sawtooth', 220, 880, 0.5, 0.12, t, null, 8);
+    this.O(d, 'square', 700, 1600, 0.24, 0.18, t + 0.3);
+    this.K(d, 0.8, t + 0.5);
+    this.O(d, 'sine', 100, 34, 0.5, 0.55, t + 0.5, 'lin');
+    this.N(d, 0.4, 0.35, 'lowpass', 3000, 300, 0.8, t + 0.5);
+    this.duck(0.4, 1.2);
+  };
+  A.warn = function () {
+    if (!this.ready() || !this.gate('warn', 0.06)) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.15, 0.8, this.uGain);
+    this.O(d, 'square', 1500, 1500, 0.06, 0.12, t);
+    this.K(d, 0.25, t);
+  };
+  A.alert = function () {
+    if (!this.ready() || !this.gate('alert', 0.1)) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.4, 0.9, this.uGain);
+    [0, 0.14].forEach((o, i) => {
+      const f = i ? 660 : 880;
+      this.O(d, 'square', f, f, 0.12, 0.16, t + o, null, -5);
+      this.O(d, 'square', f, f, 0.12, 0.16, t + o, null, 5);
+    });
+    this.N(d, 0.3, 0.1, 'bandpass', 1400, 700, 1.2, t);
+  };
+  A.pauseB = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.2, 0.9, this.uGain);
+    this.O(d, 'square', 520, 260, 0.1, 0.12, t); this.K(d, 0.3, t);
+  };
+  A.rescue = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.5, 1, this.uGain);
+    [784, 988, 1175, 1568].forEach((f, i) => { this.O(d, 'square', f, f, 0.12, 0.16, t + i * 0.09); this.O(d, 'triangle', f / 2, f / 2, 0.12, 0.08, t + i * 0.09); });
+  };
+  A.achv = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.6, 1, this.uGain);
+    [660, 880, 1320, 1760].forEach((f, i) => { this.O(d, 'triangle', f, f, 0.16, 0.2, t + i * 0.09); this.O(d, 'square', f, f, 0.16, 0.05, t + i * 0.09); });
+    this.O(d, 'sawtooth', 1760, 1760, 0.6, 0.04, t + 0.36, null, -6); this.O(d, 'sawtooth', 1760, 1760, 0.6, 0.04, t + 0.36, null, 6);
+  };
+  A.fanfare = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.55, 1, this.uGain);
+    const mel = [72, 76, 79, 84, 83, 84], dur = [0.12, 0.12, 0.12, 0.26, 0.12, 0.6];
+    let tt = t;
+    mel.forEach((n, i) => {
+      this.O(d, 'square', mf(n), mf(n), dur[i], 0.14, tt);
+      this.O(d, 'triangle', mf(n - 12), mf(n - 12), dur[i], 0.09, tt);
+      if (i === 5) [60, 64, 67, 72].forEach((c, j) => this.O(d, 'sawtooth', mf(c), mf(c), 0.75, 0.045, tt + 0.01 * j, null, j % 2 ? 7 : -7));
+      tt += dur[i] * (i === 3 ? 1 : 0.95);
+    });
+    this.K(d, 0.5, t);
+    this.duck(0.5, 1.4);
+  };
+  A.over = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.6, 1, this.uGain);
+    [67, 63, 60, 55].forEach((n, i) => {
+      this.O(d, 'sawtooth', mf(n), mf(n), i === 3 ? 0.9 : 0.3, 0.14, t + i * 0.24, null, -6);
+      this.O(d, 'sawtooth', mf(n), mf(n), i === 3 ? 0.9 : 0.3, 0.14, t + i * 0.24, null, 6);
+      this.O(d, 'triangle', mf(n - 12), mf(n - 12), i === 3 ? 0.9 : 0.3, 0.12, t + i * 0.24);
+    });
+    this.N(d, 1.2, 0.12, 'lowpass', 1200, 100, 0.6, t + 0.7);
+    this.O(d, 'sine', 55, 30, 1.2, 0.3, t + 0.72, 'lin');
+  };
+  A.heartbeat = function () {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0, 1);
+    this.O(d, 'sine', 70, 38, 0.13, 0.5, t, 'lin');
+    this.O(d, 'sine', 62, 34, 0.11, 0.38, t + 0.19, 'lin');
+    this.N(d, 0.05, 0.08, 'lowpass', 300, 120, 0.6, t);
+  };
+  A.setLowHp = function (on) {
+    if (on === this._lowHp || !this.mFilt) return;
+    this._lowHp = on;
+    if (!this._paused) this.mFilt.frequency.setTargetAtTime(on ? 3200 : 18000, this.ctx.currentTime, 0.5);
+  };
+  A.uiHover = function () {
+    if (!this.ready() || !this.gate('hover', 0.04)) return;
+    const t = this.ctx.currentTime, d = this.voice(null, 0.1, 0.6, this.uGain);
+    this.N(d, 0.014, 0.16, 'highpass', 5000, 7000, 0.7, t);
+    this.O(d, 'sine', 1800, 1500, 0.025, 0.05, t);
+  };
+
+  // ── ④ 탑승물 엔진 루프 ──────────────────────────────────────
+  A.setEngine = function (mode) {
+    const c = this.ctx, E = this.eng;
+    if (!c) return;
+    const t = c.currentTime;
+    if (E.mode) {
+      E.gain.gain.cancelScheduledValues(t);
+      E.gain.gain.setTargetAtTime(0, t, 0.12);
+      const old = E.nodes;
+      setTimeout(() => old.forEach(n => { try { n.stop(); } catch (e) { } }), 500);
+      E.nodes = []; E.lfo = null; E.lfoG = null; E.filt = null;
+    }
+    E.mode = mode || null;
+    if (!mode || this.muted) return;   // 음소거 중엔 상태만 기억 (해제 시 tick이 다시 만든다)
+    const mk = (type, f) => { const o = c.createOscillator(); o.type = type; o.frequency.value = f; return o; };
+    const nz = () => { const s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; return s; };
+    const body = c.createGain();                        // 엔진 본체 (LFO가 흔드는 게인)
+    const lfo = mk('sine', 6), lfoG = c.createGain();   // 진동 LFO
+    lfo.connect(lfoG); lfoG.connect(body.gain);
+    const filt = c.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 500;
+    body.connect(filt); filt.connect(E.gain);
+    const nodes = [lfo];
+    let lvl = 0.05;
+    if (mode === 'mech') {
+      const a = mk('sawtooth', 55), b = mk('square', 110); a.connect(body); b.connect(body); nodes.push(a, b);
+      body.gain.value = 0.5; lfo.frequency.value = 3; lfoG.gain.value = 0.12; filt.frequency.value = 420; lvl = 0.04;
+    } else if (mode === 'tank') {
+      const a = mk('sawtooth', 42), b = mk('sawtooth', 84.5), n = nz(); a.connect(body); b.connect(body); n.connect(body); nodes.push(a, b, n);
+      body.gain.value = 0.35; lfo.frequency.value = 13; lfoG.gain.value = 0.2; filt.frequency.value = 260; lvl = 0.055;
+    } else if (mode === 'heli') {
+      const n = nz(), hum = mk('sine', 70); n.connect(body); hum.connect(body); nodes.push(n, hum);
+      body.gain.value = 0.45; lfo.frequency.value = 11; lfoG.gain.value = 0.4; filt.frequency.value = 600; filt.Q.value = 1.5; lvl = 0.05;
+    } else if (mode === 'drone') {
+      const a = mk('sawtooth', 220), b = mk('sawtooth', 223.5); a.connect(body); b.connect(body); nodes.push(a, b);
+      body.gain.value = 0.3; lfo.frequency.value = 28; lfoG.gain.value = 0.08; filt.frequency.value = 1100; lvl = 0.07;
+    } else if (mode === 'jet') {
+      const n = nz(), hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1600;
+      const a = mk('sawtooth', 95), s = mk('sine', 190); n.connect(hp); hp.connect(body); a.connect(body); s.connect(body); nodes.push(n, a, s);
+      body.gain.value = 0.4; lfo.frequency.value = 0.7; lfoG.gain.value = 0.08; filt.frequency.value = 2400; lvl = 0.075;
+    } else if (mode === 'hulk') {
+      const n = nz(), s = mk('sine', 48); n.connect(body); s.connect(body); nodes.push(n, s);
+      body.gain.value = 0.3; lfo.frequency.value = 1.6; lfoG.gain.value = 0.28; filt.frequency.value = 220; lvl = 0.075;
+    } else { E.mode = null; return; }
+    nodes.forEach(n => n.start(t));
+    E.nodes = nodes; E.lfo = lfo; E.lfoG = lfoG; E.filt = filt; E.lvl = lvl;
+    E.gain.gain.cancelScheduledValues(t);
+    E.gain.gain.setValueAtTime(0.0001, t);
+    E.gain.gain.setTargetAtTime(lvl, t, 0.25);
+  };
+  A.engTick = function (p) {
+    const E = this.eng;
+    if (!E.mode || !E.lfo || !p) return;
+    const mv = Math.min(1, (Math.abs(p.vx) + Math.abs(p.vy || 0) * 0.5) / 3);
+    const t = this.ctx.currentTime;
+    if (E.mode === 'mech') { E.lfo.frequency.setTargetAtTime(3 + mv * 5, t, 0.2); E.lfoG.gain.setTargetAtTime(0.12 + mv * 0.3, t, 0.2); }
+    else if (E.mode === 'tank') { E.lfo.frequency.setTargetAtTime(13 + mv * 10, t, 0.3); E.filt.frequency.setTargetAtTime(260 + mv * 200, t, 0.3); }
+    else if (E.mode === 'heli') { E.lfo.frequency.setTargetAtTime(11 + mv * 3, t, 0.3); }
+    else if (E.mode === 'jet') { E.filt.frequency.setTargetAtTime(2400 + mv * 2600, t, 0.3); E.gain.gain.setTargetAtTime(E.lvl * (1 + mv * 0.5), t, 0.3); }
+    else if (E.mode === 'drone') { E.lfo.frequency.setTargetAtTime(28 + mv * 12, t, 0.2); }
+  };
+
+  // ── ⑤ 스테이지 앰비언스 ─────────────────────────────────────
+  A.ambSet = function (theme) {
+    const c = this.ctx, M = this.amb;
+    if (!c) return;
+    const t = c.currentTime;
+    if (M.theme) {
+      M.gain.gain.cancelScheduledValues(t);
+      M.gain.gain.setTargetAtTime(0, t, 0.4);
+      const old = M.nodes;
+      setTimeout(() => old.forEach(n => { try { n.stop(); } catch (e) { } }), 1600);
+      M.nodes = [];
+    }
+    M.theme = theme || null;
+    if (!theme || this.muted) return;
+    const mk = (type, f) => { const o = c.createOscillator(); o.type = type; o.frequency.value = f; return o; };
+    const nz = (ft, f, q) => { const s = c.createBufferSource(); s.buffer = this.noiseBuf; s.loop = true; const fl = c.createBiquadFilter(); fl.type = ft; fl.frequency.value = f; if (q) fl.Q.value = q; s.connect(fl); return { s, fl }; };
+    const bed = c.createGain(); bed.connect(M.gain);
+    const nodes = [];
+    // 느린 LFO로 층의 게인을 흔든다 (돌풍·진동)
+    const sway = (target, rate, depth, base) => { const l = mk('sine', rate), g = c.createGain(); g.gain.value = depth; l.connect(g); g.connect(target.gain); target.gain.value = base; nodes.push(l); };
+    let lvl = 0.5;
+    if (theme === 'jungle') {
+      const w = nz('lowpass', 320); const g = c.createGain(); w.fl.connect(g); g.connect(bed); nodes.push(w.s); sway(g, 0.13, 0.2, 0.4);
+      const h = nz('bandpass', 5200, 3); const hg = c.createGain(); h.fl.connect(hg); hg.connect(bed); nodes.push(h.s); sway(hg, 0.7, 0.05, 0.05);
+      lvl = 1.0;
+    } else if (theme === 'desert') {
+      const w = nz('bandpass', 520, 0.6); const g = c.createGain(); w.fl.connect(g); g.connect(bed); nodes.push(w.s); sway(g, 0.11, 0.42, 0.55);
+      const h = nz('highpass', 3600); const hg = c.createGain(); h.fl.connect(hg); hg.connect(bed); nodes.push(h.s); sway(hg, 0.19, 0.09, 0.1);
+      lvl = 0.45;
+    } else if (theme === 'snow') {
+      const w = nz('bandpass', 950, 0.9); const g = c.createGain(); w.fl.connect(g); g.connect(bed); nodes.push(w.s); sway(g, 0.17, 0.4, 0.5);
+      const ws = nz('bandpass', 1900, 6); const wg = c.createGain(); ws.fl.connect(wg); wg.connect(bed); nodes.push(ws.s); sway(wg, 0.23, 0.12, 0.12);
+      lvl = 0.45;
+    } else if (theme === 'night') {
+      const cr = mk('square', 4300), crg = c.createGain(), am = mk('sine', 31), amg = c.createGain();
+      amg.gain.value = 0.5; crg.gain.value = 0.5; am.connect(amg); amg.connect(crg.gain); cr.connect(crg);
+      const crf = c.createBiquadFilter(); crf.type = 'bandpass'; crf.frequency.value = 4300; crf.Q.value = 6; crg.connect(crf);
+      const crOut = c.createGain(); crOut.gain.value = 0.045; crf.connect(crOut); crOut.connect(bed); nodes.push(cr, am);
+      const w = nz('lowpass', 180); const g = c.createGain(); w.fl.connect(g); g.connect(bed); nodes.push(w.s); sway(g, 0.09, 0.15, 0.35);
+      lvl = 1.2;
+    } else if (theme === 'volcano') {
+      const w = nz('lowpass', 130); const g = c.createGain(); w.fl.connect(g); g.connect(bed); nodes.push(w.s); sway(g, 0.37, 0.35, 0.8);
+      const s = mk('sine', 38), sg = c.createGain(); s.connect(sg); sg.connect(bed); nodes.push(s); sway(sg, 0.21, 0.1, 0.16);
+      lvl = 0.5;
+    } else if (theme === 'sky') {
+      const w = nz('highpass', 1500); const g = c.createGain(); w.fl.connect(g); g.connect(bed); nodes.push(w.s); sway(g, 0.15, 0.06, 0.13);
+      const lw = nz('lowpass', 260); const lg = c.createGain(); lw.fl.connect(lg); lg.connect(bed); nodes.push(lw.s); sway(lg, 0.27, 0.2, 0.4);
+      const s = mk('sawtooth', 110), sf = c.createBiquadFilter(); sf.type = 'lowpass'; sf.frequency.value = 300; const sg = c.createGain(); sg.gain.value = 0.07; s.connect(sf); sf.connect(sg); sg.connect(bed); nodes.push(s);
+      lvl = 0.7;
+    }
+    nodes.forEach(n => n.start(t));
+    M.nodes = nodes; M.lvl = lvl; M.next = t + R(0.5, 1.5);
+    M.gain.gain.cancelScheduledValues(t);
+    M.gain.gain.setValueAtTime(0.0001, t);
+    M.gain.gain.setTargetAtTime(lvl * 0.16 * this.vol.sfx, t, 0.8);
+  };
+  // 앰비언스 단발 이벤트 (새·벌레·돌풍·균열음·통과 제트)
+  A.ambTick = function (now) {
+    const M = this.amb;
+    if (!M.theme || now < M.next || this.muted) return;
+    const th = M.theme, x = cam + R(-60, W + 60), d = this.voice(x, 0.3, 0.7, M.gain);
+    const t = now + 0.02;
+    if (th === 'jungle') {
+      const r = Math.random();
+      if (r < 0.55) { const f = R(3200, 5200); for (let i = 0; i < 4; i++) this.O(d, 'sine', f, f, 0.03, 0.05, t + i * 0.055); }
+      else if (r < 0.85) { this.O(d, 'triangle', R(1500, 2000), R(2400, 3000), 0.13, 0.05, t); this.O(d, 'triangle', R(1500, 2000), R(2400, 3000), 0.13, 0.05, t + 0.18); }
+      else { this.N(d, 0.5, 0.07, 'lowpass', 700, 200, 0.6, t); }
+      M.next = now + R(0.35, 1.4);
+    } else if (th === 'desert') {
+      this.N(d, R(1.2, 2.4), 0.16, 'bandpass', R(300, 700), R(900, 1600), 0.8, t);
+      M.next = now + R(2.5, 6);
+    } else if (th === 'snow') {
+      this.O(d, 'sine', R(1200, 1500), R(800, 1000), R(0.5, 0.9), 0.04, t, 'lin');
+      this.N(d, R(0.8, 1.6), 0.12, 'bandpass', R(1200, 2200), R(500, 900), 2, t);
+      M.next = now + R(2, 5);
+    } else if (th === 'night') {
+      const r = Math.random();
+      if (r < 0.5) { const f = R(900, 1400); this.O(d, 'sine', f, f * 0.8, 0.3, 0.035, t); this.O(d, 'sine', f, f * 0.8, 0.3, 0.035, t + 0.4); }
+      else this.N(d, 1.2, 0.09, 'lowpass', 400, 80, 0.6, t);
+      M.next = now + R(1.5, 4);
+    } else if (th === 'volcano') {
+      const r = Math.random();
+      if (r < 0.6) { for (let i = 0; i < 3; i++) this.N(d, 0.03, 0.12, 'bandpass', R(1400, 3200), 0, 3, t + i * R(0.04, 0.12)); }
+      else { this.O(d, 'sine', 52, 26, 0.7, 0.28, t, 'lin'); this.N(d, 0.6, 0.14, 'lowpass', 500, 90, 0.7, t); }
+      M.next = now + R(0.6, 2.2);
+    } else if (th === 'sky') {
+      this.N(d, 1.6, 0.14, 'bandpass', 380, 2400, 1.0, t);
+      this.N(d, 1.0, 0.1, 'bandpass', 2400, 380, 1.0, t + 1.5);
+      M.next = now + R(4, 9);
+    } else M.next = now + 2;
+  };
+
+  // ── ⑥ 음악 ──────────────────────────────────────────────────
+  const SC = { minor: [0, 2, 3, 5, 7, 8, 10], dorian: [0, 2, 3, 5, 7, 9, 10], phryg: [0, 1, 3, 5, 7, 8, 10], major: [0, 2, 4, 5, 7, 9, 11] };
+  const deg = (root, sc, n) => root + 12 * Math.floor((n - 1) / 7) + sc[((n - 1) % 7 + 7) % 7];
+  const chordOf = (root, sc, r, seventh) => { const a = [deg(root, sc, r), deg(root, sc, r + 2), deg(root, sc, r + 4)]; if (seventh) a.push(deg(root, sc, r + 6)); return a; };
+  // 각 테마: root(MIDI) · scale · chords(도수 4개, 1마디씩) · lead(64토큰: 도수 / 0 쉼 / -1 이음) · 옵션
+  const T = (name, tempo, root, sc, chords, lead, opt) => Object.assign({ name, tempo, root, sc: SC[sc], chordsD: chords, lead }, opt || {});
+  const _ = -1;
+  A.PATS = [
+    T('JUNGLE', 138, 45, 'minor', [1, 6, 7, 5], [
+      5, _, 5, 8, 7, _, 5, _, 3, _, 5, _, 8, _, _, 0,
+      6, _, 6, 8, 10, _, 8, _, 6, _, 5, _, 3, _, _, 0,
+      7, _, 7, 9, 10, _, 9, _, 7, _, 5, _, 4, _, _, 0,
+      5, _, 3, _, 2, _, 3, _, 5, _, _, _, 0, 0, 0, 0]),
+    T('DESERT', 124, 41, 'phryg', [1, 2, 7, 1], [
+      1, _, _, 2, 3, _, _, _, 5, _, 4, _, 3, _, 2, _,
+      2, _, _, 3, 4, _, _, _, 6, _, 5, _, 4, _, _, 0,
+      7, _, _, 8, 9, _, _, _, 7, _, 5, _, 4, _, 3, _,
+      1, _, _, _, 2, _, 1, _, 0, 0, 5, _, 4, _, 3, _]),
+    T('SNOWFIELD', 116, 43, 'minor', [1, 6, 3, 5], [
+      3, _, _, _, 5, _, _, _, 8, _, _, _, 7, _, 5, _,
+      6, _, _, _, 8, _, _, _, 10, _, _, _, 8, _, _, _,
+      5, _, _, _, 7, _, _, _, 10, _, _, _, 9, _, 7, _,
+      5, _, _, _, 4, _, _, _, 3, _, _, _, 2, _, _, _], { soft: true }),
+    T('NIGHT FORTRESS', 152, 40, 'minor', [1, 6, 7, 4], [
+      1, 0, 1, 0, 3, _, 1, 0, 5, _, 4, _, 3, _, 0, 0,
+      6, 0, 6, 0, 8, _, 6, 0, 10, _, 8, _, 6, _, 0, 0,
+      7, 0, 7, 0, 9, _, 7, 0, 11, _, 9, _, 7, _, 0, 0,
+      4, _, 5, _, 6, _, 5, _, 4, _, 3, _, 2, _, _, _]),
+    T('VOLCANO CORE', 146, 38, 'minor', [1, 6, 4, 5], [
+      1, _, 8, _, 1, _, 7, _, 1, _, 6, _, 5, _, 4, _,
+      6, _, 6, _, 8, _, 6, _, 10, _, 8, _, 6, _, _, 0,
+      4, _, 4, _, 6, _, 4, _, 8, _, 6, _, 4, _, _, 0,
+      5, _, 7, _, 9, _, 7, _, 5, _, 4, _, 3, _, 2, _], { heavy: true }),
+    T('SKY CARRIER', 132, 45, 'dorian', [1, 3, 6, 7], [
+      8, _, _, _, 10, _, 8, _, 7, _, _, _, 5, _, _, _,
+      10, _, _, _, 12, _, 10, _, 9, _, _, _, 8, _, _, _,
+      8, _, _, _, 10, _, 8, _, 6, _, _, _, 5, _, _, _,
+      7, _, 9, _, 10, _, 9, _, 7, _, _, _, 5, _, _, _]),
+    T('BOSS', 168, 40, 'phryg', [1, 2, 1, 6], [
+      1, 0, 1, 0, 2, _, 1, 0, 5, _, 4, _, 2, _, 1, _,
+      2, 0, 2, 0, 3, _, 2, 0, 6, _, 5, _, 3, _, 2, _,
+      1, 0, 1, 0, 2, _, 1, 0, 8, _, 7, _, 5, _, 4, _,
+      6, _, 8, _, 9, _, 8, _, 6, _, 5, _, 4, _, 3, _], { boss: true }),
+    T('LOBBY', 92, 48, 'major', [1, 6, 4, 5], [
+      3, _, _, _, 5, _, _, _, _, _, _, _, 0, 0, 0, 0,
+      6, _, _, _, 5, _, _, _, _, _, _, _, 0, 0, 0, 0,
+      4, _, _, _, 5, _, _, _, 6, _, _, _, 0, 0, 0, 0,
+      7, _, _, _, _, _, _, _, 5, _, _, _, _, _, _, _], { calm: true }),
+  ];
+  A.PATS.forEach(p => { p.chords = p.chordsD.map(r => chordOf(p.root, p.sc, r, !!p.calm)); });
+  const STEPS = 64;
+  // 베이스 리듬(16스텝, 코드 루트 기준 반음 오프셋 / null 쉼)
+  const BASS = {
+    calm: [0, null, null, null, null, null, null, null, 7, null, null, null, null, null, null, null],
+    low: [0, null, null, null, null, null, null, null, 0, null, null, null, null, null, 12, null],
+    mid: [0, null, 0, null, null, null, 12, null, 0, null, 0, null, 7, null, 12, null],
+    high: [0, null, 12, null, 0, null, 12, null, 0, null, 12, null, 7, null, 12, 10],
+    boss: [0, 12, 0, 12, 0, 12, 0, 0, 0, 12, 0, 12, 0, 12, 7, 12],
+  };
+  const ARP = [0, 1, 2, 1, 0, 2, 1, 2];
+
+  A.startMusic = function (i) {
+    if (!this.ctx) return;
+    const m = this.music;
+    m.idx = i % this.PATS.length;
+    m.pat = this.PATS[m.idx];
+    m.step = 0; m.loop = 0;
+    m.next = this.ctx.currentTime + 0.08;
+    m.on = true;
+    this._paused = false;
+    const t = this.ctx.currentTime;
+    this.mFilt.frequency.cancelScheduledValues(t);
+    this.mFilt.frequency.setTargetAtTime(this._lowHp ? 3200 : 18000, t, 0.1);
+    this.dly.delayTime.setTargetAtTime((60 / m.pat.tempo) * 0.75, t, 0.05);   // 점8분
+    this.mGain.gain.cancelScheduledValues(t);
+    this.mGain.gain.setTargetAtTime(this._musicLevel(), t, 0.5);
+    if (!m.timer) m.timer = setInterval(() => this._sched(), 40);
+  };
+  A.stopMusic = function () {
+    if (this.mGain && this.ctx) { const t = this.ctx.currentTime; this.mGain.gain.cancelScheduledValues(t); this.mGain.gain.setTargetAtTime(0, t, 0.25); }
+    this.music.on = false; this.music.idx = -1;
+    this._paused = false;
+  };
+  A.pauseMusic = function () {
+    if (!this.ctx || !this.music.on) return;
+    this._paused = true;
+    const t = this.ctx.currentTime;
+    this.mFilt.frequency.setTargetAtTime(480, t, 0.15);
+    this.mGain.gain.setTargetAtTime(this._musicLevel(), t, 0.2);
+  };
+  A.resumeMusic = function () {
+    if (!this.ctx) return;
+    if (!this.music.on) { this.startMusic(curMusic); return; }
+    this._paused = false;
+    const t = this.ctx.currentTime;
+    this.mFilt.frequency.setTargetAtTime(this._lowHp ? 3200 : 18000, t, 0.12);
+    this.mGain.gain.setTargetAtTime(this._musicLevel(), t, 0.2);
+  };
+  A._stepDur = function () { return 60 / this.music.pat.tempo / 4; };
+  A._sched = function () {
+    if (!this.ctx || !this.music.on || this.muted) return;
+    const m = this.music;
+    if (this.ctx.state !== 'running') { m.next = this.ctx.currentTime + 0.08; return; }
+    // 백그라운드 등으로 크게 뒤처졌으면 앞으로 건너뛴다 (밀린 스텝을 한꺼번에 쏟지 않게)
+    if (m.next < this.ctx.currentTime - 0.3) m.next = this.ctx.currentTime + 0.05;
+    while (m.next < this.ctx.currentTime + 0.2) {
+      this._play(m.step, m.next);
+      m.next += this._stepDur();
+      m.step = (m.step + 1) % STEPS;
+      if (m.step === 0) m.loop++;
+    }
+  };
+  // 악기 -----------------------------------------------------------
+  A._kick = function (t, vol) {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(165, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.09);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.17);
+    o.connect(g); g.connect(this.mGain); o.start(t); o.stop(t + 0.19);
+    this.N(this.mGain, 0.012, vol * 0.35, 'highpass', 2800, 0, 0.7, t);
+    // 사이드체인: 패드·베이스가 킥마다 숨을 쉰다
+    const sc = this.mSc.gain;
+    sc.cancelScheduledValues(t); sc.setValueAtTime(0.55, t); sc.linearRampToValueAtTime(1, t + 0.16);
+  };
+  A._snare = function (t, vol) {
+    this.N(this.mGain, 0.14, vol, 'bandpass', 1900, 1000, 0.9, t);
+    this.N(this.mGain, 0.05, vol * 0.3, 'highpass', 6000, 0, 0.7, t);
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(230, t); o.frequency.exponentialRampToValueAtTime(115, t + 0.09);
+    g.gain.setValueAtTime(vol * 0.6, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    o.connect(g); g.connect(this.mGain); o.start(t); o.stop(t + 0.12);
+  };
+  A._hat = function (t, vol, open) { this.N(this.mGain, open ? 0.15 : 0.035, vol, 'highpass', open ? 7000 : 8200, open ? 8500 : 0, 0.7, t); };
+  A._bass = function (t, midi, dur, calm) {
+    const c = this.ctx, f = mf(midi), g = c.createGain(), fl = c.createBiquadFilter();
+    fl.type = 'lowpass'; fl.Q.value = calm ? 0.5 : 4;
+    fl.frequency.setValueAtTime(calm ? 600 : 1500, t);
+    fl.frequency.exponentialRampToValueAtTime(calm ? 300 : 200, t + Math.min(dur, 0.25));
+    const a = c.createOscillator(); a.type = calm ? 'triangle' : 'sawtooth'; a.frequency.value = f;
+    const b = c.createOscillator(); b.type = calm ? 'sine' : 'square'; b.frequency.value = f / 2;
+    const bg = c.createGain(); bg.gain.value = calm ? 0.6 : 0.45;
+    a.connect(fl); b.connect(bg); bg.connect(fl); fl.connect(g); g.connect(this.mSc);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(calm ? 0.16 : 0.24, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.03, t + dur * 0.92);
+    a.start(t); b.start(t); a.stop(t + dur); b.stop(t + dur);
+  };
+  A._arp = function (t, midi, dur, vol) {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = 'square'; o.frequency.value = mf(midi);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.004, t + dur * 0.7);
+    o.connect(g); g.connect(this.mGain);
+    const s = c.createGain(); s.gain.value = 0.35; g.connect(s); s.connect(this.dlyIn);
+    o.start(t); o.stop(t + dur);
+  };
+  A._lead = function (t, midi, dur, vol, type, oct) {
+    const c = this.ctx, g = c.createGain(), f = mf(midi);
+    const o1 = c.createOscillator(), o2 = c.createOscillator();
+    o1.type = type; o2.type = type; o1.frequency.value = f; o2.frequency.value = f;
+    o1.detune.value = -6; o2.detune.value = 6;
+    const lfo = c.createOscillator(), lg = c.createGain();     // 비브라토 (지연 시작)
+    lfo.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(9, t + 0.25);
+    lfo.connect(lg); lg.connect(o1.detune); lg.connect(o2.detune);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + (oct ? 0.004 : 0.012));
+    g.gain.setValueAtTime(vol, t + Math.max(0.012, dur - 0.06));
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o1.connect(g); o2.connect(g); g.connect(this.mGain);
+    const s = c.createGain(); s.gain.value = 0.3; g.connect(s); s.connect(this.dlyIn);
+    if (this.verb) { const r = c.createGain(); r.gain.value = 0.18; g.connect(r); r.connect(this.verb); }
+    o1.start(t); o2.start(t); lfo.start(t); o1.stop(t + dur + 0.02); o2.stop(t + dur + 0.02); lfo.stop(t + dur + 0.02);
+  };
+  A._pad = function (t, notes, dur, bright, calm) {
+    const c = this.ctx, fl = c.createBiquadFilter(), g = c.createGain();
+    fl.type = 'lowpass'; fl.Q.value = 0.8;
+    fl.frequency.setValueAtTime(calm ? 700 : bright ? 1600 : 900, t);
+    fl.frequency.linearRampToValueAtTime(calm ? 500 : bright ? 1100 : 650, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(1, t + 0.18);
+    g.gain.setValueAtTime(1, t + dur - 0.2);
+    g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.05);
+    fl.connect(g); g.connect(this.mSc);
+    if (this.verb) { const r = c.createGain(); r.gain.value = 0.12; g.connect(r); r.connect(this.verb); }
+    const per = (calm ? 0.02 : 0.019) / Math.sqrt(notes.length / 3);
+    notes.forEach(n => [-9, 0, 9].forEach((dt, i) => {
+      const o = c.createOscillator(), og = c.createGain();
+      o.type = (calm && i === 1) ? 'triangle' : 'sawtooth'; o.frequency.value = mf(n); o.detune.value = dt;
+      og.gain.value = per;
+      o.connect(og); og.connect(fl); o.start(t); o.stop(t + dur + 0.08);
+    }));
+  };
+  // 스텝 시퀀서 --------------------------------------------------------
+  A._play = function (i, t) {
+    if (!this.ctx || this.muted) return;
+    const m = this.music, p = m.pat, sd = this._stepDur();
+    const e = p.calm ? 0 : this.energy;
+    const bar = Math.floor(i / 16), s16 = i % 16, chord = p.chords[bar], root = chord[0];
+    const fill = !p.calm && e >= 1 && bar === 3 && (m.loop % 2 === 1) && s16 >= 12;
+    // 패드 (마디 첫 스텝)
+    if (s16 === 0) this._pad(t, chord.map(n => n + 12), sd * 16, e >= 2, p.calm);
+    // 드럼
+    if (p.calm) {
+      if (s16 === 0) this._kick(t, 0.28);
+      if (s16 % 4 === 0) this._hat(t, 0.035, false);
+      if (s16 === 8) this.N(this.mGain, 0.03, 0.08, 'bandpass', 2400, 0, 3, t);
+    } else {
+      const kickOn = e >= 1 ? (s16 % 4 === 0 || (p.boss && s16 === 14)) : (s16 === 0 || s16 === 8);
+      if (kickOn) this._kick(t, e >= 1 ? 0.5 : 0.36);
+      if (fill) this._snare(t, 0.12 + (s16 - 12) * 0.05);
+      else if (e >= 1 && (s16 === 4 || s16 === 12)) this._snare(t, 0.28);
+      else if (e >= 2 && (s16 === 7 || s16 === 15)) this._snare(t, 0.08);
+      if (e >= 2) this._hat(t, s16 % 2 ? 0.05 : 0.09, false);
+      else if (s16 % 2 === 0) this._hat(t, e >= 1 ? 0.09 : 0.05, false);
+      if (e >= 1 && (s16 === 6 || s16 === 14)) this._hat(t, 0.07, true);
+      if (i === 0 && m.loop > 0 && e >= 1) this.N(this.mGain, 0.5, 0.1, 'highpass', 5000, 8000, 0.7, t);   // 루프 첫머리 크래시
+    }
+    // 베이스
+    const bp = p.calm ? BASS.calm : p.boss && e >= 1 ? BASS.boss : e >= 2 ? BASS.high : e >= 1 ? BASS.mid : BASS.low;
+    const bo = bp[s16];
+    if (bo != null) {
+      let bd = 1; while (s16 + bd < 16 && bp[s16 + bd] == null) bd++;
+      this._bass(t, root - 12 + bo, sd * Math.min(bd, p.calm ? 8 : 2), p.calm);
+    }
+    // 아르페지오 (평시부터 · 보스전은 16분)
+    const arpOn = p.calm ? (s16 % 2 === 0) : (p.boss && e >= 2) ? true : (s16 % 2 === 0);
+    if (arpOn) {
+      const ai = (p.boss && e >= 2) ? i : (i >> 1);
+      const ci = ARP[ai % ARP.length] % chord.length;
+      this._arp(t, chord[ci] + 24, sd * (p.calm ? 2 : 1.4), p.calm ? 0.035 : e >= 1 ? 0.055 : 0.045);
+    }
+    // 리드 (교전 이상 · 로비는 항상 부드럽게)
+    if (p.calm || e >= 1) {
+      const tok = p.lead[i];
+      if (tok > 0) {
+        let n = 1; while (i + n < STEPS && p.lead[i + n] === -1) n++;
+        const midi = deg(p.root, p.sc, tok) + 12;
+        const dur = sd * n * 0.95;
+        if (p.calm) this._lead(t, midi, dur, 0.05, 'triangle');
+        else {
+          this._lead(t, midi, dur, p.soft ? 0.06 : 0.075, p.heavy ? 'sawtooth' : 'square');
+          if (e >= 2) this._lead(t, midi + 12, Math.min(dur, sd * 2), 0.028, 'square', true);
+        }
+      }
+    }
+  };
+
+  // ── ⑦ 매 프레임 디렉터 틱 (loop()에서 호출) ─────────────────
+  A.tick = function () {
+    if (!this.ctx || !this.started) return;
+    const now = this.ctx.currentTime;
+    // 로비·상점 테마
+    if ((state === 'menu' || state === 'shop') && !this.muted && this.music.idx !== LOBBY) this.startMusic(LOBBY);
+    // 앰비언스
+    const inField = state === 'play' || state === 'pause' || state === 'bonus' || state === 'intermission';
+    const want = (inField && stage) ? stage.theme : null;
+    if (want !== this.amb.theme) this.ambSet(want);
+    if (this.amb.theme && state !== 'pause') this.ambTick(now);
+    // 플레이어: 엔진 · 발소리 · 심박
+    const p = player, playing = state === 'play' || state === 'bonus';
+    const eng = (playing && p && !p.dead && p.mode !== 'foot') ? p.mode : null;
+    if (eng !== this.eng.mode) this.setEngine(eng);
+    if (this.eng.mode) this.engTick(p);
+    let low = false;
+    if (playing && p && !p.dead && hitstop <= 0) {
+      if (p.mode === 'foot' && p.onGround && !p.climbing && Math.abs(p.vx) > 0.6) {
+        this._stepAcc += Math.abs(p.vx);
+        if (this._stepAcc > 20) { this._stepAcc = 0; this.step(); }
+      } else this._stepAcc = 12;
+      if (!hasVehHp(p.mode) && p.hp / p.maxHp <= 0.28) {
+        low = true;
+        if (now >= this._hbNext) { this.heartbeat(); this._hbNext = now + 0.95; }
+      }
+    }
+    this.setLowHp(low && (state === 'play' || state === 'pause'));
+  };
+  // 음소거 전환 시 루프 계열(엔진·앰비언스) 정리
+  const _setMuted = A.setMuted.bind(A);
+  A.setMuted = function (m) {
+    _setMuted(m);
+    if (m) { this.setEngine(null); this.ambSet(null); }
+    else { this.eng.mode = null; this.amb.theme = null; }   // 다음 tick에서 엔진·앰비언스 재생성
+  };
+  // ── 믹서 채널 트림 — 리미터 출력 계측(2026-09-28)으로 맞춘 효과음별 보정 배율.
+  //    목표 피크(dBFS): 폭발(대) -7 · 탱크포 -9 · 산탄 -11 · 소총 -14 · 기관총 -16 · 처치 -17 · 적사격 -20 · 타격 -23 · 발소리 -30
+  const TRIM = {
+    shoot: { gun: 0.38, mg: 0.41, shotgun: 0.44, spread: 0.43, dragon: 0.43, laser: 0.84, prism: 0.79, rail: 0.63, rocketP: 0.65, hellst: 0.73, tank: 0.4, flame: 1.66, homing: 1.45, swarm: 1.5, blade: 1.51, hulk: 1.55, mech: 0.66 },
+    eshoot: 0.53, impact: 1.01, edie: 0.52, boom: 0.5, hurt: 0.45, pickup: 1.41, coin: 1.32, step: 1.09, land: 0.5,
+    heartbeat: 0.36, uiHover: 0.58, jump: 1.19, nade: 0.88, crate: 0.46, swap: 0.5, deny: 2.14, power: 1.59, ult: 0.43,
+    warn: 0.94, alert: 1.24, fanfare: 1, over: 0.72, evolve: 0.92, rescue: 1.39, achv: 1.35, bossRoar: 0.57, bossDie: 0.54,
+    ambTick: 1,
+  };
+  A._trim = 1;
+  const _voice = A.voice;
+  A.voice = function (x, send, vol, dst) { return _voice.call(this, x, send, (vol == null ? 1 : vol) * this._trim, dst); };
+  Object.keys(TRIM).forEach(name => {
+    const orig = A[name], f = TRIM[name];
+    A[name] = function () {
+      this._trim = (typeof f === "object") ? (f[arguments[0]] || 2) : f;
+      try { return orig.apply(this, arguments); } finally { this._trim = 1; }
+    };
+  });
+  A.TRIM = TRIM;
+  // 메뉴 호버 틱 (마우스만 · 게임 화면 밖 버튼)
+  document.addEventListener('pointerover', ev => {
+    if (!A.started || ev.pointerType === 'touch') return;
+    const b = ev.target && ev.target.closest && ev.target.closest('button, .card, .shopit, .stagebtn, .md-card, .mc, .pcard');
+    if (!b || b === A._hoverEl || b.classList.contains('hidden')) return;
+    A._hoverEl = b;
+    A.uiHover();
+  }, true);
+})();
+
+// ═══════════════════════════════════════════════════════════════
 // 난이도 설정
 // ═══════════════════════════════════════════════════════════════
 // kids: 아이용 — 잔기 5, 받는 피해 40%, 느린 적탄, 필살기 +2, 시작 수류탄 +2.
@@ -2387,7 +3398,7 @@ let bossIntro = 0, bossIntroMax = 130;   // 보스 등장 연출 타이머
 let combo = 0, comboT = 0;
 
 // 판 단위 통계(startGame에서 리셋) / 스테이지 단위 통계(startStage에서 리셋)
-let run = { kills: 0, maxCombo: 0, pow: 0, vehicles: {} };
+let run = { kills: 0, maxCombo: 0, pow: 0, vehicles: {}, missions: {} };
 let st = { deaths: 0, dmg: 0, maxCombo: 0, pow: 0, powCount: 0, midDone: false };
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -2471,7 +3482,7 @@ function tagSwap() {
     if (p.tagMsgCd > 0) return;
     p.tagMsgCd = 30;
     addFloat(p.x, p.y - 26, msg, '#8a8158');
-    S.impact();
+    S.deny();
   };
   if (p.tagCd > 0) return deny('교대 대기 ' + (p.tagCd / 60).toFixed(1) + 's');
   if (p.mode !== 'foot') return deny('탑승 중엔 교대 불가');
@@ -2596,7 +3607,7 @@ function fieldSwapWeapon(pk) {
   pk.type = 'w_' + old; pk.ammo = oldAmmo;          // 같은 픽업이 "버린 무기"로 바뀐다
   addFloat(p.x, p.y - 26, '교체: ' + WEAPONS[old].name + ' ▶ ' + WEAPONS[wk].name, '#ff9a3c');
   for (let i = 0; i < 8; i++) particles.push(spark(pk.x + 8, pk.y + 8, '#ffcf3f'));
-  S.pickup();
+  S.swap();
   checkEvolutions();
 }
 
@@ -2646,7 +3657,7 @@ function checkEvolutions() {
     flashScreen = Math.max(flashScreen, 5);
     for (let k = 0; k < 18; k++) particles.push(spark(p.x + p.w / 2, p.y + p.h / 2, '#ff8a5c'));
     addShake(5);
-    S.power();
+    S.evolve();
   });
 }
 // ═══════════════════════════════════════════════════════════════
@@ -2712,7 +3723,7 @@ function cycleWeapon() {
   const i = p.inv.indexOf(p.weapon);
   p.weapon = p.inv[(i + 1) % p.inv.length];
   addFloat(p.x, p.y - 12, '▶ ' + WEAPONS[p.weapon].name, '#9fe8ff');
-  S.pickup();
+  S.swap();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2850,8 +3861,9 @@ function buildLevel() {
     { x: lateDeck.x + Math.round(lateDeck.w * 0.5), y: lateDeck.y - 16 },
     { x: Math.round(stage.len * 0.84), y: GROUND_Y - 16 },
   ];
-  st.powCount = 2 + (si >= 3 ? 1 : 0);
-  for (let i = 0; i < st.powCount; i++) pickups.push({ x: powSpots[i].x, y: powSpots[i].y, type: 'pow', w: 12, h: 16 });
+  const mres = mission && mission.objs.find(o => o.type === 'rescue');
+  st.powCount = mres ? mres.need : 2 + (si >= 3 ? 1 : 0);
+  for (let i = 0; i < st.powCount; i++) pickups.push({ x: powSpots[i].x, y: powSpots[i].y, type: 'pow', w: 12, h: 16, mlabel: mres ? mres.label : undefined, micon: mres ? mres.icon : undefined });
 
   // ═══════════════════════════════════════════════════════════
   // 경로 차단물 — 한쪽 길을 막아 우회를 강제한다
@@ -2952,6 +3964,7 @@ function buildLevel() {
     const barrel = Math.random() < 0.4;
     crates.push({ x: x + rnd(-40, 40), y: GROUND_Y - 14, w: 14, h: 14, hp: 20, barrel, dead: false });
   }
+  placeMissionTargets();                   // 📖 파괴 표적(crates에 mt) · 사수/설치 구역 — 차단물 생성 뒤라 겹침 회피 가능
 
   // 발판 위 포탑 (드물게)
   platforms.forEach((pl, k) => {
@@ -3004,12 +4017,338 @@ function snapshotRun() {
     capMul: p.capMul, hpRegen: p.hpRegen, spdBonus: p.spdBonus,
     ultGainMul: p.ultGainMul, critBonus: p.critBonus, regenMul: p.regenMul,
     bonusPlayed: bonusPlayed, odShown: odShown,
-    runStats: { kills: run.kills, maxCombo: run.maxCombo, pow: run.pow, vehicles: Object.assign({}, run.vehicles) },
+    runStats: { kills: run.kills, maxCombo: run.maxCombo, pow: run.pow, vehicles: Object.assign({}, run.vehicles), missions: Object.assign({}, run.missions || {}) },
   };
   commitSave();
 }
 function clearRunSnapshot() {
   if (save.run) { save.run = null; commitSave(); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 스토리 캠페인 — 7개 작전 (2026-09-28)
+// 적 세력 "보이드 군단"이 정찰대·민간인을 납치하고 화산 지하에서 만든 핵탄두를
+// 궤도 요새에서 발사하려 한다. 스테이지마다 작전명 + 실제로 수행하는 보너스 목표
+// (구출 rescue / 파괴 destroy / 사수 hold / 설치 plant)가 있고, 마지막 ORBITAL RUN
+// 보스전에서 1~6작전의 결과가 아군 지원·보스 약화로 되돌아온다.
+// 목표는 보너스형: 보스만 잡으면 클리어. 달성 시 등급(S) 조건 · $150 · SP +30 · 최종전 지원.
+// 서바이벌·일일 도전에서는 mission = null (전부 비활성).
+// ═══════════════════════════════════════════════════════════════
+const STORY_ENEMY = '보이드 군단';
+const MISSIONS = [
+  { code: '첫 신호', icon: '🪖',
+    brief: ['보이드 군단이 정글 기지를 기습해 우리 정찰대를 끌고 갔다.', '정글 곳곳에 묶여 있는 정찰대원을 찾아 모두 구출하라.'],
+    goal: '납치된 정찰대원 3명 구출',
+    radio: '📻 HQ: 정찰대의 구조 신호를 잡았다. 한 명도 남기지 마라!',
+    objs: [{ type: 'rescue', need: 3, label: '정찰대원', icon: '🪖' }],
+    ok: '정찰대원 전원 복귀! "최종전에서 보급으로 갚겠습니다."', fail: '정찰대원 일부는 아직 적의 손에 있다…' },
+  { code: '모래 폭풍', icon: '🛢️',
+    brief: ['사막을 가로지르는 보이드 군단의 연료 수송로가 발견됐다.', '연료 탱크로리를 파괴해 적의 전차 부대를 멈춰 세워라.'],
+    goal: '연료 탱크로리 4대 파괴',
+    radio: '📻 HQ: 탱크로리는 크게 터진다. 가까이서 쏘지 마!',
+    objs: [{ type: 'destroy', need: 4, label: '탱크로리', icon: '🛢️', kind: 'tanker' }],
+    ok: '적 전차 부대가 연료 부족으로 멈췄다. 최종 보스의 공격이 느려진다.', fail: '수송로 일부가 남아 적은 계속 연료를 받는다.' },
+  { code: '얼어붙은 무전', icon: '📡',
+    brief: ['설원의 통신 중계기가 적에게 점령돼 아군 무전이 끊겼다.', '중계기 앞을 지키며 재가동하라. 켜질 때까지 버텨야 한다.'],
+    goal: '통신 중계기 2곳 재가동 (7초 사수)',
+    radio: '📻 HQ: 중계기가 켜지면 본부 지원이 열린다. 자리를 지켜!',
+    objs: [{ type: 'hold', need: 2, label: '중계기', icon: '📡', hold: 420 }],
+    ok: '무전이 살아났다! 최종전에서 본부가 필살기를 추가 지원한다.', fail: '무전은 여전히 잡음뿐이다.' },
+  { code: '야간 침투', icon: '🏰',
+    brief: ['밤의 요새 지하에 붙잡힌 민간인들이 있다.', '정전을 틈타 민간인을 구하고, 요새 기둥에 폭약을 설치하라.'],
+    goal: '민간인 3명 구출 + 폭약 2곳 설치',
+    radio: '📻 HQ: 민간인이 먼저다. 폭약은 기둥 앞에서 3초간 설치!',
+    objs: [{ type: 'rescue', need: 3, label: '민간인', icon: '🧑' }, { type: 'plant', need: 2, label: '폭약', icon: '💣', hold: 180 }],
+    ok: '민간인 전원 구출, 요새 붕괴! 적은 최종전에 증원을 보낼 수 없다.', fail: '요새는 아직 서 있고, 구하지 못한 이들이 남았다.' },
+  { code: '지옥의 심장', icon: '☢️',
+    brief: ['화산 지하에서 보이드 군단이 핵탄두를 만들고 있다.', '냉각 장치를 부수면 탄두는 완성될 수 없다. 모두 파괴하라.'],
+    goal: '핵탄두 냉각 장치 3기 파괴',
+    radio: '📻 HQ: 냉각 장치가 터지면 크게 폭발한다. 거리를 둬!',
+    objs: [{ type: 'destroy', need: 3, label: '냉각 장치', icon: '☢️', kind: 'cooler' }],
+    ok: '냉각 장치 전멸. 핵탄두가 불안정해져 최종 보스의 체력이 줄어든다.', fail: '냉각 장치가 남아 탄두는 완성됐다.' },
+  { code: '하늘의 요새', icon: '🛩️',
+    brief: ['거대 항공모함이 핵탄두를 싣고 궤도 요새로 향한다.', '붙잡힌 우리 조종사를 구하고 항모 엔진을 파괴해 추락시켜라.'],
+    goal: '조종사 2명 구출 + 항모 엔진 3기 파괴',
+    radio: '📻 HQ: 조종사를 구하면 최종전에서 공습을 부를 수 있다!',
+    objs: [{ type: 'rescue', need: 2, label: '조종사', icon: '🛩️' }, { type: 'destroy', need: 3, label: '항모 엔진', icon: '⚙️', kind: 'engine' }],
+    ok: '항모 추락! 구출된 조종사 편대가 최종전 공습을 약속했다.', fail: '항모는 흔들리며 궤도로 향했다.' },
+  { code: '최후의 카운트다운', icon: '🚀',
+    brief: ['궤도 요새의 핵탄두 발사 카운트다운이 시작됐다.', '시간 안에 제어 코어를 부수고, VOID DREADNOUGHT를 격파해 발사를 막아라.'],
+    goal: '카운트다운 안에 제어 코어 3기 파괴 → 최종 보스 격파',
+    radio: '📻 HQ: 지금까지 구한 모두가 너를 돕는다. 가자, 마지막 작전이다!',
+    objs: [{ type: 'destroy', need: 3, label: '제어 코어', icon: '🛰️', kind: 'core' }],
+    countdown: 150 * 60,
+    ok: '제어 코어 파괴 — 발사가 지연됐다! 보스 장갑이 약해진다.', fail: '카운트다운 종료… 이제 보스를 직접 막는 수밖에 없다.' },
+];
+let mission = null;   // 현재 스테이지의 작전 상태 (캠페인 전용)
+
+function storyDone(si) { return !!(run && run.missions && run.missions[si] && run.missions[si].done); }
+function initMission(si) {
+  mission = null;
+  if (survival || daily) return;
+  const def = MISSIONS[si];
+  if (!def) return;
+  mission = {
+    def, si, objs: def.objs.map(o => Object.assign({ n: 0, done: false }, o)),
+    done: false, failed: false, zones: [], cd: def.countdown || 0,
+    allies: null, allyShow: 0, supT: 900, airT: 600, strikeQ: 0,
+    relayBonus: si === STAGES.length - 1 && storyDone(2),
+  };
+  if (!run.missions) run.missions = {};
+  toasts = toasts.filter(t2 => !t2.radio);
+  toasts.push({ txt: def.radio, life: 330, radio: true });
+}
+// 파괴 표적(상자 배열에 mt 플래그로 편입 — 탄환·폭발·돌진 판정을 그대로 재사용)과 사수/설치 구역 배치
+function placeMissionTargets() {
+  const m = mission;
+  if (!m) return;
+  const FR = { 2: [0.32, 0.68], 3: [0.24, 0.5, 0.74], 4: [0.2, 0.38, 0.58, 0.76] };
+  // 차단물(벽·덕트·기둥)과 60px 안에 겹치면 오른쪽으로 밀어낸다
+  const safeX = x => { for (let k = 0; k < 6; k++) { const hit = barriers.some(b2 => x + 22 > b2.x - 60 && x < b2.x + b2.w + 60); if (!hit) break; x += 90; } return Math.min(x, stage.len - 560); };
+  m.objs.forEach(o => {
+    const xs = (FR[o.need] || FR[3]).map(f => safeX(Math.round(stage.len * f)));
+    if (o.type === 'destroy') {
+      xs.forEach(x => crates.push({ x, y: GROUND_Y - 22, w: 22, h: 22, hp: 90, maxhp: 90, barrel: false, dead: false, mt: true, kind: o.kind, label: o.label, icon: o.icon }));
+    } else if (o.type === 'hold' || o.type === 'plant') {
+      xs.forEach(x => m.zones.push({ x, r: 40, hold: 0, need: o.hold, done: false, type: o.type, label: o.label, icon: o.icon }));
+    }
+  });
+}
+function syncMissionRun() {
+  const m = mission;
+  if (!m) return;
+  if (!run.missions) run.missions = {};
+  run.missions[m.si] = { done: m.done, n: m.objs.reduce((a, o) => a + Math.min(o.n, o.need), 0), need: m.objs.reduce((a, o) => a + o.need, 0) };
+}
+function missionProgress(type, x, y) {
+  const m = mission;
+  if (!m) return;
+  const o = m.objs.find(o2 => o2.type === type && !o2.done);
+  if (!o) return;
+  o.n++;
+  if (o.n >= o.need) { o.done = true; addFloat(x, y, '✔ ' + o.label + ' ' + o.need + '/' + o.need + ' 완료!', '#5ad15a'); }
+  else addFloat(x, y, o.icon + ' ' + o.label + ' ' + o.n + '/' + o.need, '#9fe8ff');
+  if (!m.done && !m.failed && m.objs.every(o2 => o2.done)) {
+    m.done = true;
+    toasts.push({ txt: '🎖 작전 「' + m.def.code + '」 목표 달성! +$150 · SP +30', life: 300 });
+    addMoney(150); gainUlt(30);
+    flashScreen = Math.max(flashScreen, 5);
+    S.fanfare();
+  }
+  syncMissionRun();
+}
+function missionTargetDown(c) {
+  const cx = c.x + c.w / 2, cy = c.y + c.h / 2;
+  explode(cx, cy, 36, 22, true);
+  if (Math.hypot(player.x + player.w / 2 - cx, player.y + player.h / 2 - cy) < 36) hurtPlayer(10);   // 배럴처럼 가까우면 다친다
+  addShake(7);
+  for (let i = 0; i < 10; i++) particles.push({ x: cx, y: cy, vx: rnd(-2.5, 2.5), vy: rnd(-3.5, 0), life: rnd(14, 26), c: c.kind === 'core' ? '#b18cff' : c.kind === 'cooler' ? '#9fe8ff' : '#e8823c', r: 2, g: 0.2 });
+  missionProgress('destroy', cx, cy - 26);
+}
+function updateMission() {
+  const m = mission, p = player;
+  if (!m || !p || p.dead) return;
+  if (m.relayBonus) {   // 3작전 성공 보상: 최종전 본부 지원 (필살기 +1 · SP 50)
+    m.relayBonus = false;
+    p.ultUses = Math.min(9, p.ultUses + 1); p.ult = Math.max(p.ult, 50);
+    addFloat(p.x + p.w / 2, p.y - 40, '📡 본부 지원 — 필살기 +1 · SP 50', '#c8a0ff');
+  }
+  m.zones.forEach(z => {
+    if (z.done) return;
+    const inside = Math.abs(p.x + p.w / 2 - z.x) < z.r && p.y + p.h > GROUND_Y - 60;
+    if (inside) { z.hold++; if (z.hold % 60 === 0) S.pickup(); }
+    else z.hold = Math.max(0, z.hold - 2);                // 벗어나면 천천히 식는다
+    if (z.hold >= z.need) {
+      z.done = true;
+      if (z.type === 'plant') { explode(z.x, GROUND_Y - 14, 46, 30, true); addShake(10); flashScreen = Math.max(flashScreen, 5); }
+      else { S.power(); for (let i = 0; i < 14; i++) particles.push(spark(z.x + rnd(-10, 10), GROUND_Y - 30 - rnd(0, 40), '#9fe8ff')); }
+      missionProgress(z.type, z.x, GROUND_Y - 64);
+    }
+  });
+  if (m.cd > 0 && !boss) {                                 // 최종 작전 카운트다운 (보스 등장 = 발사 개시)
+    m.cd--;
+    if (m.cd === 0 && !m.done) { m.failed = true; toasts.push({ txt: '🚀 ' + m.def.fail, life: 300 }); S.alert(); }
+  }
+  if (m.si === STAGES.length - 1) updateFinalSupport(m);
+}
+// 최종 보스 등장 시 1~6작전 결과 적용 (spawnBoss에서 호출)
+function applyFinalStoryMods(b) {
+  const m = mission;
+  if (!m) return;
+  const L = [];
+  if (storyDone(4)) { b.maxhp = b.hp = Math.round(b.maxhp * 0.8); L.push('☢️ 냉각 장치 파괴 — 보스 체력 -20%'); }
+  if (m.done) { b.cfg = Object.assign({}, b.cfg, { armor: Math.max(0, (b.cfg.armor || 0) - 0.12) }); L.push('🛰️ 제어 코어 파괴 — 보스 장갑 약화'); }
+  if (storyDone(1)) { b.rate = (b.rate || 1) * 1.2; L.push('🛢️ 연료 차단 — 보스 공격 속도 -20%'); }
+  if (storyDone(3)) L.push('🏰 요새 붕괴 — 적 증원 차단');
+  if (storyDone(2)) L.push('📡 통신 회복 — 필살기 +1 (지원 완료)');
+  if (storyDone(0)) L.push('🪖 정찰대 — 보급 투하 대기');
+  if (storyDone(5)) L.push('🛩️ 조종사 편대 — 공습 대기');
+  m.allies = L; m.allyShow = 480;
+  if (L.length) S.achv();
+}
+function updateFinalSupport(m) {
+  if (m.allyShow > 0) m.allyShow--;
+  const b = boss, p = player;
+  if (!b || b.dead || b.hidden || b.state === 'enter' || bossIntro > 0) return;
+  if (storyDone(0) && ++m.supT >= 1500) {                 // 25초마다 정찰대 보급 투하
+    m.supT = 0;
+    pickups.push({ x: p.x + 34, y: GROUND_Y - 14, type: 'hp' });
+    pickups.push({ x: p.x - 30, y: GROUND_Y - 14, type: 'nade' });
+    addFloat(p.x + p.w / 2, p.y - 40, '🪂 정찰대 보급 투하!', '#5ad15a');
+    S.pickup();
+  }
+  if (storyDone(5) && ++m.airT >= 900) {                  // 15초마다 조종사 편대 공습 5발
+    m.airT = 0; m.strikeQ = 5;
+    addFloat(b.x + b.w / 2, b.y - 24, '🛩️ 조종사 편대 공습!', '#9fe8ff');
+    S.alert();
+  }
+  if (m.strikeQ > 0 && tick % 7 === 0) {
+    m.strikeQ--;
+    explode(b.x + rnd(0, b.w), b.y + rnd(0, b.h), 26, 0, true);
+    hurtBoss(pdmg(22));
+  }
+}
+// ── 그리기 ────────────────────────────────────────────────────
+function bakeMissionTarget(kind) {
+  return bakeUnit('mt|' + kind, 22, 22, 2, H => {
+    if (kind === 'tanker') {
+      H.E(6, 19, 3, 3, '#1a1a1e'); H.E(16, 19, 3, 3, '#1a1a1e'); H.E(6, 19, 1.2, 1.2, '#6a6a7a'); H.E(16, 19, 1.2, 1.2, '#6a6a7a');
+      H.R(1, 5, 20, 11, '#b8561a'); H.E(1, 10.5, 2, 5.5, '#b8561a'); H.E(21, 10.5, 2, 5.5, '#9a4414');
+      H.R(1, 5, 20, 2.4, '#e8823c'); H.R(1, 13.5, 20, 1.6, '#7a3410');
+      H.R(7, 8, 8, 5, '#ffcf3f'); H.P([[11, 8.6], [14, 12.4], [8, 12.4]], '#1a1408'); H.R(10.4, 9.8, 1.2, 1.6, '#ffcf3f');
+    } else if (kind === 'cooler') {
+      H.R(0, 1, 22, 3, '#8aa0b0'); H.R(2, 0, 3, 5, '#a8bccc'); H.R(17, 0, 3, 5, '#a8bccc');
+      H.R(3, 5, 16, 17, '#3a5a7a'); H.R(3, 5, 16, 2.6, '#5a8ab0'); H.R(3, 19.6, 16, 2.4, '#243a50');
+      H.R(6, 9, 3, 10, '#9fe8ff'); H.R(13, 9, 3, 10, '#9fe8ff'); H.R(6, 9, 3, 2, '#e0fbff'); H.R(13, 9, 3, 2, '#e0fbff');
+      H.R(9.5, 8, 3, 1.2, '#ff5a3c'); H.R(9.5, 11, 3, 1.2, '#ff5a3c'); H.R(9.5, 14, 3, 1.2, '#ff5a3c');
+    } else if (kind === 'engine') {
+      H.E(11, 11, 10.5, 10.5, '#4a4a56'); H.E(11, 11, 8.5, 8.5, '#6a6a78');
+      H.R(10, 1, 2, 20, '#2a2a30'); H.R(1, 10, 20, 2, '#2a2a30'); H.P([[3.6, 3.6], [5, 2.5], [19.5, 17], [18.4, 18.1]], '#2a2a30'); H.P([[18.4, 3.6], [19.5, 5], [5, 19.5], [3.6, 18.4]], '#2a2a30');
+      H.E(11, 11, 4, 4, '#8a8a99'); H.E(11, 11, 2.4, 2.4, '#ff8a5c'); H.E(11, 11, 1, 1, '#fff0c8');
+    } else {   // core
+      H.P([[11, 0], [21, 11], [11, 22], [1, 11]], '#4a2a80'); H.P([[11, 2.5], [18.8, 11], [11, 19.5], [3.2, 11]], '#6a3aa0');
+      H.P([[11, 5], [16.5, 11], [11, 17], [5.5, 11]], '#b18cff'); H.R(9.4, 9.4, 3.2, 3.2, '#fff0ff');
+      H.R(0, 20, 22, 2, '#2a2a34'); H.R(9, 18, 4, 3, '#3a3a44');
+    }
+  });
+}
+function bakeMissionProp(type) {
+  return bakeUnit('mp|' + type, 16, 34, 2, H => {
+    if (type === 'hold') {   // 통신 중계기: 격자 마스트 + 접시
+      H.R(7, 6, 2, 28, '#8a8a96'); H.R(4, 30, 8, 4, '#4a4a56'); H.R(3, 33, 10, 1, '#2a2a30');
+      H.R(5, 10, 6, 1, '#6a6a76'); H.R(5, 16, 6, 1, '#6a6a76'); H.R(5, 22, 6, 1, '#6a6a76');
+      H.E(8, 5, 5, 3.6, '#c8d4e0'); H.E(8, 5, 3, 2, '#8aa0b0'); H.R(7.5, 0, 1, 6, '#e0e8f0'); H.E(8, 0.8, 1.2, 1.2, '#ff5a3c');
+    } else {                 // 요새 기둥: 검은 돌 + 균열
+      H.R(1, 2, 14, 32, '#2a2632'); H.R(0, 0, 16, 3, '#3a3644'); H.R(1, 2, 3, 32, '#3a3644'); H.R(12, 2, 3, 32, '#1a1720');
+      H.R(6, 8, 1.2, 8, '#141018'); H.R(7, 15, 1.2, 6, '#141018'); H.R(5, 24, 1.2, 5, '#141018');
+      H.R(4, 30, 8, 2, '#8a2a2a'); H.R(5, 27, 6, 3, '#e8412c'); H.R(6.5, 28, 3, 1, '#ffcf3f');
+    }
+  });
+}
+function drawMissionTarget(c) {
+  blitUnit(bakeMissionTarget(c.kind), c.x, c.y);
+}
+// 월드 좌표 (카메라 변환 안): 사수 구역·표적 체력바·화면 밖 화살표
+function drawMissionWorld() {
+  const m = mission;
+  if (!m || SILH) return;
+  let fx2 = null, fd = 1e9, ficon = '', fcol = '#ffd23f';
+  const consider = (x, icon, col) => { const d = Math.abs(x - (player.x + player.w / 2)); if (d < fd) { fd = d; fx2 = x; ficon = icon; fcol = col; } };
+  m.zones.forEach(z => {
+    const col = z.type === 'plant' ? '#ff9a3c' : '#9fe8ff';
+    blitUnit(bakeMissionProp(z.type), z.x - 8, GROUND_Y - 34);
+    if (z.done) {
+      if (z.type === 'hold' && tick % 30 < 15) { ctx.fillStyle = '#5ad15a'; ctx.fillRect(z.x - 1, GROUND_Y - 38, 2, 2); }
+      return;
+    }
+    const r = clamp(z.hold / z.need, 0, 1), pulse = 0.5 + 0.5 * Math.sin(tick * 0.15);
+    ctx.fillStyle = z.type === 'plant' ? 'rgba(255,154,60,' + (0.10 + 0.06 * pulse) + ')' : 'rgba(159,232,255,' + (0.10 + 0.06 * pulse) + ')';
+    ctx.fillRect(z.x - z.r, GROUND_Y - 70, z.r * 2, 70);
+    ctx.fillStyle = col;
+    ctx.fillRect(z.x - z.r, GROUND_Y - 70, 1, 70); ctx.fillRect(z.x + z.r - 1, GROUND_Y - 70, 1, 70); ctx.fillRect(z.x - z.r, GROUND_Y - 1, z.r * 2, 2);
+    ctx.fillStyle = '#000'; ctx.fillRect(z.x - 26, GROUND_Y - 84, 52, 6);
+    ctx.fillStyle = col; ctx.fillRect(z.x - 25, GROUND_Y - 83, 50 * r, 4);
+    ctx.font = '700 8.7px ' + FONT_U; ctx.textAlign = 'center';
+    const tx = z.icon + ' ' + z.label + ' ' + ((z.need - z.hold) / 60).toFixed(1) + 's';
+    ctx.fillStyle = '#07060a'; ctx.fillText(tx, z.x + 1, GROUND_Y - 88);
+    ctx.fillStyle = '#eaffea'; ctx.fillText(tx, z.x, GROUND_Y - 89);
+    ctx.textAlign = 'left';
+    consider(z.x, z.icon, col);
+  });
+  crates.forEach(c => {
+    if (!c.mt || c.dead) return;
+    const cx = c.x + c.w / 2;
+    ctx.fillStyle = '#000'; ctx.fillRect(c.x - 3, c.y - 9, c.w + 6, 5);
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(c.x - 2, c.y - 8, Math.round((c.w + 4) * clamp(c.hp / c.maxhp, 0, 1)), 3);
+    if (tick % 40 < 28) {
+      ctx.font = '700 7.3px ' + FONT_U; ctx.textAlign = 'center';
+      ctx.fillStyle = '#07060a'; ctx.fillText(c.icon + ' ' + c.label, cx + 1, c.y - 11);
+      ctx.fillStyle = '#ffd23f'; ctx.fillText(c.icon + ' ' + c.label, cx, c.y - 12);
+      ctx.textAlign = 'left';
+    }
+    consider(cx, c.icon, '#ffd23f');
+  });
+  pickups.forEach(pk => { if (pk.type === 'pow' && !pk.taken && pk.mlabel) consider(pk.x + 6, pk.micon || '🪖', '#5ad15a'); });
+  // 가장 가까운 미완료 목표가 화면 밖이면 가장자리 화살표
+  if (fx2 !== null && (fx2 < cam + 8 || fx2 > cam + W - 8) && tick % 30 < 22) {
+    const left = fx2 < cam + 8, ax = left ? cam + 10 : cam + W - 10, ay = GROUND_Y - 50;
+    ctx.fillStyle = fcol;
+    ctx.beginPath();
+    ctx.moveTo(ax + (left ? -6 : 6), ay); ctx.lineTo(ax + (left ? 4 : -4), ay - 7); ctx.lineTo(ax + (left ? 4 : -4), ay + 7);
+    ctx.closePath(); ctx.fill();
+    ctx.font = '700 8.7px ' + FONT_U; ctx.textAlign = left ? 'left' : 'right';
+    ctx.fillText(ficon + ' ' + Math.round(fd / 10) + 'm', ax + (left ? 8 : -8), ay + 3);
+    ctx.textAlign = 'left';
+  }
+}
+// HUD (화면 좌표): 목표 진행 줄 · 진행바 표식 · 최종전 아군 지원 목록
+function drawMissionHud() {
+  const m = mission;
+  if (!m || bossIntro > 0) return;
+  const parts = m.objs.map(o => o.icon + ' ' + o.label + ' ' + Math.min(o.n, o.need) + '/' + o.need);
+  let txt = m.done ? '✔ 작전 「' + m.def.code + '」 완료' : parts.join(' · ');
+  const cdOn = m.cd > 0 && !boss && !m.done;
+  if (cdOn) txt += '  🚀 T-' + Math.floor(m.cd / 3600) + ':' + String(Math.floor(m.cd / 60) % 60).padStart(2, '0');
+  const col = m.done ? '#5ad15a' : m.failed ? '#9b8f63' : '#ffd23f';
+  ctx.font = '700 8.7px ' + FONT_U; ctx.textAlign = 'center';
+  const tw = ctx.measureText(txt).width + 14;
+  ctx.fillStyle = 'rgba(7,6,10,.7)'; ctx.fillRect(W / 2 - tw / 2, 46, tw, 12);
+  ctx.fillStyle = col; ctx.fillRect(W / 2 - tw / 2, 46, tw, 1);
+  ctx.fillStyle = (cdOn && m.cd < 1800 && tick % 20 < 10) ? '#ffffff' : col;
+  ctx.fillText(txt, W / 2, 55);
+  const pbx = 60, pbw = W - 120, pby = H - 9;
+  const mk = (x, col2) => px(pbx + 1 + Math.round((pbw - 2) * clamp(x / stage.len, 0, 1)), pby - 1, 2, 7, col2);
+  m.zones.forEach(z => { if (!z.done) mk(z.x, '#9fe8ff'); });
+  crates.forEach(c => { if (c.mt && !c.dead) mk(c.x, '#ffd23f'); });
+  if (m.allies && m.allyShow > 0) {
+    ctx.globalAlpha = clamp(m.allyShow / 60, 0, 1);
+    ctx.textAlign = 'left';
+    const lines = m.allies.length ? ['🤝 아군 지원 — 앞선 작전의 결과'].concat(m.allies) : ['🤝 아군 지원 없음 — 작전 목표를 달성하면 최종전이 쉬워진다'];
+    lines.forEach((l, i) => {
+      const y = 132 + i * 11;
+      ctx.fillStyle = 'rgba(7,6,10,.72)'; ctx.fillRect(8, y - 8, ctx.measureText(l).width + 8, 11);
+      ctx.fillStyle = i === 0 ? '#ffd23f' : '#9fe8ff'; ctx.fillText(l, 12, y);
+    });
+    ctx.globalAlpha = 1;
+  }
+  ctx.textAlign = 'left';
+}
+// 출격 화면 브리핑 카드 HTML
+function briefingHtml(si) {
+  const d = MISSIONS[si];
+  if (!d) return '';
+  return '<div class="brief"><div class="brief-h">' + d.icon + ' 작전명 「' + d.code + '」<span class="brief-goal">목표: ' + d.goal + '</span></div>'
+    + '<div class="brief-b">' + d.brief.join('<br>') + '</div></div>';
+}
+// 결과 화면 스토리 줄 (캠페인 종료 시)
+function storyEndHtml(win) {
+  if (survival || !run || !run.missions) return '';
+  const total = STAGES.length, done = Object.keys(run.missions).filter(k => run.missions[k].done).length;
+  if (!win) return '<br><span style="color:#9b8f63;">📖 작전 목표 달성 ' + done + '/' + total + ' — ' + STORY_ENEMY + '은 아직 건재하다. 다시 출격하자!</span>';
+  const all = done >= total;
+  return '<br><span style="color:' + (all ? '#ffd23f' : '#9fe8ff') + ';">📖 ' + (all
+    ? '완벽한 승리! 핵탄두 발사를 막고, 납치된 모두를 집으로 데려왔다.'
+    : '핵탄두 발사를 막았다! 하지만 아직 구하지 못한 이들이 있다… (작전 목표 ' + done + '/' + total + ')') + '</span>';
 }
 
 function startStage(i) {
@@ -3029,6 +4368,7 @@ function startStage(i) {
   bossIntro = 0;
   combo = 0; comboT = 0;
   st = { deaths: 0, dmg: 0, maxCombo: 0, pow: 0, powCount: 0, midDone: survival };   // 서바이벌: APC 미등장
+  initMission(i);                          // 📖 스토리 캠페인 작전 목표 (서바이벌·일일은 null)
   buildLevel();
   initWeather();
   const p = player;
@@ -4172,8 +5512,9 @@ function applyPickup(pk) {
     else if (gift === 'nade') p.nades = Math.min(9, p.nades + 2);
     else addMoney(40);
     addFloat(pk.x, pk.y - 14, 'THANK YOU!', '#5ad15a');
-    addFloat(pk.x, pk.y - 24, 'POW 구출!', '#ffd23f');
+    addFloat(pk.x, pk.y - 24, (pk.mlabel || 'POW') + ' 구출!', '#ffd23f');
     S.rescue();
+    if (pk.mlabel) missionProgress('rescue', pk.x + 6, pk.y - 36);
     return;
   }
   if (t === 'hp') { p.hp = Math.min(p.maxHp, p.hp + 30); addFloat(pk.x, pk.y - 10, '+30 HP', '#5ad15a'); }
@@ -4196,6 +5537,7 @@ function damageCrate(c, dmg) {
   c.hp -= dmg;
   if (c.hp <= 0) {
     c.dead = true;
+    if (c.mt) { missionTargetDown(c); return; }   // 📖 작전 표적
     S.crate();
     for (let i = 0; i < 8; i++)
       particles.push({ x: c.x + 7, y: c.y + 7, vx: rnd(-2, 2), vy: rnd(-3, 0), life: rnd(12, 24), c: c.barrel ? '#e8412c' : '#8f6f38', r: 2, g: 0.2 });
@@ -4890,7 +6232,7 @@ function vehicleSpecial() {
     if ((p.ultMsgCd || 0) <= 0) {
       p.ultMsgCd = 30;
       addFloat(p.x, p.y - 26, '특수기 재충전 ' + (p.vehCd / 60).toFixed(1) + 's', '#8a8158');
-      S.impact();
+      S.deny();
     }
     return;
   }
@@ -4985,7 +6327,7 @@ function triggerUlt() {
     if ((p.ultMsgCd || 0) <= 0) {
       p.ultMsgCd = 40;
       addFloat(p.x, p.y - 34, blocked[0], blocked[1]);
-      S.impact();
+      S.deny();
     }
     return;
   }
@@ -5209,7 +6551,7 @@ function hurtEnemy(e, dmg) {
   gainUlt(d * 0.22);
   const dir = (e.x + e.w / 2 > player.x + player.w / 2) ? 1 : -1;
   fx.blood(e.x + e.w / 2, e.y + e.h / 2, dir);
-  S.impact();
+  S.impact(e.x + e.w / 2);
   if (d >= 12 && d >= e.maxhp * 0.35) addHitstop(2);   // 절대값 20 → 최대체력 대비 35%: 피해 인플레 시 매 탄마다 걸리던 정지 방지
   if (e.hp <= 0 && !e.dead) {
     e.dead = true;
@@ -5219,7 +6561,7 @@ function hurtEnemy(e, dmg) {
     }
     onEnemyKilled(e);
     gainUlt(5);
-    S.edie();
+    S.edie(e.x + e.w / 2, e.type);
     addHitstop(3);
     // ⑤ 오버드라이브: 처치 파티클 증폭 — 화면이 불꽃으로 덮이게
     const od3 = odLevel();
@@ -5340,7 +6682,9 @@ function bossPhaseShift(b) {
     });
   }
   // 호위 병력 소환
-  const adds = 1 + b.phase;
+  const fortDown = mission && mission.si === STAGES.length - 1 && storyDone(3);
+  const adds = fortDown ? 0 : 1 + b.phase;
+  if (fortDown) addFloat(b.x + b.w / 2, b.y - 30, '🏰 증원 차단!', '#5ad15a');
   for (let i = 0; i < adds; i++) {
     const type = stage.roster[Math.floor(Math.random() * stage.roster.length)];
     const c = ECFG[type];
@@ -5441,14 +6785,14 @@ function emuzzle(e, ang) {
 function straightShoot(e) {
   ebullets.push({ x: e.x + (e.face > 0 ? e.w : 0), y: e.y + 11, vx: e.face * 3.4 * diff.eBulletSpd, vy: 0, life: 110 });
   emuzzle(e, e.face > 0 ? 0 : Math.PI);
-  S.shoot('mg');
+  S.eshoot(e);
 }
 function aimShoot(e, spd) {
   const s = (spd || 3.2) * diff.eBulletSpd;
   const ang = Math.atan2((player.y + 10) - (e.y + 8), player.x - e.x);
   ebullets.push({ x: e.x + e.w / 2, y: e.y + 8, vx: Math.cos(ang) * s, vy: Math.sin(ang) * s, life: 120 });
   emuzzle(e, ang);
-  S.shoot('mg');
+  S.eshoot(e, 'turret');
 }
 function lobNade(e, hi) {
   const dx = player.x - e.x, t = hi ? 60 : 42;
@@ -5459,7 +6803,7 @@ function fireRocketE(e) {
   ebullets.push({ x: e.x + (e.face > 0 ? e.w : 0), y: e.y + 10, vx: e.face * 2.0 * diff.eBulletSpd, vy: 0, life: 200, rocket: true, r: 3 });
   emuzzle(e, e.face > 0 ? 0 : Math.PI);
   fx.smoke(e.x + e.w / 2, e.y + 12, -e.face * 0.6, -0.3, 2, 0.4);
-  S.shoot('mech');
+  S.eshoot(e, 'rocket');
 }
 function flameBreath(e) {
   ebullets.push({
@@ -5740,10 +7084,11 @@ function spawnBoss() {
     cfg: b, tier: stageIndex,
   };
   prebakeBoss(boss);                       // 등장 연출 동안 전 프레임 굽기
+  if (stageIndex === STAGES.length - 1 && mission) applyFinalStoryMods(boss);   // 📖 1~6작전 결과 반영
   bossIntro = bossIntroMax;
   addShake(8);
   flashScreen = Math.max(flashScreen, 6);
-  S.alert();
+  S.bossRoar();
   curMusic = 6;
   S.startMusic(6);   // 보스전 테마
 }
@@ -5913,7 +7258,7 @@ function _updateBossFight() {
       }
     }
     b.fireCd = fc * diff.eFire * (b.rate || 1);
-    S.shoot('gun');
+    S.shoot('gun', b.x + b.w / 2);
   }
 
   // 곡사탄 패턴
@@ -5960,7 +7305,7 @@ function _updateBossFight() {
       for (let i = 0; i < cnt; i++)
         ebullets.push({ x: b.x + 20, y: b.y + 10 + i * 12, vx: -2.2, vy: rnd(-1, 1), life: 260, eh: true, spd: 2.6, r: 3, rocket: true });
       b.homeCd = (enraged ? 120 : 190) * diff.eFire;
-      S.shoot('homing');
+      S.shoot('homing', b.x + b.w / 2);
     }
     if (b.spCd <= 0) {
       const alive = enemies.filter(e => !e.dead && e.type === 'jet').length;
@@ -6011,7 +7356,7 @@ function fireBossSignature(b, enraged) {
       break;
     }
     case 1: { // DESERT FANG — 사구 폭풍: 넓은 부채꼴 난사
-      S.shoot('shotgun');
+      S.shoot('shotgun', cx);
       addFloat(cx, b.y - 10, '사구 폭풍!', '#e0a85a');
       const n = 7, baseAng = Math.atan2((p.y + 10) - cy, p.x - cx);
       for (let i = 0; i < n; i++) {
@@ -6027,7 +7372,7 @@ function fireBossSignature(b, enraged) {
       break;
     }
     case 3: { // NIGHT REAPER — 사신의 낫질: 초승달형 광역 산탄
-      S.shoot('rail');
+      S.shoot('rail', cx);
       addFloat(cx, b.y - 10, '사신의 낫질!', '#b18cff');
       const n = 5, baseAng = Math.atan2((p.y + 10) - cy, p.x - cx);
       for (let i = 0; i < n; i++) {
@@ -6037,7 +7382,7 @@ function fireBossSignature(b, enraged) {
       break;
     }
     case 4: { // MAGMA GOLEM — 용암 낙석: 큰 폭발 반경의 낙하 바위 3발
-      S.shoot('rocketP');
+      S.shoot('rocketP', cx);
       addFloat(cx, b.y - 10, '용암 낙석!', '#ff8a2b');
       for (let i = 0; i < 3; i++) {
         const tx = clamp(p.x + rnd(-70, 70), cam + 20, cam + W - 20);
@@ -6051,6 +7396,19 @@ function fireBossSignature(b, enraged) {
       addFloat(cx, b.y - 16, '궤도 폭격!', '#eafcff');
       const bx = clamp(p.x + p.w / 2, cam + 18, cam + W - 18);
       beams.push({ x: bx, w: 18, warm: 46, dur: 22, durMax: 22 });
+      break;
+    }
+    case 6: { // VOID DREADNOUGHT — 보이드 포격: 궤도 레이저 2줄 + 보라 탄환 고리 (최종 보스 전용)
+      S.alert();
+      addFloat(cx, b.y - 16, '보이드 포격!', '#b18cff');
+      const bx = clamp(p.x + p.w / 2, cam + 18, cam + W - 18);
+      beams.push({ x: bx, w: 18, warm: 50, dur: 20, durMax: 20 });
+      beams.push({ x: clamp(bx + (p.x < cx ? 90 : -90), cam + 18, cam + W - 18), w: 14, warm: 74, dur: 18, durMax: 18 });
+      const n = enraged ? 12 : 8;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * 6.283 + tick * 0.01;
+        ebullets.push({ x: cx, y: cy, vx: Math.cos(a) * 2.6 * diff.eBulletSpd, vy: Math.sin(a) * 2.6 * diff.eBulletSpd, life: 160, dmgP: 9, col: '#b18cff' });
+      }
       break;
     }
   }
@@ -6194,7 +7552,7 @@ function calcRank() {
   if (st.dmg === 0) pts += 1;
   if (stageTime < stage.par) pts += 1;
   if (st.maxCombo >= 10) pts += 1;
-  if (st.pow >= st.powCount) pts += 1;
+  if (mission ? mission.done : st.pow >= st.powCount) pts += 1;   // 📖 캠페인: 작전 목표 달성
   lastRank = pts >= 5 ? 'S' : pts >= 4 ? 'A' : pts >= 3 ? 'B' : 'C';
   if (lastRank === 'S') unlockAch('RANK_S');
   if (st.dmg === 0) unlockAch('NO_DMG');
@@ -6632,6 +7990,7 @@ function update() {
     checkArenaEnter();
     updateArena();
     runSpawner();
+    updateMission();                       // 📖 작전 목표 (사수·설치·카운트다운·최종전 지원)
     if (!boss && !st.midDone && camMax + W > stage.apcX) {
       st.midDone = true;
       enemies.push(mkEnemy(cam + W + 30, GROUND_Y - ECFG.apc.h, 'apc', 1));
@@ -7091,7 +8450,7 @@ function draw() {
   // 파티클
   drawParticles();
 
-  if (survival) drawSurvEventWorld();
+  if (survival) drawSurvEventWorld(); else drawMissionWorld();
   drawSwapPrompt();
 
   // 플로팅 텍스트 (피해 숫자는 sz로 피해량 비례 크기)
@@ -7776,7 +9135,7 @@ function drawCrates() {
   if (SILH) return;
   crates.forEach(c => {
     if (c.dead || c.x > cam + W + 20 || c.x < cam - 20) return;
-    blitUnit(bakeCrate(c.barrel), c.x, c.y);
+    if (c.mt) drawMissionTarget(c); else blitUnit(bakeCrate(c.barrel), c.x, c.y);
   });
 }
 
@@ -7894,7 +9253,7 @@ function drawPickup(pk) {
       ctx.fillStyle = '#5ad15a';
       ctx.font = '700 7.3px ' + FONT_U;
       ctx.textAlign = 'center';
-      ctx.fillText('HELP', x + 6, pk.y - 8);
+      ctx.fillText(pk.mlabel || 'HELP', x + 6, pk.y - 8);
       ctx.textAlign = 'left';
     }
     return;
@@ -10913,6 +12272,7 @@ function drawPlayer() {
     // 착지 프레임 + 착지 먼지
     if (p.onGround && !_wasGround && p.mode === 'foot') {
       p.landT = 12;
+      S.land(_lastVy);
       if (_lastVy > 3.2) {
         for (let i = 0; i < 7; i++) fx.dust(p.x + p.w / 2 + rnd(-6, 6), p.y + p.h, rnd(-1.4, 1.4), -rnd(0.2, 0.9));
         addShake(_lastVy > 6 ? 2.2 : 1);
@@ -11256,7 +12616,7 @@ function explode(x, y, radius, dmg, fromPlayer, pDmg) {
   if (big || tick >= shakeCd) { addShake(big ? 11 : 7); shakeCd = tick + 30; }
   addHitstop(big ? 4 : 2);
   flashScreen = Math.max(flashScreen, big ? 4 : 2);
-  S.boom(big);
+  S.boom(big, x);
 
   fx.flashDisc(x, y, radius * 0.85);
   fx.shock(x, y, radius * 1.5, '#fff2c8', 2.4);
@@ -11485,6 +12845,7 @@ function drawHUD() {
     ctx.textAlign = 'center';
     ctx.fillText('STAGE ' + (stageIndex + 1) + '/' + STAGES.length, W / 2, H - 12);
     ctx.textAlign = 'left';
+    drawMissionHud();                      // 📖 작전 목표 줄 · 표식 · 아군 지원
   }
 
   // ── 보스 체력바 ────────────────────────────────────────────
@@ -11534,6 +12895,7 @@ function drawHUD() {
       ? '📅 DAILY — ' + (dailyRule ? dailyRule.icon + ' ' + dailyRule.name + ' · ' : '') + '3분을 버티고 탈출하라'
       : survival
         ? '🌊 SURVIVAL — 3분을 버티고 탈출하라'
+        : mission ? mission.def.icon + ' 작전 「' + mission.def.code + '」 — ' + mission.def.goal
         : 'STAGE ' + (stageIndex + 1) + ' — ' + BOSSCFG[stageIndex].name + ' 격파', W / 2, H / 2 + 12);
     ctx.globalAlpha = 1;
     ctx.textAlign = 'left';
@@ -11918,7 +13280,9 @@ function drawIntermission() {
       ['사망', st.deaths + '회', st.deaths === 0 ? '#5ad15a' : '#cdbf95'],
       ['피해', Math.round(st.dmg) + '', st.dmg === 0 ? '#5ad15a' : '#cdbf95'],
       ['최대 콤보', 'x' + st.maxCombo, st.maxCombo >= 10 ? '#ffcf3f' : '#cdbf95'],
-      ['POW 구출', st.pow + '/' + st.powCount, (st.powCount > 0 && st.pow >= st.powCount) ? '#5ad15a' : '#cdbf95'],
+      mission
+        ? ['작전 목표', mission.done ? '달성 ✔' : mission.objs.map(o => o.icon + Math.min(o.n, o.need) + '/' + o.need).join(' '), mission.done ? '#5ad15a' : '#cdbf95']
+        : ['POW 구출', st.pow + '/' + st.powCount, (st.powCount > 0 && st.pow >= st.powCount) ? '#5ad15a' : '#cdbf95'],
       ['클리어 타임', Math.floor(stageTime / 60) + 's / ' + Math.floor(stage.par / 60) + 's', stageTime < stage.par ? '#5ad15a' : '#cdbf95'],
     ];
     ctx.font = '700 8.7px ' + FONT_U;
@@ -11929,6 +13293,12 @@ function drawIntermission() {
     });
   }
 
+  if (t > 96 && mission) {   // 📖 후일담
+    ctx.textAlign = 'center';
+    ctx.font = '700 8.7px ' + FONT_U;
+    ctx.fillStyle = mission.done ? '#5ad15a' : '#9b8f63';
+    ctx.fillText('📖 ' + (mission.done ? mission.def.ok : mission.def.fail), W / 2, 222);
+  }
   if (t > 130 && tick % 40 < 24) {
     ctx.textAlign = 'center';
     ctx.font = '700 10.2px ' + FONT_U;
@@ -12634,10 +14004,10 @@ function buildStageRow() {
     b.innerHTML = '<span class="icn">' + (known ? OP_ICONS[i] : '❓') + '</span>'
       + (i + 1) + '. ' + (known ? s.name : '???')
       + '<span class="rec">' + recLine + '</span>';
-    b.title = isCur ? '다음 목표 — STAGE 1부터 진격해 도달하라'
+    b.title = (MISSIONS[i] ? MISSIONS[i].icon + ' 작전 「' + MISSIONS[i].code + '」 — ' + MISSIONS[i].goal + '\n' : '') + (isCur ? '다음 목표 — STAGE 1부터 진격해 도달하라'
       : cleared ? '재출격 — 탈환한 거점 재방문 (훈장 파밍·보스 재도전)'
       : i === 0 ? '새 작전 시작 (STAGE 1부터 순차 진행)'
-      : '미확보 거점';
+      : '미확보 거점');
     b.addEventListener('click', () => {
       if (!selectable) { S.warn(); return; }
       selStage = i;
@@ -13550,7 +14920,7 @@ function startGame(dk, surv, isDaily) {
   survT = 0; survKills = 0; survNext = SURV_PERK_KILLS; survWave = 1; survBanner = 0; survRushOn = false;
   survMod = null; survUltMul = 1; survWon = false;
   odShown = 0;
-  run = { kills: 0, maxCombo: 0, pow: 0, vehicles: {} };
+  run = { kills: 0, maxCombo: 0, pow: 0, vehicles: {}, missions: {} };
   player = makePlayer(selChar);
   player.partner = teamPartner();
   player.lives = diff.lives;
@@ -13592,8 +14962,8 @@ function resumeRun() {
   Math.random = ORIG_RANDOM;
   odShown = r.odShown | 0;
   run = r.runStats
-    ? { kills: r.runStats.kills | 0, maxCombo: r.runStats.maxCombo | 0, pow: r.runStats.pow | 0, vehicles: Object.assign({}, r.runStats.vehicles) }
-    : { kills: 0, maxCombo: 0, pow: 0, vehicles: {} };
+    ? { kills: r.runStats.kills | 0, maxCombo: r.runStats.maxCombo | 0, pow: r.runStats.pow | 0, vehicles: Object.assign({}, r.runStats.vehicles), missions: Object.assign({}, r.runStats.missions || {}) }
+    : { kills: 0, maxCombo: 0, pow: 0, vehicles: {}, missions: {} };
   player = makePlayer(selChar);
   const p = player;
   // 2인 편성 복원 — 스냅샷은 "그 순간 뛰던 대원"을 char로, 대기 대원을 partner로 담는다.
@@ -13688,7 +15058,7 @@ function endGame(win) {
       + (newBest ? ' <span style="color:#ffd23f;">🏆 NEW BEST SCORE!</span>' : '')
       + (dailyFirst ? ' <span style="color:#ffd23f;">오늘 첫 도전 — 보상 2배!</span>' : '')
       + (dailyModTxt ? '<br><span style="color:#9fe8ff;">🧩 ' + dailyModTxt + ' (대원 선택에서 장착)</span>' : '')
-    : '도달 ' + STAGES[stageIndex].name + ' · ' + diff.label + (lastRank ? ' · 최종 RANK ' + lastRank : '');
+    : '도달 ' + STAGES[stageIndex].name + ' · ' + diff.label + (lastRank ? ' · 최종 RANK ' + lastRank : '') + storyEndHtml(win);
   elEndStats.innerHTML =
     'KILLS ' + run.kills + ' · MAX COMBO x' + run.maxCombo + ' · POW ' + run.pow + ' · $' + (player ? player.money : 0) + '<br>' +
     survLine + '<br>' +
@@ -13702,7 +15072,7 @@ function togglePause() {
   if (state === 'play' || state === 'bonus') {
     pausedFrom = state;
     state = 'pause';
-    S.stopMusic();
+    S.pauseMusic();
     S.pauseB();
     syncOptBtns();
     // 상점 버튼 상태: 보스전·보너스 중에는 잠금 표시
@@ -13715,7 +15085,7 @@ function togglePause() {
     state = pausedFrom;
     elPause.classList.add('hidden');
     S.pauseB();
-    S.startMusic(curMusic);
+    S.resumeMusic();
   }
 }
 
@@ -13750,7 +15120,21 @@ function syncOptBtns() {
   elOptSound.textContent = 'SOUND ' + (save.opt.mute ? 'OFF' : 'ON');
   elOptShake.classList.toggle('on', !!save.opt.shake);
   elOptShake.textContent = 'SHAKE ' + (save.opt.shake ? 'ON' : 'OFF');
+  syncVolUI();
 }
+// 볼륨 슬라이더 ↔ save.opt.bgm/sfx
+const elVolBgm = document.getElementById('volBgm'), elVolSfx = document.getElementById('volSfx');
+function syncVolUI() {
+  const b = Math.round((save.opt.bgm == null ? 0.8 : save.opt.bgm) * 100), f = Math.round((save.opt.sfx == null ? 1 : save.opt.sfx) * 100);
+  elVolBgm.value = b; elVolSfx.value = f;
+  document.getElementById('volBgmV').textContent = b;
+  document.getElementById('volSfxV').textContent = f;
+}
+function bindVol(el, key) {
+  el.addEventListener('input', () => { S.init(); S.setVolume(key, el.value / 100); syncVolUI(); if (key === 'sfx') S.uiHover(); });
+  el.addEventListener('change', () => { commitSave(); if (key === 'bgm') S.pickup(); });
+}
+bindVol(elVolBgm, 'bgm'); bindVol(elVolSfx, 'sfx');
 
 // ═══════════════════════════════════════════════════════════════
 // DOM 이벤트 바인딩
@@ -13794,7 +15178,7 @@ function updateDeploySummary() {
     const status = selStage === 0 && save.best === 0 ? '🚩 첫 작전 — 여기서 시작한다'
       : selStage < save.best ? '↺ 재출격 — 탈환 거점 재방문 (훈장 파밍 · 보스 재도전)'
       : '🚩 새 작전 — STAGE 1부터 순차 진격';
-    rec.innerHTML =
+    rec.innerHTML = briefingHtml(selStage) +
       '<span style="color:#ffd23f;">' + (selStage + 1) + '. ' + STAGES[selStage].name + '</span>'
       + ' · 거점 보스 <span style="color:#ff8a5c;">' + BOSSCFG[selStage].name + '</span>'
       + ' · ' + status + '<br>'
@@ -13932,6 +15316,7 @@ function loop() {
   ctx.setTransform(RS, 0, 0, RS, 0, 0);   // 매 프레임 2배 스케일 보장 (저장/복원 불균형 방어)
   // 상태와 무관하게 항상 감쇠 — 어떤 화면에서도 흔들림은 반드시 잦아든다
   decayFx();
+  S.tick();                                 // 사운드 디렉터: 앰비언스·엔진·발소리·심박·로비 테마
   syncChromeBtns();
   if (state === 'play' || state === 'intermission' || state === 'bonus') {
     tickHitstop();
@@ -13997,6 +15382,10 @@ boot();
 // 개발용 디버그 훅 — URL에 ?debug 가 있을 때만 노출 (일반 플레이 영향 없음)
 if (location.search.indexOf('debug') >= 0) {
   window.__jsdx = {
+    S,
+    mission: () => mission, storyRun: () => run.missions,   // 📖 작전 상태 / 런 집계
+    mdone() { if (!mission) return; mission.objs.forEach(o => { while (!o.done) missionProgress(o.type, player.x, player.y); }); },   // 현재 작전 목표 즉시 달성
+    story(si, done) { run.missions[si] = { done: done !== false, n: 9, need: 9 }; },   // 앞 작전 결과 조작 (최종전 지원 테스트)                                                    // 오디오 엔진 (음향 검수: __jsdx.S.boom(true) 등)
     ff(sec) { survT += sec * 60; },                       // 서바이벌 시간 빨리감기
     state() {
       return { state, survT, survWave, survMod, survUltMul,
