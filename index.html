@@ -1015,6 +1015,67 @@
   .card.lock .lk br + .lkbuy,.card.lock .lkbuy{margin-top:1px;}
   .shopbtn{border-radius:8px;}
   .lb-fg{opacity:.92;}
+  /* ── 🎬 작전 컷신 (시작 브리핑 · 종료 결과) — 2026-10-05 ─────────── */
+  #cine{position:absolute;inset:0;z-index:40;overflow:hidden;pointer-events:auto;cursor:pointer;user-select:none;
+    font-family:var(--f-body);color:#f3ead2;
+    background:radial-gradient(120% 100% at 50% 48%,rgba(4,6,8,.8) 0%,rgba(2,3,4,.96) 72%);
+    -webkit-backdrop-filter:blur(5px) saturate(.7);backdrop-filter:blur(5px) saturate(.7);
+    opacity:0;transition:opacity .45s;}
+  #cine.show{opacity:1;}
+  #cine.hidden{display:none;}
+  #cine .cn-bar{position:absolute;left:0;right:0;height:11%;background:#000;z-index:2;transition:transform .7s cubic-bezier(.2,.8,.2,1);}
+  #cine .cn-bar.t{top:0;transform:translateY(-100%);}
+  #cine .cn-bar.b{bottom:0;transform:translateY(100%);}
+  #cine.show .cn-bar{transform:none;}
+  #cine .cn-load{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:none;
+    font-family:var(--f-ui);font-weight:700;letter-spacing:.3em;font-size:clamp(10px,1.6vw,14px);color:#9fe8ff;text-align:center;}
+  #cine.loading .cn-load{display:block;}
+  #cine .cn-load i{display:block;width:clamp(140px,30vw,260px);height:3px;margin:9px auto 0;background:rgba(255,255,255,.12);}
+  #cine .cn-load b{display:block;height:100%;width:0;background:#ffcf3f;transition:width .25s;}
+  #cine .cn-body{position:absolute;inset:11% 5%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:clamp(6px,1.4vw,14px);text-align:center;}
+  #cine.loading .cn-body{visibility:hidden;}
+  #cine .cn-kick{font-family:var(--f-ui);font-weight:700;letter-spacing:.35em;color:#9fe8ff;font-size:clamp(10px,1.6vw,15px);
+    opacity:0;transition:opacity .6s;}
+  #cine .cn-kick.in{opacity:1;}
+  #cine .cn-title{font-family:var(--f-display);font-size:clamp(26px,6.6vw,64px);line-height:1.1;color:#ffcf3f;letter-spacing:.03em;
+    text-shadow:0 0 26px rgba(255,170,40,.45),3px 3px 0 #000;opacity:0;}
+  #cine .cn-title .ic{font-size:.8em;margin-right:.15em;}
+  #cine.no .cn-title{color:#ffb05c;text-shadow:0 0 22px rgba(255,120,40,.35),3px 3px 0 #000;}
+  #cine .cn-title.in{animation:cnSlam .6s cubic-bezier(.2,.9,.3,1.15) forwards;}
+  #cine .cn-rule{width:0;height:2px;background:linear-gradient(90deg,transparent,#ffcf3f,transparent);transition:width .9s;}
+  #cine .cn-rule.in{width:min(62%,540px);}
+  #cine .cn-sub{min-height:3.2em;max-width:min(92%,780px);font-size:clamp(12px,2.05vw,19px);line-height:1.6;color:#ece4cc;
+    text-shadow:0 2px 6px #000,0 0 2px #000;word-break:keep-all;}
+  #cine .cn-sub .cur{display:inline-block;width:.45em;height:1em;margin-left:2px;background:#ffcf3f;vertical-align:-.12em;
+    animation:cnBlink .7s steps(1) infinite;}
+  #cine .cn-objs{display:flex;gap:clamp(6px,1.2vw,12px);flex-wrap:wrap;justify-content:center;min-height:clamp(34px,6vw,58px);perspective:600px;}
+  #cine .cn-obj{position:relative;display:flex;align-items:center;gap:7px;padding:clamp(5px,.9vw,9px) clamp(9px,1.5vw,16px);
+    border:1px solid rgba(255,207,63,.55);background:rgba(20,16,8,.78);border-radius:6px;
+    font-family:var(--f-ui);font-weight:700;font-size:clamp(11px,1.8vw,17px);color:#ffe9a8;opacity:0;transform:translateY(14px) rotateX(70deg);}
+  #cine .cn-obj.sm{font-size:clamp(10px,1.4vw,13px);padding:clamp(4px,.7vw,7px) clamp(7px,1vw,11px);}
+  #cine .cn-obj.in{animation:cnCard .45s cubic-bezier(.2,.9,.3,1.2) forwards;}
+  #cine .cn-obj .ic{font-size:1.3em;}
+  #cine .cn-obj .n{color:#fff;}
+  #cine .cn-obj .stamp{position:absolute;right:-9px;top:-13px;font-family:var(--f-display);font-size:.78em;padding:1px 6px;border:2px solid;border-radius:4px;
+    opacity:0;transform:rotate(12deg) scale(2.4);}
+  #cine .cn-obj .stamp.ok{color:#5dff8f;border-color:#5dff8f;background:rgba(0,28,10,.88);}
+  #cine .cn-obj .stamp.no{color:#ff6a5c;border-color:#ff6a5c;background:rgba(30,6,4,.88);}
+  #cine .cn-obj.stamped .stamp{animation:cnStamp .3s cubic-bezier(.3,1.6,.5,1) forwards;}
+  #cine .cn-obj.stamped.fail{filter:saturate(.45) brightness(.8);}
+  #cine .cn-go{font-family:var(--f-display);font-size:clamp(20px,4.4vw,42px);color:#fff;letter-spacing:.14em;opacity:0;
+    text-shadow:0 0 18px #e8412c,3px 3px 0 #000;}
+  #cine .cn-go.in{animation:cnSlam .5s cubic-bezier(.2,.9,.3,1.15) forwards;}
+  #cine .cn-skip{position:absolute;right:3%;bottom:12.5%;z-index:3;font-family:var(--f-ui);font-size:clamp(9px,1.4vw,13px);
+    color:rgba(255,255,255,.5);letter-spacing:.1em;}
+  #cine .cn-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:1;}
+  #cine .cn-flash.go{animation:cnFlash .55s ease-out;}
+  @keyframes cnSlam{0%{opacity:0;transform:scale(1.9);filter:blur(6px);}60%{opacity:1;transform:scale(.96);filter:blur(0);}100%{opacity:1;transform:scale(1);}}
+  @keyframes cnCard{to{opacity:1;transform:none;}}
+  @keyframes cnStamp{0%{opacity:0;transform:rotate(12deg) scale(2.4);}100%{opacity:1;transform:rotate(-8deg) scale(1);}}
+  @keyframes cnFlash{0%{opacity:.55;}100%{opacity:0;}}
+  @keyframes cnBlink{50%{opacity:0;}}
+  @media (prefers-reduced-motion:reduce){#cine .cn-title.in,#cine .cn-go.in,#cine .cn-obj.in{animation-duration:.01s;}}
 </style>
 </head>
 <body>
@@ -1023,6 +1084,21 @@
   <div id="scan"></div><div id="vig"></div>
   <button class="muteb" id="muteBtn">SOUND: ON</button>
   <button class="muteb hidden" id="pauseBtn" title="일시정지">⏸</button>
+  <!-- ═══ 🎬 작전 컷신 (시작 브리핑 · 종료 결과) — Gemini 지휘관 음성 + Lyria 음악, audio/*.mp3 ═══ -->
+  <div id="cine" class="hidden">
+    <div class="cn-flash"></div>
+    <div class="cn-bar t"></div><div class="cn-bar b"></div>
+    <div class="cn-load"><span id="cnLoadTxt">작전 자료 수신 중</span><i><b id="cnLoadBar"></b></i></div>
+    <div class="cn-body">
+      <div class="cn-kick" id="cnKick"></div>
+      <div class="cn-title" id="cnTitle"></div>
+      <div class="cn-rule" id="cnRule"></div>
+      <div class="cn-sub" id="cnSub"></div>
+      <div class="cn-objs" id="cnObjs"></div>
+      <div class="cn-go" id="cnGo"></div>
+    </div>
+    <div class="cn-skip">아무 키나 터치로 건너뛰기 ▸</div>
+  </div>
 
   <!-- ═══ 메인 메뉴 1/3 — 로비: 히어로 · 계급 · 모드 선택 ═══ -->
   <div id="startScreen" class="screen lobby">
@@ -1221,6 +1297,7 @@
     <div class="optrow volrows">
       <label class="volrow">🎵 BGM <input type="range" id="volBgm" min="0" max="100" step="5"><span id="volBgmV">80</span></label>
       <label class="volrow">🔊 SFX <input type="range" id="volSfx" min="0" max="100" step="5"><span id="volSfxV">100</span></label>
+      <label class="volrow">🎙 VOICE <input type="range" id="volVoice" min="0" max="100" step="5"><span id="volVoiceV">100</span></label>
     </div>
     <div class="hint">P(또는 Q/E) 무기교체 · ↑+사격 위로조준 · 공중 ↓+사격 대각사격 · <b style="color:#ffcf3f;">B 보급 상점</b><br>
       필살기는 SP 게이지가 가득 찼을 때 L/C · 잔여 횟수는 게이지 옆 눈금</div>
@@ -1317,7 +1394,7 @@ const GRAVITY = 0.46;          // 중력 가속도
 // mods: 소장한 진화 모듈(진화 무기 든 채 보스 격파로 획득) / equip: 대원별 장착 모듈
 // modBoxes: 수령한 스테이지 클리어 보상 상자(3·6스테이지 첫 클리어 — 조기 모듈 획득 경로)
 const SAVE_KEY = 'jsdx_save';
-let save = { hi: 0, best: 0, ach: [], pow: 0, medals: 0, meta: {}, survBestS: 0, survBestSBy: {}, survWins: 0, surv3m: true, survLegacyXP: 0, chars: [0, 1, 3], achPaid: false, dailyDone: '', dailyDate: '', dailyBestS: 0, run: null, mods: [], equip: {}, modBoxes: [], partner: 1, opt: { mute: false, shake: true, bgm: 0.8, sfx: 1 } };
+let save = { hi: 0, best: 0, ach: [], pow: 0, medals: 0, meta: {}, survBestS: 0, survBestSBy: {}, survWins: 0, surv3m: true, survLegacyXP: 0, chars: [0, 1, 3], achPaid: false, dailyDone: '', dailyDate: '', dailyBestS: 0, run: null, mods: [], equip: {}, modBoxes: [], partner: 1, cineSeen: [], opt: { mute: false, shake: true, bgm: 0.8, sfx: 1, voice: 1 } };
 
 function loadSave() {
   try {
@@ -1361,7 +1438,9 @@ function loadSave() {
         save.opt.shake = s.opt.shake !== false;
         save.opt.bgm = (typeof s.opt.bgm === 'number') ? Math.max(0, Math.min(1, s.opt.bgm)) : 0.8;
         save.opt.sfx = (typeof s.opt.sfx === 'number') ? Math.max(0, Math.min(1, s.opt.sfx)) : 1;
+        save.opt.voice = (typeof s.opt.voice === 'number') ? Math.max(0, Math.min(1, s.opt.voice)) : 1;
       }
+      save.cineSeen = Array.isArray(s.cineSeen) ? s.cineSeen.filter(Number.isInteger) : [];   // 🎬 음성 브리핑을 본 작전
     }
     // 구버전 하이스코어 마이그레이션
     const legacy = parseInt(localStorage.getItem('jstrike_hi') || '0', 10) || 0;
@@ -4351,6 +4430,313 @@ function storyEndHtml(win) {
     : '핵탄두 발사를 막았다! 하지만 아직 구하지 못한 이들이 있다… (작전 목표 ' + done + '/' + total + ')') + '</span>';
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🎬 작전 컷신 (2026-10-05) — 스토리 캠페인 작전 시작 브리핑 · 종료 결과
+//   음악: Lyria 3 (m_brief / m_final / m_win / m_part), 음성: Gemini TTS 지휘관(Charon)
+//   파일은 audio/*.mp3 (생성: concept_art/audio/gen_cine_audio.py — 대사를 고치면 CINE_VO도 같이)
+//   · 시작: 처음 보는 작전은 음성 브리핑 전체, 이미 본 작전은 짧은 버전(음악 + 작전명 + 목표)
+//   · 종료: 보스 격파 후 목표별 도장 + 성공/일부 실패 음성 → 인터미션(최종전은 엔딩)
+//   · 아무 키·터치로 건너뛰기. 오디오를 못 받으면(오프라인·음소거) 글자만으로 같은 연출
+//   · fetch+decode(WebAudio)가 안 되는 file:// 실행은 <audio> 요소로 재생
+// ═══════════════════════════════════════════════════════════════
+const CINE_VO = [
+  { i: '작전명, 첫 신호. 보이드 군단이 정글 기지를 기습해, 우리 정찰대를 끌고 갔다. 정글 곳곳에 묶여 있는 정찰대원을 찾아라. 목표. 납치된 정찰대원 세 명, 전원 구출. 작전을, 개시한다!',
+    ok: '작전 성공. 정찰대원 전원 복귀! 그들은 최종전에서, 보급으로 은혜를 갚겠다고 약속했다.',
+    no: '보스는 격파했다. 하지만 정찰대원 일부는, 아직 적의 손에 있다.' },
+  { i: '작전명, 모래 폭풍. 사막을 가로지르는 보이드 군단의 연료 수송로가 발견됐다. 연료 탱크로리를 파괴해, 적의 전차 부대를 멈춰 세워라. 목표. 연료 탱크로리 네 대 파괴. 작전을, 개시한다!',
+    ok: '작전 성공. 적 전차 부대가, 연료 부족으로 멈췄다. 최종 보스의 공격이 느려진다.',
+    no: '보스는 격파했다. 하지만 수송로 일부가 남아, 적은 계속 연료를 받는다.' },
+  { i: '작전명, 얼어붙은 무전. 설원의 통신 중계기가 적에게 점령돼, 아군 무전이 끊겼다. 중계기 앞을 지키며 재가동하라. 켜질 때까지, 버텨야 한다. 목표. 통신 중계기 두 곳 재가동. 작전을, 개시한다!',
+    ok: '작전 성공. 무전이 살아났다! 최종전에서 본부가, 필살기를 추가로 지원한다.',
+    no: '보스는 격파했다. 하지만 무전은, 여전히 잡음뿐이다.' },
+  { i: '작전명, 야간 침투. 밤의 요새 지하에, 붙잡힌 민간인들이 있다. 정전을 틈타 민간인을 구하고, 요새 기둥에 폭약을 설치하라. 목표. 민간인 세 명 구출, 그리고 폭약 두 곳 설치. 작전을, 개시한다!',
+    ok: '작전 성공. 민간인 전원 구출, 요새 붕괴! 적은 최종전에, 증원을 보낼 수 없다.',
+    no: '보스는 격파했다. 하지만 요새는 아직 서 있고, 구하지 못한 이들이 남았다.' },
+  { i: '작전명, 지옥의 심장. 화산 지하에서, 보이드 군단이 핵탄두를 만들고 있다. 냉각 장치를 부수면, 탄두는 완성될 수 없다. 목표. 핵탄두 냉각 장치 세 기, 모두 파괴. 작전을, 개시한다!',
+    ok: '작전 성공. 냉각 장치 전멸. 핵탄두가 불안정해져, 최종 보스의 체력이 줄어든다.',
+    no: '보스는 격파했다. 하지만 냉각 장치가 남아, 탄두는 완성됐다.' },
+  { i: '작전명, 하늘의 요새. 거대 항공모함이 핵탄두를 싣고, 궤도 요새로 향한다. 붙잡힌 우리 조종사를 구하고, 항모 엔진을 파괴해 추락시켜라. 목표. 조종사 두 명 구출, 그리고 항모 엔진 세 기 파괴. 작전을, 개시한다!',
+    ok: '작전 성공. 항모 추락! 구출된 조종사 편대가, 최종전 공습을 약속했다.',
+    no: '보스는 격파했다. 하지만 항모는 흔들리며, 궤도로 향했다.' },
+  { i: '작전명, 최후의 카운트다운. 궤도 요새의 핵탄두 발사 카운트다운이, 시작됐다. 시간 안에 제어 코어를 부수고, 보이드 드레드노트를 격파하라. 지금까지 구한 모두가, 너를 돕는다. 마지막 작전이다. 작전을, 개시한다!',
+    // 최종 작전: ok = 7개 작전 목표 전부 달성, no = 일부만 달성
+    ok: '작전 완수. 핵탄두 발사를 막고, 납치된 모두를 집으로 데려왔다. 완벽한 승리다. 수고했다, 대원.',
+    no: '작전 완수. 핵탄두 발사를 막았다! 하지만 아직, 구하지 못한 이들이 있다. 다시 출격할 날을 기다리겠다.' },
+];
+const CINE_DIR = 'audio/';
+const Cine = { on: false, mode: null, gen: 0, timers: [], snd: [], raw: {}, onDone: null, skipAt: 0, finish: null, disabled: /[?&]nocine\b/.test(location.search) };
+const elCine = document.getElementById('cine');
+const $cn = id => document.getElementById(id);
+
+function cineWanted(si) { return !Cine.disabled && !survival && !daily && !!mission && !!MISSIONS[si] && !!CINE_VO[si]; }
+function cineAt(ms, fn) { const g = Cine.gen; Cine.timers.push(setTimeout(() => { if (g === Cine.gen && Cine.on) fn(); }, ms)); }
+function cineEvery(ms, fn) { const g = Cine.gen; const id = setInterval(() => { if (g === Cine.gen && Cine.on) fn(); else clearInterval(id); }, ms); Cine.timers.push(id); }
+
+// 압축 바이트만 캐시한다 (30초 스테레오를 디코딩해 두면 곡당 10MB — 쓸 때만 디코딩)
+function cineFetch(name) {
+  if (!(name in Cine.raw)) Cine.raw[name] = fetch(CINE_DIR + name + '.mp3').then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); }).catch(() => null);
+  return Cine.raw[name];
+}
+function cinePrefetch(si) {
+  if (Cine.disabled || survival || daily || !MISSIONS[si] || !CINE_VO[si]) return;
+  [si === STAGES.length - 1 ? 'm_final' : 'm_brief', 'v' + si + 'i'].forEach(cineFetch);
+}
+function cineDecode(ab) {
+  return new Promise(res => {
+    try { const p = S.ctx.decodeAudioData(ab.slice(0), res, () => res(null)); if (p && p.catch) p.catch(() => res(null)); }
+    catch (e) { res(null); }
+  });
+}
+// 오디오 1개 준비 → { buf | el, dur } 또는 null (음소거·실패)
+async function cineAsset(name) {
+  if (!S.ctx || S.muted) return null;
+  const ab = await cineFetch(name);
+  if (ab) { const buf = await cineDecode(ab); if (buf) return { buf, dur: buf.duration }; }
+  return new Promise(res => {   // file:// 등 fetch 불가 → <audio> 요소
+    let el;
+    try { el = new Audio(CINE_DIR + name + '.mp3'); } catch (e) { res(null); return; }
+    const to = setTimeout(() => res(null), 4000);
+    el.preload = 'auto';
+    el.addEventListener('canplaythrough', () => { clearTimeout(to); res(isFinite(el.duration) ? { el, dur: el.duration } : null); }, { once: true });
+    el.addEventListener('error', () => { clearTimeout(to); res(null); }, { once: true });
+    el.load();
+  });
+}
+// 여러 개를 진행 막대와 함께 받는다 (전체 5초 제한 — 늦으면 받은 것만으로 진행)
+function cineLoad(names) {
+  let got = 0;
+  const bar = $cn('cnLoadBar'); bar.style.width = '0';
+  const all = Promise.all(names.map(n => cineAsset(n).then(a => { got++; bar.style.width = Math.round(got / names.length * 100) + '%'; return a; })));
+  return Promise.race([all, new Promise(r => setTimeout(() => r(names.map(() => null)), 5000))]);
+}
+const cineVol = k => k === 'voice' ? (save.opt.voice == null ? 1 : save.opt.voice) : (save.opt.bgm == null ? 0.8 : save.opt.bgm);
+// 재생 → 핸들 { g|el, t0, dur, onend }. 마스터 버스(리미터)로 바로 보낸다 — 음소거·리미터 공유
+function cinePlay(a, level, delay) {
+  if (!a) return null;
+  const h = { a, dur: a.dur, onend: null, ended: false };
+  const end = () => { if (h.ended) return; h.ended = true; if (h.onend) h.onend(); };
+  if (a.buf) {
+    const c = S.ctx, t = c.currentTime + (delay || 0);
+    const src = c.createBufferSource(); src.buffer = a.buf;
+    const g = c.createGain(); g.gain.value = level;
+    src.connect(g); g.connect(S.master);
+    src.onended = end;
+    src.start(t);
+    h.src = src; h.g = g; h.t0 = t;
+  } else {
+    const el = a.el; h.el = el;
+    el.currentTime = 0; el.volume = Math.max(0, Math.min(1, level));
+    el.onended = end;
+    cineAt((delay || 0) * 1000, () => { h.p0 = performance.now(); el.play().catch(() => {}); });
+  }
+  Cine.snd.push(h);
+  return h;
+}
+// 재생 위치(초) — 아직 시작 전이면 음수
+function cinePos(h) {
+  if (!h) return 0;
+  if (h.g) return S.ctx.currentTime - h.t0;
+  return h.el && h.p0 ? h.el.currentTime : -1;
+}
+function cineLevel(h, v, tc) {
+  if (!h) return;
+  if (h.g) h.g.gain.setTargetAtTime(v, S.ctx.currentTime, tc || 0.25);
+  else if (h.el) h.el.volume = Math.max(0, Math.min(1, v));
+}
+function cineStop(h, fade) {
+  if (!h) return;
+  fade = fade || 0.3;
+  try {
+    if (h.g) {
+      const t = S.ctx.currentTime;
+      h.g.gain.cancelScheduledValues(t); h.g.gain.setValueAtTime(h.g.gain.value, t);
+      h.g.gain.linearRampToValueAtTime(0, t + fade);
+      h.src.stop(t + fade + 0.05);
+    } else if (h.el) {
+      const el = h.el, v0 = el.volume; let k = 0;
+      const id = setInterval(() => { k++; el.volume = Math.max(0, v0 * (1 - k / 8)); if (k >= 8) { clearInterval(id); el.pause(); } }, fade * 1000 / 8);
+    }
+  } catch (e) { }
+}
+
+// ── 화면 조립 ───────────────────────────────────────────────
+function cineOpen(mode) {
+  Cine.gen++;
+  Cine.timers.forEach(clearTimeout); Cine.timers = [];
+  Cine.snd = [];
+  Cine.on = true; Cine.mode = mode; Cine.finish = null;
+  Cine.skipAt = performance.now() + 450;
+  ['cnKick', 'cnTitle', 'cnRule', 'cnGo'].forEach(id => $cn(id).className = id === 'cnKick' ? 'cn-kick' : id === 'cnTitle' ? 'cn-title' : id === 'cnRule' ? 'cn-rule' : 'cn-go');
+  $cn('cnSub').innerHTML = ''; $cn('cnObjs').innerHTML = ''; $cn('cnGo').textContent = '';
+  elCine.className = 'loading';
+  void elCine.offsetWidth;
+  elCine.classList.add('show');
+  state = 'cine';
+  S.stopMusic();
+}
+function cineCard(icon, label, n, small) {
+  const d = document.createElement('div');
+  d.className = 'cn-obj' + (small ? ' sm' : '');
+  d.innerHTML = '<span class="ic">' + icon + '</span><span>' + label + '</span>' + (n ? ' <span class="n">' + n + '</span>' : '') + '<span class="stamp"></span>';
+  $cn('cnObjs').appendChild(d);
+  return d;
+}
+function cineFlash() { const f = elCine.querySelector('.cn-flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+// 자막 타자 — 음성 재생 위치에 비례해 글자를 드러낸다 (음성이 없으면 글자 수 기반 시간)
+function cineType(text, voice, fallbackSec, onChar) {
+  const el = $cn('cnSub'), t0 = performance.now();
+  let shown = -1;
+  cineEvery(40, () => {
+    const pos = voice ? cinePos(voice) : (performance.now() - t0) / 1000;
+    const dur = voice ? voice.dur * 0.94 : fallbackSec;
+    const n = Math.max(0, Math.min(text.length, Math.round(text.length * pos / dur)));
+    if (n === shown) return;
+    shown = n;
+    el.innerHTML = text.slice(0, n) + (n < text.length ? '<span class="cur"></span>' : '');
+    if (onChar) onChar(n);
+  });
+}
+function cineClose(fadeMusic) {
+  Cine.on = false;
+  Cine.gen++;
+  Cine.timers.forEach(clearTimeout); Cine.timers = [];
+  Cine.snd.forEach(h => cineStop(h, h.music ? (fadeMusic || 0.8) : 0.25));
+  elCine.classList.remove('show');
+  setTimeout(() => { if (!Cine.on) elCine.classList.add('hidden'); }, 460);
+}
+// 메뉴로 나가기 등 — 콜백 없이 즉시 정리
+function cineAbort() { if (!Cine.on) return; cineClose(0.3); }
+function cineSkip() {
+  if (!Cine.on || performance.now() < Cine.skipAt) return;
+  if (Cine.finish) Cine.finish(true);
+}
+
+// ── 작전 시작 브리핑 ───────────────────────────────────────
+function cineIntro(si) {
+  if (!cineWanted(si)) return false;
+  const d = MISSIONS[si], vo = CINE_VO[si], last = si === STAGES.length - 1;
+  if (!Array.isArray(save.cineSeen)) save.cineSeen = [];
+  const full = save.cineSeen.indexOf(si) < 0;
+  cineOpen('intro');
+  const g = Cine.gen;
+  $cn('cnKick').textContent = (last ? 'FINAL OPERATION' : 'OPERATION ' + String(si + 1).padStart(2, '0')) + ' / ' + String(STAGES.length).padStart(2, '0');
+  $cn('cnTitle').innerHTML = '<span class="ic">' + d.icon + '</span>「' + d.code + '」';
+  const cards = d.objs.map(o => cineCard(o.icon, o.label, '×' + o.need));
+  if (d.countdown) { const sec = Math.round(d.countdown / 60); cards.push(cineCard('⏱️', '제한 시간', Math.floor(sec / 60) + '분' + (sec % 60 ? ' ' + sec % 60 + '초' : ''))); }
+  $cn('cnGo').textContent = '작전 개시';
+  ['m_win', 'm_part', 'v' + si + 'ok', 'v' + si + 'no'].forEach(cineFetch);   // 종료 컷신 미리 받기
+  let mus = null, voice = null;
+  const finish = () => {
+    if (!Cine.on || g !== Cine.gen) return;
+    if (save.cineSeen.indexOf(si) < 0) { save.cineSeen.push(si); commitSave(); }
+    cineClose(1.0);
+    if (state === 'cine') { state = 'play'; S.startMusic(curMusic); }
+  };
+  Cine.finish = finish;
+  const names = [last ? 'm_final' : 'm_brief'].concat(full ? ['v' + si + 'i'] : []);
+  cineLoad(names).then(([ma, va]) => {
+    if (!Cine.on || g !== Cine.gen) return;
+    elCine.classList.remove('loading');
+    mus = cinePlay(ma, 0.62 * cineVol('bgm'), 0.02); if (mus) mus.music = true;
+    cineAt(80, () => $cn('cnKick').classList.add('in'));
+    cineAt(260, () => { $cn('cnTitle').classList.add('in'); cineFlash(); });
+    cineAt(700, () => $cn('cnRule').classList.add('in'));
+    const go = () => {
+      $cn('cnGo').classList.add('in'); cineFlash();
+      cineAt(1350, finish);
+    };
+    if (full) {
+      // 전체 브리핑: 음성 + 자막 타자, "목표" 대목에서 목표 카드가 깔린다
+      voice = cinePlay(va, 1.05 * cineVol('voice'), 1.4);
+      if (voice) cineAt(1300, () => cineLevel(mus, 0.3 * cineVol('bgm'), 0.35));   // 덕킹
+      const goalAt = vo.i.indexOf('목표');
+      let dealt = 0;
+      const deal = n => { while (dealt < cards.length && n >= goalAt + 3 + dealt * 6) { cards[dealt++].classList.add('in'); S.uiHover && S.uiHover(); } };
+      const fallback = vo.i.length * 0.085;
+      cineAt(1400, () => cineType(vo.i, voice, fallback, deal));
+      let gone = false;
+      const after = () => { if (gone) return; gone = true; cineLevel(mus, 0.62 * cineVol('bgm'), 0.3); cards.forEach(c => c.classList.add('in')); go(); };
+      if (voice) { voice.onend = after; cineAt(1400 + (voice.dur + 2) * 1000, after); }
+      else cineAt(1400 + fallback * 1000 + 300, after);
+    } else {
+      // 다시 하는 작전: 짧은 버전 (작전명 + 목표만)
+      $cn('cnSub').textContent = '목표: ' + d.goal;
+      cards.forEach((c, k) => cineAt(800 + k * 220, () => c.classList.add('in')));
+      cineAt(2500, go);
+    }
+  });
+  return true;
+}
+
+// ── 작전 종료 결과 (보스 격파 직후) ──────────────────────────
+// done: 컷신이 끝나면 부를 원래 흐름(인터미션 또는 엔딩). 컷신을 안 띄우면 false.
+function cineOutro(si, done) {
+  if (!cineWanted(si)) return false;
+  syncMissionRun();
+  const d = MISSIONS[si], vo = CINE_VO[si], last = si === STAGES.length - 1;
+  const doneN = Object.keys(run.missions).filter(k => run.missions[k].done).length;
+  const good = last ? doneN >= STAGES.length : !!mission.done;
+  cineOpen('outro');
+  const g = Cine.gen;
+  elCine.classList.add(good || last ? 'ok' : 'no');
+  $cn('cnKick').textContent = (last ? 'FINAL OPERATION' : 'OPERATION ' + String(si + 1).padStart(2, '0')) + '  ·  「' + d.code + '」 결과';
+  $cn('cnTitle').innerHTML = last ? (good ? '완벽한 승리' : '작전 완수') : (good ? '작전 성공' : '작전 종료');
+  // 일반 작전: 목표별 카드 / 최종전: 7개 작전 전체 성적표
+  const rows = last
+    ? MISSIONS.map((m, k) => ({ icon: m.icon, label: m.code, n: '', ok: !!(run.missions[k] && run.missions[k].done), small: true }))
+    : mission.objs.map(o => ({ icon: o.icon, label: o.label, n: Math.min(o.n, o.need) + '/' + o.need, ok: o.n >= o.need }));
+  const cards = rows.map(r => {
+    const c = cineCard(r.icon, r.label, r.n, r.small);
+    const st = c.querySelector('.stamp'); st.className = 'stamp ' + (r.ok ? 'ok' : 'no'); st.textContent = r.ok ? '완료' : '미달';
+    if (!r.ok) c.classList.add('fail');
+    return c;
+  });
+  $cn('cnGo').textContent = last ? '' : (good ? '최종전 지원 확보' : '');
+  const text = good ? vo.ok : vo.no;
+  const finish = () => {
+    if (!Cine.on || g !== Cine.gen) return;
+    cineClose(0.9);
+    if (state === 'cine') done();
+  };
+  Cine.finish = finish;
+  cineLoad([good || last ? 'm_win' : 'm_part', 'v' + si + (good ? 'ok' : 'no')]).then(([ma, va]) => {
+    if (!Cine.on || g !== Cine.gen) return;
+    elCine.classList.remove('loading');
+    const mus = cinePlay(ma, 0.6 * cineVol('bgm'), 0.02); if (mus) mus.music = true;
+    cineAt(60, () => $cn('cnKick').classList.add('in'));
+    cineAt(220, () => { $cn('cnTitle').classList.add('in'); cineFlash(); });
+    cineAt(650, () => $cn('cnRule').classList.add('in'));
+    const step = last ? 260 : 420;
+    cards.forEach((c, k) => {
+      cineAt(800 + k * step, () => c.classList.add('in'));
+      cineAt(800 + k * step + 330, () => { c.classList.add('stamped'); if (rows[k].ok) S.pickup(); else S.warn(); });
+    });
+    const t1 = 800 + cards.length * step + 300;
+    const voice = cinePlay(va, 1.05 * cineVol('voice'), t1 / 1000);
+    if (voice) cineAt(t1 - 100, () => cineLevel(mus, 0.3 * cineVol('bgm'), 0.35));
+    const fallback = text.length * 0.085;
+    cineAt(t1, () => cineType(text, voice, fallback));
+    let gone = false;
+    const after = () => {
+      if (gone) return; gone = true;
+      cineLevel(mus, 0.6 * cineVol('bgm'), 0.3);
+      if ($cn('cnGo').textContent) $cn('cnGo').classList.add('in');
+      cineAt(last ? 2600 : 1600, finish);
+    };
+    if (voice) { voice.onend = after; cineAt(t1 + (voice.dur + 2) * 1000, after); }
+    else cineAt(t1 + fallback * 1000 + 300, after);
+  });
+  return true;
+}
+// 입력: 컷신 중에는 모든 키를 가로채 건너뛰기로 (N 음소거만 통과)
+addEventListener('keydown', e => {
+  if (!Cine.on) return;
+  if (e.code === 'KeyN') return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  if (!e.repeat) cineSkip();
+}, true);
+elCine.addEventListener('pointerdown', e => { e.preventDefault(); cineSkip(); });
+
 function startStage(i) {
   if (player) prebakeWeapons(player);
   // 교대 대원의 무기 스프라이트도 미리 굽는다 — 첫 교대 순간의 프레임 끊김 방지
@@ -4390,6 +4776,7 @@ function startStage(i) {
   state = 'play';
   curMusic = i;
   S.startMusic(i);
+  cineIntro(i);                            // 🎬 작전 시작 브리핑 (캠페인 — 컷신 동안 state 'cine')
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -5590,6 +5977,7 @@ let shopNext = -1;
 function openShop(nextStage) {
   state = 'shop';
   shopNext = (nextStage === undefined) ? -1 : nextStage;
+  if (shopNext >= 0) cinePrefetch(shopNext);   // 🎬 다음 작전 브리핑 음성·음악 미리 받기
   shopSwapSlot = -1;
   S.stopMusic();
   S.alert();
@@ -7133,14 +7521,18 @@ function _updateBossFight() {
       // 스테이지 3·6 첫 클리어: 보상 상자 — 미소장 모듈 랜덤 지급 (조기 획득 경로)
       if (stageIndex === 2 || stageIndex === 5) grantModuleBox(stageIndex);
       commitSave();
-      if (stageIndex >= STAGES.length - 1) {
-        endGame(true);
-      } else {
-        state = 'intermission';
-        intermission = 200;
-        S.fanfare();
-        S.stopMusic();
-      }
+      // 🎬 캠페인: 작전 결과 컷신을 먼저 보여주고 원래 흐름(인터미션/엔딩)으로
+      const toNext = cined => {
+        if (stageIndex >= STAGES.length - 1) {
+          endGame(true);
+        } else {
+          state = 'intermission';
+          intermission = cined ? 130 : 200;
+          if (!cined) S.fanfare();
+          S.stopMusic();
+        }
+      };
+      if (!cineOutro(stageIndex, () => toNext(true))) toNext(false);
     }
     return;
   }
@@ -15090,6 +15482,7 @@ function togglePause() {
 }
 
 function quitToMenu() {
+  cineAbort();
   state = 'menu';
   shopNext = -1;
   perkChoices = null; perkPendingT = 0; ultCardPendingT = 0;
@@ -15123,18 +15516,20 @@ function syncOptBtns() {
   syncVolUI();
 }
 // 볼륨 슬라이더 ↔ save.opt.bgm/sfx
-const elVolBgm = document.getElementById('volBgm'), elVolSfx = document.getElementById('volSfx');
+const elVolBgm = document.getElementById('volBgm'), elVolSfx = document.getElementById('volSfx'), elVolVoice = document.getElementById('volVoice');
 function syncVolUI() {
   const b = Math.round((save.opt.bgm == null ? 0.8 : save.opt.bgm) * 100), f = Math.round((save.opt.sfx == null ? 1 : save.opt.sfx) * 100);
   elVolBgm.value = b; elVolSfx.value = f;
   document.getElementById('volBgmV').textContent = b;
   document.getElementById('volSfxV').textContent = f;
+  const v = Math.round((save.opt.voice == null ? 1 : save.opt.voice) * 100);
+  elVolVoice.value = v; document.getElementById('volVoiceV').textContent = v;
 }
 function bindVol(el, key) {
   el.addEventListener('input', () => { S.init(); S.setVolume(key, el.value / 100); syncVolUI(); if (key === 'sfx') S.uiHover(); });
   el.addEventListener('change', () => { commitSave(); if (key === 'bgm') S.pickup(); });
 }
-bindVol(elVolBgm, 'bgm'); bindVol(elVolSfx, 'sfx');
+bindVol(elVolBgm, 'bgm'); bindVol(elVolSfx, 'sfx'); bindVol(elVolVoice, 'voice');
 
 // ═══════════════════════════════════════════════════════════════
 // DOM 이벤트 바인딩
@@ -15327,7 +15722,7 @@ function loop() {
     draw();
     ctx.fillStyle = 'rgba(6,5,3,.55)';
     ctx.fillRect(0, 0, W, H);
-  } else if (state === 'shop' || state === 'win' || state === 'over') {
+  } else if (state === 'shop' || state === 'win' || state === 'over' || state === 'cine') {
     tick++;
     draw();
   } else {
@@ -15413,7 +15808,10 @@ if (location.search.indexOf('debug') >= 0) {
     ride(m) { if (player) enterMode(m); },
     render() { draw(); },
     start(dk) { startGame(dk || 'normal', false, false); },                     // 캠페인 즉시 시작
-    stage(i) { startStage(i); },                                               // 특정 스테이지로 즉시 이동
+    stage(i) { startStage(i); },
+    killBoss() { if (boss) { boss.dead = true; boss.deathT = 2; } },          // 보스 즉시 격파 (격파 후 흐름 검수)
+    cine() { return { on: Cine.on, mode: Cine.mode, state, seen: save.cineSeen, sub: $cn('cnSub').textContent, snd: Cine.snd.length }; },   // 🎬 컷신 상태
+    outro(good) { if (mission) { mission.done = good !== false; mission.objs.forEach(o => o.n = good !== false ? o.need : 0); } return cineOutro(stageIndex, () => { state = 'intermission'; intermission = 130; }); },                                               // 특정 스테이지로 즉시 이동
     bonus() { startBonus(); },
     weaponSheet(ci, z) {   // 대원 ci의 무기 14종 idle·run·aimUp 프레임 시트
       ci = ci | 0; z = z || 2;
